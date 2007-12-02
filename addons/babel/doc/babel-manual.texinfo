@@ -1,0 +1,145 @@
+\input texinfo   @c -*- Mode: Texinfo; Mode: auto-fill -*-
+@c %**start of header
+@setfilename babel.info
+@settitle Babel User Manual
+@exampleindent 2
+
+@c ============================= Macros =============================
+@c The following macros are used throughout this manual.
+
+@macro Function {args}
+@defun \args\
+@end defun
+@end macro
+
+@macro Macro {args}
+@defmac \args\
+@end defmac
+@end macro
+
+@macro Accessor {args}
+@deffn {Accessor} \args\
+@end deffn
+@end macro
+
+@macro GenericFunction {args}
+@deffn {Generic Function} \args\
+@end deffn
+@end macro
+
+@macro ForeignType {args}
+@deftp {Foreign Type} \args\
+@end deftp
+@end macro
+
+@macro Variable {args}
+@defvr {Special Variable} \args\
+@end defvr
+@end macro
+
+@macro Condition {args}
+@deftp {Condition Type} \args\
+@end deftp
+@end macro
+
+@macro impnote {text}
+@quotation
+@strong{Implementor's note:} @emph{\text\}
+@end quotation
+@end macro
+
+@c Info "requires" that x-refs end in a period or comma, or ) in the
+@c case of @pxref.  So the following implements that requirement for
+@c the "See also" subheadings that permeate this manual, but only in
+@c Info mode.
+@ifinfo
+@macro seealso {name}
+@ref{\name\}.
+@end macro
+@end ifinfo
+
+@ifnotinfo
+@alias seealso = ref
+@end ifnotinfo
+
+@c Set ROMANCOMMENTS to get comments in roman font.
+@ifset ROMANCOMMENTS
+@alias lispcmt = r
+@end ifset
+@ifclear ROMANCOMMENTS
+@alias lispcmt = asis
+@end ifclear
+
+
+@c ============================= Macros =============================
+
+
+@c Show types, functions, and concepts in the same index.
+@syncodeindex tp cp
+@syncodeindex fn cp
+
+@copying
+Copyright @copyright{} 2005, 2006 Lu@'{@dotless{i}}s Oliveira
+  <loliveira at common-lisp.net> @*
+
+@quotation
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+``Software''), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+@sc{The software is provided ``as is'', without warranty of any kind,
+express or implied, including but not limited to the warranties of
+merchantability, fitness for a particular purpose and noninfringement.
+In no event shall the authors or copyright holders be liable for any
+claim, damages or other liability, whether in an action of contract,
+tort or otherwise, arising from, out of or in connection with the
+software or the use or other dealings in the software.}
+@end quotation
+@end copying
+@c %**end of header
+
+@titlepage
+@title Babel User Manual
+@c @subtitle Version X.X
+@c @author Luis Oliveira
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top babel
+@insertcopying
+@end ifnottex
+
+@menu
+* Introduction::                
+* Comprehensive Index::         
+@end menu
+
+@c ===================================================================
+@c CHAPTER: Introduction
+
+@node Introduction
+@chapter Introduction
+
+
+@c ===================================================================
+@c INDEX
+
+@node Comprehensive Index
+@unnumbered Index
+@printindex cp
+
+@bye

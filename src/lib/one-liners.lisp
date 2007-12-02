@@ -1,0 +1,37 @@
+(in-package #:tpd2.lib)
+
+(defun unquote-quoted-symbol (func)
+  (assert (eq (first func) 'quote)) 
+  (check-type (second func) symbol)
+  (second func))
+
+(defun force-list (val)
+  (if (listp val)
+      val
+      (list val)))
+
+(declaim (ftype (function (t) list) force-list))
+(declaim (inline force-list))
+
+
+(defun force-first (form)
+  (typecase form
+    (list (first form))
+    (t form)))
+(declaim (inline force-first))
+
+(defun force-rest (form)
+  (when (listp form) (rest form)))
+(declaim (inline force-rest))
+
+(defun force-class (class)
+  (if (symbolp class)
+      (find-class class)
+      class))
+
+(defun make-displaced-vector (vector &key (start 0) (end (length vector)))
+  (make-array (- end start)
+              :element-type (array-element-type vector)
+              :displaced-to vector
+              :displaced-index-offset start))
+

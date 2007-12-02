@@ -1,0 +1,26 @@
+trivial-garbage is a simple library that provides a portable API to
+finalizers, weak hash-tables and weak pointers.
+
+It is placed in the public domain with absolutely no warranty.
+
+The various bits of funcionality (finalizers, weak pointers, etc...)
+are mutually independent. Feel free to copy whatever bits you find
+useful into your own program.
+
+Documentation is generated with the code below and is available at
+<http://cliki.net/trivial-garbage>.
+
+(asdf:oos 'asdf:load-op :trivial-garbage)
+(require :sb-introspect)
+
+(let ((syms nil))
+  (do-external-symbols (sym :trivial-garbage)
+    (push sym syms))
+  (flet ((snd (sym) (string-downcase (symbol-name sym))))
+    (setq syms (sort syms #'string< :key #'snd))
+    (dolist (sym syms)
+      (format t "<p>&mdash; Function: <strong>tg:~A</strong>" (snd sym))
+      (format t "~{ <var>~A</var>~}</p>~%"
+                (mapcar #'snd (sb-introspect:function-arglist sym)))
+      (format t "<blockquote><p>~A</p></blockquote>~%~%"
+                (documentation sym 'function))))))
