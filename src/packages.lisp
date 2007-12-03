@@ -1,3 +1,7 @@
+(cl:defpackage #:teepeedee2.system
+  (:use #:cl))
+(in-package #:teepeedee2.system)
+
 (defpackage #:teepeedee2.lib
   (:nicknames #:tpd2.lib)
   (:use #:common-lisp)
@@ -57,8 +61,36 @@
 
 (defpackage #:teepeedee2.io
   (:nicknames #:tpd2.io)
-  (:use #:common-lisp #:teepeedee2.lib))
+  (:use #:common-lisp #:teepeedee2.lib)
+  (:export 
+   #:defprotocol 
+   #:launch-io
+   #:io
+   #:protocol-error
 
+   #:build-sendbuf
+   #:recv
+   #:recvline
+   #:send
+   #:accept
+
+   #:make-con-connect
+   #:make-con-listen
+   #:hangup
+
+   #:byte-vector-to-string
+   #:+newline+
+
+   #:event-loop
+   #:event-loop-reset))
+
+#.`
 (defpackage #:teepeedee2
   (:nicknames #:tpd2)
-  (:use #:common-lisp))
+  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib)) syms)
+	 (dolist (p tpd-pkgs)
+	   (do-external-symbols (sym (find-package p)) (push sym syms)))
+	 (list
+	  `(:use #:common-lisp ,@tpd-pkgs)
+	  `(:export ,@syms))))
+

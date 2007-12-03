@@ -3,6 +3,9 @@
 (defstruct mux
   (fd-to-con (make-array 128 :element-type '(or null con) :initial-element nil)))
 
+(my-defun mux empty ()
+  (every 'not (my fd-to-con))) 
+
 (my-defun mux find-fd (fd)
   (when (> (length (my fd-to-con)) fd)
     (aref (my fd-to-con) fd)))
@@ -16,6 +19,6 @@
     (setf (aref (my fd-to-con) fd) con)))
 
 (my-defun mux del (fd)
-  (assert (aref (my fd-to-con) fd))
-  (setf (aref (my fd-to-con) fd) nil))
+  (when (my find-fd fd)
+    (setf (aref (my fd-to-con) fd) nil)))
 

@@ -17,13 +17,9 @@
 		  (ignore-errors (socket-close sock)))))
     con))
 
+
 (my-defun con run ()
   (funcall (my ready-callback)))
-
-(my-defun con hangup ()
-  (cancel-finalization me)
-  (socket-close (my socket))
-  (setf (my socket) nil))
 
 (defconstant +newline+ (force-byte-vector #(13 10)))
 
@@ -59,4 +55,30 @@
        (funcall done it))
       (t
        (socket-when-ready-to-read (my socket) me #'my-call))))
+
+(my-defun con 'hangup ()
+  (when (my socket)
+    (cancel-finalization me)
+    (socket-close (my socket))
+    (setf (my socket) nil)))
+
+
+(defun make-con-connect (&key address port 	       
+		(socket-family +AF_INET+) 
+		(socket-type +SOCK_STREAM+))
+  (make-con :socket (make-connect-socket
+		     :port port
+		     :address address 
+		     :socket-family socket-family
+		     :socket-type socket-type)))
+
+(defun make-con-listen (&key (port 0) 
+	       (address "0.0.0.0") 
+	       (socket-family +AF_INET+) 
+	       (socket-type +SOCK_STREAM+))
+  (make-con :socket (make-listen-socket 
+		     :port port 
+		     :address address 
+		     :socket-family socket-family
+		     :socket-type socket-type)))
 

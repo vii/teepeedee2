@@ -280,8 +280,14 @@
 
 (def-simple-syscall bind
     (sockfd :int)
-  (my_addr :pointer)
+  (addr :pointer)
   (addrlen :int))
+
+(def-simple-syscall connect
+    (sockfd :int)
+  (addr :pointer)
+  (addrlen :int))
+
 
 (def-simple-syscall listen
     (sockfd :int)
@@ -340,26 +346,39 @@
     (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
       #.`(strcat ,@(loop for i below 4 unless (= i 0) collect "." collect `(the simple-string (aref octet-to-string (ldb (byte 8 (* 8 ,i)) addr) )))))))
 
-(defun make-listen-socket (&key port address backlog 
-			   (socket-family +AF_INET+) 
-			   (socket-type +SOCK_STREAM+))
-  (let* ((fd (syscall-socket socket-family socket-type 0))
-	 (network-port (htons port)))
+(defun new-socket-helper (&key 
+			  port 
+			  address 
+			  socket-family
+			  socket-type
+			  action)
+  (let ((fd (syscall-socket socket-family socket-type 0)))
     (signal-protect 
-     (progn
-       (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
-       (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
-	 (setf family socket-family)
-	 (cffi:with-foreign-string (src address)
-	   (when (<= (inet_pton socket-family src (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
-	     (error "Internet address is not valid: ~A" address)))
+	(let ((network-port (htons port)))
+	  (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
+	  (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
+	    (setf family socket-family)
+	    (cffi:with-foreign-string (src address)
+	      (when (<= (inet_pton socket-family src 
+				   (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
+		(error "Internet address is not valid: ~A" address)))
 	    (setf port network-port)
-	    (syscall-bind fd sa (cffi:foreign-type-size 'sockaddr_in)))
-       (syscall-listen fd backlog)
-       (set-fd-nonblock fd)
-       fd)
-     (syscall-close fd))))
+	    (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in))) 
+	  (set-fd-nonblock fd)
+	  fd)
+      (syscall-close fd))))
 
+(defun make-listen-socket (&rest args)
+  (apply 'new-socket-helper :action 
+	 (lambda(fd sa len)
+	   (syscall-bind fd sa len)
+	   (syscall-listen fd 1024))
+	 args))
+
+(defun make-connect-socket (&rest args)
+  (apply 'new-socket-helper 
+	 :action 'syscall-connect
+	 args))
 
 (cffi:defcstruct timeval
   (sec :uint32)

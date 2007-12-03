@@ -13,7 +13,14 @@
 
 (def-if-unbound defun-consistent utf8-encode (str) ; XXX not implemented
   (assert (every (lambda(x) (> 128 (char-int x))) str))
-  (map '(vector (unsigned-byte 8)) #'char-code str))
+  (map '(vector (unsigned-byte 8)) 'char-code str))
+
+#+sbcl
+(defun-consistent byte-vector-to-string (vec)
+  (babel:octets-to-string vec :encoding :utf-8 :errorp nil))
+
+(def-if-unbound defun-consistent byte-vector-to-string (vec)
+  (map 'string 'code-char vec))
 
 (defun-consistent force-byte-vector (val)
   (typecase val

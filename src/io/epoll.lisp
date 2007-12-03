@@ -1,6 +1,6 @@
 (in-package #:tpd2.io)
 
-(defstruct (epoll (:include mux))
+(defstruct (epoll (:include mux) (:constructor %make-epoll))
   fd
   events
   postpone-registration
@@ -21,6 +21,11 @@
 		(ignore-errors
 		  (cffi:foreign-free events-mem))))))  
 
+(defun make-epoll ()
+  (let ((e (%make-epoll)))
+    (epoll-init e)
+    e))
+
 (my-defun epoll ctl (ctl fd-wanted events-wanted)
   (with-foreign-object-and-slots ((events data) event epoll-event)
     (setf events
@@ -38,7 +43,9 @@
 
   (let ((nevents
 	 (syscall-epoll_wait (my fd) (my events) (my max-events) 
-			     (when timeout (floor (* 1000 timeout))))))
+			     (if timeout 
+				 (floor (* 1000 timeout))
+				 -1))))
     (assert (>= (my max-events) nevents))
     (dotimes (i nevents)
       (let ((event (cffi:mem-aref (my events) 'epoll-event i)))
@@ -50,8 +57,8 @@
 		      (con-run it)
 		      (unless (zerop (logand (logior +POLLERR+ +POLLHUP+ +POLLRDHUP+) events))
 			(error 'socket-closed)))
-		  (socket-closed ()
-		    (con-hangup it)))))))))
+		  (socket-error ()
+		    (hangup it)))))))))
   (setf (my postpone-registration) nil)
   (adolist (my postponed-registrations)
     (my 'mux-add it))
@@ -60,10 +67,7 @@
   (values))
 
 
-(defvar *global-epoll* 
-  (let ((e (make-epoll)))
-    (epoll-init e)
-    e))
+(defvar *global-epoll* (make-epoll))
 
 (defun register-fd (events con)
   (with-shorthand-accessor (my epoll *global-epoll*)
@@ -80,7 +84,17 @@
   (with-shorthand-accessor (my epoll *global-epoll*)
     (my 'mux-del fd)))
 
-(defun wait-for-next-event (timeout)
+(defun events-pending-p ()
+  (not (mux-empty *global-epoll*)))
+
+(defun wait-for-next-event (&optional timeout)
   (with-shorthand-accessor (my epoll *global-epoll*)
     (my wait timeout)))
 
+(defun event-loop ()
+  (loop while (events-pending-p) do
+    (wait-for-next-event)))
+
+(defun event-loop-reset ()
+  (setf *global-epoll*
+	(make-epoll)))

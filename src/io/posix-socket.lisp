@@ -50,9 +50,6 @@
   (con-set-callback con callback)
   (register-fd events con))
 
-(define-condition socket-closed (error) 
-  ())
-
 (defun socket-close (fd)
   (deregister-fd fd)
   (handler-case (syscall-close fd)

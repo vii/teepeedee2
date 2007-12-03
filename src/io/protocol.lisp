@@ -1,5 +1,9 @@
 (in-package #:tpd2.io)
 
+(define-condition protocol-error
+    (socket-error)
+  ())
+
 (defmacro defprotocol (name (con-var &rest args) &body body)
   (check-symbols con-var)
   (with-unique-names (done)

@@ -1,3 +1,7 @@
+(cl:defpackage #:teepeedee2.system
+  (:use #:cl))
+(in-package #:teepeedee2.system)
+
 (loop for addon in (directory "addons/*/") do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
@@ -25,16 +29,21 @@
 					       :components (
 							    (:file "byte-vector")
 							    (:file "peer-info")
+							    (:file "socket")
 							    (:file "recvbuf" :depends-on ("posix-socket"))
 							    (:file "sendbuf" :depends-on ("posix-socket"))
-							    (:file "posix-socket" :depends-on ("byte-vector" "syscalls"))
+							    (:file "posix-socket" :depends-on ("byte-vector" "syscalls" "socket"))
 							    (:file "con" :depends-on ("byte-vector" "peer-info" "sendbuf" "recvbuf"))
 							    (:file "mux" :depends-on ("con"))
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
-							    (:file "protocol")
-							    (:file "echo-line" :depends-on ("con" "protocol"))
-							    )))))
+							    (:file "protocol" :depends-on ("socket"))))))
+
+	       (:module :t 
+			:depends-on (:src)
+			:components (
+				     (:file "suite")
+				     (:file "io" :depends-on ("suite")))))
   :depends-on (
 	       #+sbcl :babel
 		      :trivial-garbage
