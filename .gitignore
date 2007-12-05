@@ -1,0 +1,7 @@
+_darcs
+*.fasl
+*.fas
+*~
+#*
+*.ffasl
+*.lib
