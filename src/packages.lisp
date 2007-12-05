@@ -4,7 +4,7 @@
 
 (defpackage #:teepeedee2.lib
   (:nicknames #:tpd2.lib)
-  (:use #:common-lisp)
+  (:use #:common-lisp #:iter)
   (:import-from #:cl-utilities #:with-unique-names)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:export 
@@ -17,6 +17,7 @@
    #:check-symbols
    #:eval-always
    #:def-if-unbound
+   #:ignorable-let
    #:force-string
    #:force-keyword
    #:force-list
@@ -57,7 +58,14 @@
    #:defmyclass
    #:force-class
    #:signal-protect
-   #:strcat))
+   #:strcat
+   
+
+   #:cdr-assoc
+
+   #:match-bind
+   #:match-failed
+))
 
 (defpackage #:teepeedee2.io
   (:nicknames #:tpd2.io)
@@ -83,6 +91,10 @@
 
    #:event-loop
    #:event-loop-reset))
+
+(defpackage #:teepeedee2.http
+  (:nicknames #:tpd2.http)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io))
 
 #.`
 (defpackage #:teepeedee2

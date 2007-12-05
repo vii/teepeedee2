@@ -23,9 +23,10 @@
 							    (:file "one-liners")
 							    (:file "utils" :depends-on ("macros" "once-only"))
 							    (:file "strcat" :depends-on ("macros" "utils"))
-							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))))
+							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
+							    (:file "regex" :depends-on ("utils" "one-liners"))))
 				     (:module :io
-					       :depends-on (:lib "packages")
+					       :depends-on (:lib)
 					       :components (
 							    (:file "byte-vector")
 							    (:file "peer-info")
@@ -37,7 +38,14 @@
 							    (:file "mux" :depends-on ("con"))
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
-							    (:file "protocol" :depends-on ("socket"))))))
+							    (:file "protocol" :depends-on ("socket"))))
+
+				     (:module :http
+					      :depends-on (:lib :io)
+					      :components (
+							   (:file "headers")
+							   (:file "serve" :depends-on ("headers"))
+							   (:file "request" :depends-on ("headers"))))))
 
 	       (:module :t 
 			:depends-on (:src)
@@ -49,6 +57,7 @@
 		      :trivial-garbage
 		      :arnesi
 		      :cffi
+		      :iterate
 		      :fiveam
 		      :parenscript
 		      :cl-utilities))

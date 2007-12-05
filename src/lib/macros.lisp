@@ -89,6 +89,11 @@
        (,def ,name ,args
 	 ,@body))))
 
+(defmacro ignorable-let (let-name bindings &body body)
+  (let ((names (mapcar 'force-first bindings)))
+    `(,let-name ,bindings
+		(declare (ignorable ,@names))
+		,@body)))
 
 (defun filter-until-full (fn list max-num)
   (remove-if-not fn list :count max-num))

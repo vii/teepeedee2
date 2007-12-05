@@ -19,8 +19,10 @@
 (test echo-line
   (let ((port 18890) (address "127.0.0.1") (count 0)
 	(lines (list 
+		""
 		(with-output-to-string (stream)
 		  (dotimes (x 1000) (format stream "x")))
+		" "
 		"Once more unto the breach, dear friends, once more;"
 		"Or close the wall up with our English dead."
 		"In peace there's nothing so becomes a man"
