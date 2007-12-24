@@ -6,6 +6,7 @@
     (typecase val
       (null "")
       (symbol (symbol-name val))
+      (byte-vector (byte-vector-to-string val))
       (string val)
       (t  (let ((*print-pretty* nil)) (princ-to-string val))))))
 

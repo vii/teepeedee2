@@ -7,12 +7,24 @@
   (:use #:common-lisp #:iter)
   (:import-from #:cl-utilities #:with-unique-names)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
+  (:import-from #:cl-cont #:call/cc #:with-call/cc)
   (:export 
    #:finalize
    #:cancel-finalization
 
    #:with-unique-names
    #:once-only
+
+   #:make-byte-vector
+   #:byte-vector-to-string
+   #:make-byte-vector
+   #:force-byte-vector
+   #:utf8-encode
+   #:with-pointer-to-vector-data
+   #:byte-vector
+   #:byte-vector-cat
+   #:byte-to-ascii-upper
+   #:byte-vector-parse-integer
 
    #:check-symbols
    #:eval-always
@@ -65,6 +77,15 @@
 
    #:match-bind
    #:match-failed
+   #:match-replace-all
+   #:fail-match
+   #:if-match
+   #:case-match-fold-ascii-case
+
+   #:convert-continuation-to-normal-function
+   #:without-call/cc
+   #:with-call/cc
+   #:call/cc
 ))
 
 (defpackage #:teepeedee2.io
@@ -75,8 +96,14 @@
    #:launch-io
    #:io
    #:protocol-error
+   #:accept-forever
+   #:without-call/cc
 
-   #:build-sendbuf
+   #:with-sendbuf
+   #:sendbuf-len
+   #:sendbuf-merge
+   #:sendbuf
+
    #:recv
    #:recvline
    #:send
@@ -86,7 +113,6 @@
    #:make-con-listen
    #:hangup
 
-   #:byte-vector-to-string
    #:+newline+
 
    #:event-loop

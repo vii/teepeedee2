@@ -65,3 +65,11 @@
           (my eat-to-idx ending)
         (incf (my read-idx) (length delimiter))))))
 
+
+(my-defun recvbuf 'print-object (stream)
+  (print-unreadable-object (me stream :type t :identity t)
+    (format stream "read ~D/~D bytes: ~A~%|~%~A"
+	    (my read-idx)
+	    (my write-idx)
+	    (force-string (subseq (my store) 0 (my read-idx)))
+	    (force-string (subseq (my store) (my read-idx) (my write-idx))))))

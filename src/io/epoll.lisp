@@ -49,22 +49,18 @@
     (assert (>= (my max-events) nevents))
     (dotimes (i nevents)
       (let ((event (cffi:mem-aref (my events) 'epoll-event i)))
-	  (cffi:with-foreign-slots ((events data) event epoll-event)
-	    (cffi:with-foreign-slots ((fd) data epoll-data)
-	      (awhen (my 'mux-find-fd fd)
-		(handler-case 
-		    (progn
-		      (con-run it)
-		      (unless (zerop (logand (logior +POLLERR+ +POLLHUP+ +POLLRDHUP+) events))
-			(error 'socket-closed)))
-		  (socket-error ()
-		    (hangup it)))))))))
-  (setf (my postpone-registration) nil)
-  (adolist (my postponed-registrations)
-    (my 'mux-add it))
-  (setf (my postponed-registrations) nil)
+	(cffi:with-foreign-slots ((events data) event epoll-event)
+	  (cffi:with-foreign-slots ((fd) data epoll-data)
+	    (awhen (my 'mux-find-fd fd)
+	      (con-run it)
+	      (unless (zerop (logand (logior +POLLERR+ +POLLHUP+ +POLLRDHUP+) events))
+		(hangup it)))))))
+    (setf (my postpone-registration) nil)
+    (adolist (my postponed-registrations)
+      (my 'mux-add it))
+    (setf (my postponed-registrations) nil)
   
-  (values))
+    (values)))
 
 
 (defvar *global-epoll* (make-epoll))
@@ -93,7 +89,7 @@
 
 (defun event-loop ()
   (loop while (events-pending-p) do
-    (wait-for-next-event)))
+	(wait-for-next-event)))
 
 (defun event-loop-reset ()
   (setf *global-epoll*

@@ -17,9 +17,23 @@
 		  (ignore-errors (socket-close sock)))))
     con))
 
+(defgeneric normal-connection-error (e))
+(defmethod normal-connection-error (e))
+(defmethod normal-connection-error ((e socket-error))
+  t)
+(defmethod normal-connection-error ((e match-failed))
+  (break)
+  t)
 
 (my-defun con run ()
-  (funcall (my ready-callback)))
+  (restart-case
+      (handler-bind ((error 
+		      (lambda(e)
+			(when (normal-connection-error e)
+			  (invoke-restart 'hangup)))))
+	(funcall (my ready-callback)))
+    (hangup ()
+      (my 'hangup))))
 
 (defconstant +newline+ (force-byte-vector #(13 10)))
 

@@ -32,16 +32,16 @@
     (is (string= (force-string w) "one"))))
 
 (test integer
-  (test-match-bind-enters-body ((w (integer))) "666"
+  (test-match-bind-enters-body ((w :integer)) "666"
     (is (= 666 w)))
-  (test-match-bind-enters-body ((i (integer)) "." (f (integer)) " ") "3.14159 "
+  (test-match-bind-enters-body ((i (:integer)) "." (f (:integer)) " ") "3.14159 "
     (is (= 3 i))
     (is (= 14159 f))))
   
 (test http-request-line
   (dolist (request-line '("GET / HTTP/1.0" "GET   /index.html  "))
     (test-match-bind-enters-body (method :whitespace url :whitespace?
-					 (:? "HTTP/" (version-major (integer) 1) "." (version-minor (integer) 0) :whitespace?) 
+					 (:? "HTTP/" (version-major (:integer) 1) "." (version-minor (:integer) 0) :whitespace?) 
 					 :$)
 			       request-line
 			       (is (string= (force-string method) "GET"))
@@ -50,10 +50,34 @@
 			       ))
 
   (test-match-bind-enters-body (method :whitespace url :whitespace?
-				       (:? "HTTP/" (version-major (integer) 1) "." (version-minor (integer) 0) :whitespace?) 
+				       (:? "HTTP/" (version-major (:integer) 1) "." (version-minor (:integer) 0) :whitespace?) 
 				       :$)
       "POST    /index.php?   HTTP/901.121  "
     (is (string= (force-string method) "POST"))
     (is (string= (force-string url) "/index.php?"))
     (is (= 901 version-major))
     (is (= 121 version-minor))))
+
+
+(test until-match
+  (test-match-bind-enters-body
+      ((left (:until-and-eat :whitespace? ":" :whitespace?))
+       (right (:until :whitespace? :$)))
+      "X-Header: x y "))
+
+(test http-header
+  (loop for (name . value) in '(
+				  ("User-Agent" . "curl/7.16.4 (i486-pc-linux-gnu) libcurl/7.16.4 OpenSSL/0.9.8e zlib/1.2.3.3 libidn/1.0")
+				  ("Host" . "localhost:9999")
+				  ("Accept" . "*/*"))
+	do
+	(loop for ws in '("" "  " "                                         ") do 
+	      (test-match-bind-enters-body
+		  ((rname (:until-and-eat :whitespace? ":" :whitespace?))
+		   (rvalue (:until :whitespace? :$)))
+		  (strcat name ws ":" ws value ws)
+		  (is (string= (force-string rname) name))
+		  (is (string= (force-string rvalue) value))))))
+		  
+	    
+      

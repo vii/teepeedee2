@@ -21,20 +21,22 @@
 							    (:file "macros" :depends-on ("once-only" "one-liners")) 
 							    (:file "once-only")
 							    (:file "one-liners")
-							    (:file "utils" :depends-on ("macros" "once-only"))
+							    (:file "utils" :depends-on ("macros" "once-only" "byte-vector"))
 							    (:file "strcat" :depends-on ("macros" "utils"))
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
-							    (:file "regex" :depends-on ("utils" "one-liners"))))
+							    (:file "byte-vector" :depends-on ("macros"))
+							    (:file "regex" :depends-on ("byte-vector"  "callcc"))
+							    (:file "callcc")))
+				     
 				     (:module :io
 					       :depends-on (:lib)
 					       :components (
-							    (:file "byte-vector")
 							    (:file "peer-info")
 							    (:file "socket")
 							    (:file "recvbuf" :depends-on ("posix-socket"))
 							    (:file "sendbuf" :depends-on ("posix-socket"))
-							    (:file "posix-socket" :depends-on ("byte-vector" "syscalls" "socket"))
-							    (:file "con" :depends-on ("byte-vector" "peer-info" "sendbuf" "recvbuf"))
+							    (:file "posix-socket" :depends-on ("syscalls" "socket"))
+							    (:file "con" :depends-on ("peer-info" "sendbuf" "recvbuf"))
 							    (:file "mux" :depends-on ("con"))
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
@@ -43,19 +45,21 @@
 				     (:module :http
 					      :depends-on (:lib :io)
 					      :components (
+							   (:file "encoding")
 							   (:file "headers")
-							   (:file "serve" :depends-on ("headers"))
+							   (:file "serve" :depends-on ("encoding" "headers"))
 							   (:file "request" :depends-on ("headers"))))))
 
 	       (:module :t 
 			:depends-on (:src)
 			:components (
 				     (:file "suite")
-				     (:file "io" :depends-on ("suite")))))
+				     (:file "io" :depends-on ("suite"))
+				     (:file "regex" :depends-on ("suite")))))
   :depends-on (
 	       #+sbcl :babel
 		      :trivial-garbage
-		      :arnesi
+		      :cl-cont
 		      :cffi
 		      :iterate
 		      :fiveam

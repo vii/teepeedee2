@@ -13,9 +13,10 @@
   `(load-time-value ,form t))
 
 (defun load-time-constantp (form &optional env)
-  (or (constantp form env) 
-      (let ((expansion (macroexpand form env)))
-	(and (listp expansion) (eq 'load-time-value (first expansion))))))
+  (ignore-errors
+    (or (constantp form env) 
+	(let ((expansion (macroexpand form env)))
+	  (and (listp expansion) (eq 'load-time-value (first expansion)))))))
 
 (defmacro with-package (package &body body)
   (let ((*package* (find-package package)))
@@ -67,21 +68,26 @@
      (maphash (lambda (,key ,value) ,@body) ,table)
      ,result-form))
 
+(defun generate-case-key (keyform &key test (transform ''identity) clauses)
+  (once-only (keyform test transform)
+    (flet ((apply-transform (form)
+	     `(funcall ,transform ,form)))
+      `(cond ,@(mapcar 
+		(lambda(clause) 
+		  (list* (typecase (first clause)
+			   ((member t otherwise) t)
+			     (list `(member ,keyform (list ,(mapcar #'apply-transform (first clause))) :test ,test))
+			     (t `(funcall ,test ,keyform ,(apply-transform (first clause)))))
+			 (rest clause))) clauses)))))
+
 (defmacro case-func (keyform func &rest clauses)
-  (once-only (keyform func)
-    `(cond ,@(mapcar 
-	      (lambda(clause) 
-		(list* (typecase (first clause)
-			((member t otherwise) t)
-			(list `(member ,keyform ,(first clause) :test ,func))
-			(t `(funcall ,func ,keyform ,(first clause))))
-		      (rest clause))) clauses))))
+  (generate-case-key keyform :test func :clauses clauses))
 
 (defmacro case-equalp (keyform &rest clauses)
-  `(case-func ,keyform #'equalp ,@clauses))
+  `(case-func ,keyform 'equalp ,@clauses))
 
 (defmacro case-= (keyform &rest clauses)
-  `(case-func ,keyform #'= ,@clauses))
+  `(case-func ,keyform '= ,@clauses))
 
 (defmacro def-if-unbound (def name args &body body)
   `(eval-always
