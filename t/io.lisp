@@ -4,7 +4,7 @@
 (in-suite io)
 
 (defprotocol echo-line (con)
-  (io 'send con (with-sendbuf
+  (io 'send con (with-sendbuf ()
 		  (io 'recvline con)
 		  +newline+))
   (hangup con))
@@ -58,7 +58,7 @@
 
     (defprotocol check-echo-line (con line)
       (io 'send con 
-	  (with-sendbuf
+	  (with-sendbuf ()
 	    line
 	    +newline+))
       (let ((answer (byte-vector-to-string (io 'recvline con))))

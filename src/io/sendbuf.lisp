@@ -6,16 +6,19 @@
   (num-bufs 0)
   (len 0))
 
-(my-defun sendbuf add (buf)
-  (unless (zerop (length buf))
-    (incf (my num-bufs))
-    (incf (my len) (length buf))
-    (let ((n (cons buf nil)))
-      (cond ((my head)
-	     (setf (cdr (my tail)) n)
-	     (setf (my tail) n))
-	    (t (setf (my head) n
-		     (my tail) n))))))
+(my-defun sendbuf add (x)
+  (cond ((sendbuf-p x)
+	 (my merge x))
+	(t (let ((buf (force-byte-vector x)))
+	     (unless (zerop (length buf))
+	       (incf (my num-bufs))
+	       (incf (my len) (length buf))
+	       (let ((n (cons buf nil)))
+		 (cond ((my head)
+			(setf (cdr (my tail)) n)
+			(setf (my tail) n))
+		       (t (setf (my head) n
+				(my tail) n)))))))))
 
 (my-defun sendbuf merge (other)
   (cond ((my head)
@@ -24,25 +27,29 @@
 	(t (setf (my head) (its head other)
 		 (my tail) (its tail other))))
   (incf (my len) (its len other))
+  (incf (my num-bufs) (its num-bufs other))
   (setf (its num-bufs other) 'merged
 	(its head other) 'merged
 	(its tail other) 'merged
 	(its len other) 'merged)
   (values))
-	  
 
-(defmacro with-sendbuf (&body body)
-  `(let ((sendbuf (make-sendbuf)))
-     ,@(loop for form in body
-	     collect (case (force-first form) 
-		       (sendbuf-merge
-			`(sendbuf-merge sendbuf ,(second form)))
-		       (quote
-			(second form))
-		       (t
-			`(sendbuf-add sendbuf 
-				      (force-byte-vector ,form)))))
-     sendbuf))
+(defmacro with-sendbuf ((&optional (var (gensym "sendbuf"))) &body body)
+  (check-symbols var)
+  `(let ((,var (make-sendbuf)))
+     (macrolet ((with-sendbuf-continue (&body body)
+		  `(progn
+		     ,@(loop for form in body
+			     collect 
+			     (case (force-first form) 
+			       (quote
+				(second form))
+			       (t
+				`(sendbuf-add ,',var
+					      ,form))))
+		     ,',var)))
+       (with-sendbuf-continue
+	   ,@body))))
 
 (my-defun sendbuf done ()
   (not (my head)))
@@ -62,3 +69,7 @@
   (if (my head)
     (socket-when-ready-to-write (con-socket con) con #'my-call)
     (funcall done)))
+
+(my-defun sendbuf 'print-object (stream)
+  (cond (*print-readably* (call-next-method))
+	(t (write (apply 'concatenate 'string (mapcar (lambda(s)(force-string s)) (my head))) :stream stream :escape t))))

@@ -25,6 +25,7 @@
    #:byte-vector-cat
    #:byte-to-ascii-upper
    #:byte-vector-parse-integer
+   #:byte-vector=-fold-ascii-case
 
    #:check-symbols
    #:eval-always
@@ -71,7 +72,8 @@
    #:force-class
    #:signal-protect
    #:strcat
-   
+   #:random-shuffle
+   #:random-elt
 
    #:cdr-assoc
 
@@ -100,6 +102,7 @@
    #:without-call/cc
 
    #:with-sendbuf
+   #:with-sendbuf-continue
    #:sendbuf-len
    #:sendbuf-merge
    #:sendbuf
@@ -120,12 +123,28 @@
 
 (defpackage #:teepeedee2.http
   (:nicknames #:tpd2.http)
-  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io))
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
+  (:export 
+   #:dispatcher-register-path 
+   #:*default-dispatcher*
+   #:http-parse-and-generate-response))
+
+(defpackage #:teepeedee2.ml
+  (:nicknames #:tpd2.ml)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
+  (:export
+   #:define-dtd #:ml-raw))
+
+(defpackage #:teepeedee2.webapp
+  (:nicknames #:tpd2.webapp)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.http)
+  (:export
+   #:defpage))
 
 #.`
 (defpackage #:teepeedee2
   (:nicknames #:tpd2)
-  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib)) syms)
+  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib #:tpd2.http #:tpd2.webapp)) syms)
 	 (dolist (p tpd-pkgs)
 	   (do-external-symbols (sym (find-package p)) (push sym syms)))
 	 (list

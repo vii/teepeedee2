@@ -22,8 +22,7 @@
 (defmethod normal-connection-error ((e socket-error))
   t)
 (defmethod normal-connection-error ((e match-failed))
-  (break)
-  t)
+   t)
 
 (my-defun con run ()
   (restart-case

@@ -81,7 +81,7 @@
      nil
      (list new-value)
      `(set-its ,new-value ',func ,instance ,@args)
-     `(its ',func ,instance ,@args))))
+     `(its ,func ,instance ,@args))))
 
 (defun my-func-name-to-symbol (class func)
   (etypecase func

@@ -1,12 +1,5 @@
 (in-package #:tpd2.lib)
 
-(eval-always
-  (defun make-byte-vector (len)
-    (cffi-sys::make-shareable-byte-vector len)))
-
-(deftype byte-vector (&optional (len '*))
-  `(vector (unsigned-byte 8) ,len))
-
 #+sbcl
 (defun-consistent utf8-encode (str)
   (babel:string-to-octets str :encoding :utf-8))
@@ -15,9 +8,6 @@
   (assert (every (lambda(x) (> 128 (char-int x))) str))
   (map '(vector (unsigned-byte 8)) 'char-code str))
 
-#+sbcl
-(defun-consistent byte-vector-to-string (vec)
-  (babel:octets-to-string vec :encoding :utf-8 :errorp nil))
 
 (def-if-unbound defun-consistent byte-vector-to-string (vec)
   (map 'string 'code-char vec))
@@ -26,11 +16,10 @@
   (typecase val
     (null #.(make-byte-vector 0))
     (string (utf8-encode val))
-    (integer (utf8-encode (string (code-char val))))
     (character (utf8-encode (string val)))
     (byte-vector val)
     (sequence (map 'byte-vector 'identity val))
-    (t val)))
+    (t (utf8-encode (force-string val)))))
 
 (defmacro with-pointer-to-vector-data ((ptr lisp-vector) &body body)
   (check-symbols ptr)

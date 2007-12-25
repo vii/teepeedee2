@@ -40,7 +40,7 @@ passing style."
       (expr->cps (car cons)
 		 (let ((i (gensym))
 		       (rest-args (gensym)))
-		   `(lambda (,i &rest ,rest-args)
+		   `(lambda (&optional ,i &rest ,rest-args)
 		      (declare (ignorable ,i))
 		      (declare (ignore ,rest-args))
 		      ,(application->cps app-sym (cdr cons)

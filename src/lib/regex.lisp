@@ -191,13 +191,19 @@ binding-form ::= symbol -> match a word and set symbol to its value
 (define-match-helper :value (value &key (test 'eql))
   (match-value value :test test))
 
+(define-match-macro-helper with-return-matched (&body body)
+  (with-unique-names (start end)
+    `(let ((,start (peek)))
+	   ,@body
+	   (let ((,end (peek)))
+	     (subseq ,start 0 (- (length ,start) (length ,end)))))))
 
 (define-match-macro-helper match-multiple (min max &body body)
   (once-only (min max)
     (with-unique-names (i m)
-      `(progn 
-	 (loop for ,i below ,min
-	       do (locally ,@body))
+      `(with-return-matched
+	   (loop for ,i below ,min
+		 do (locally ,@body))
 	 (let ((,m (or ,max most-positive-fixnum)))
 	   (loop for ,i from ,min below ,m
 		 while (and (if-match (locally ,@body) t) (can-peek))))))))
@@ -227,12 +233,9 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	 (values)))))
 
 (define-match-macro-helper match-until (&rest end)
-  (with-unique-names (start len)
-    `(let ((,start (peek)) (,len 0))
+  `(with-return-matched
        (loop until (try-match-lookahead (locally ,@end))
-	     do (eat 1)
-	     (incf ,len))
-       (subseq ,start 0 ,len))))
+	     do (eat 1))))
 		   
 (define-match-helper whitespace ()
   (match-any-value #\Space #\Tab #\Linefeed #\Return #\Page))

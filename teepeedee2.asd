@@ -21,10 +21,10 @@
 							    (:file "macros" :depends-on ("once-only" "one-liners")) 
 							    (:file "once-only")
 							    (:file "one-liners")
-							    (:file "utils" :depends-on ("macros" "once-only" "byte-vector"))
+							    (:file "utils" :depends-on ("macros" "once-only"))
 							    (:file "strcat" :depends-on ("macros" "utils"))
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
-							    (:file "byte-vector" :depends-on ("macros"))
+							    (:file "byte-vector" :depends-on ("macros" "utils"))
 							    (:file "regex" :depends-on ("byte-vector"  "callcc"))
 							    (:file "callcc")))
 				     
@@ -47,8 +47,17 @@
 					      :components (
 							   (:file "encoding")
 							   (:file "headers")
-							   (:file "serve" :depends-on ("encoding" "headers"))
-							   (:file "request" :depends-on ("headers"))))))
+							   (:file "dispatcher")
+							   (:file "serve" :depends-on ("encoding" "headers" "dispatcher"))
+							   (:file "request" :depends-on ("headers"))))
+				     (:module :ml
+					      :depends-on (:lib :io)
+					      :components (
+							   (:file "define-dtd")
+							   (:file "html" :depends-on ("define-dtd"))))
+				     (:module :webapp
+					      :depends-on (:http :ml)
+					      :components ((:file "page")))))
 
 	       (:module :t 
 			:depends-on (:src)
