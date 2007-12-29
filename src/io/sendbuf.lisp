@@ -18,7 +18,8 @@
 			(setf (cdr (my tail)) n)
 			(setf (my tail) n))
 		       (t (setf (my head) n
-				(my tail) n)))))))))
+				(my tail) n))))))))
+  (values))
 
 (my-defun sendbuf merge (other)
   (cond ((my head)
@@ -37,7 +38,7 @@
 (defmacro with-sendbuf ((&optional (var (gensym "sendbuf"))) &body body)
   (check-symbols var)
   `(let ((,var (make-sendbuf)))
-     (macrolet ((with-sendbuf-continue (&body body)
+     (macrolet ((with-sendbuf-continue ((&optional (var ',var)) &body body)
 		  `(progn
 		     ,@(loop for form in body
 			     collect 
@@ -45,11 +46,12 @@
 			       (quote
 				(second form))
 			       (t
-				`(sendbuf-add ,',var
+				`(sendbuf-add ,var
 					      ,form))))
-		     ,',var)))
-       (with-sendbuf-continue
-	   ,@body))))
+		     (values))))
+       (with-sendbuf-continue ()
+	   ,@body))
+     ,var))
 
 (my-defun sendbuf done ()
   (not (my head)))

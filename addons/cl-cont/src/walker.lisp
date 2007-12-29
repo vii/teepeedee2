@@ -36,20 +36,24 @@ passing style."
 
 (defun application->cps (app-sym cons k-expr args env)
   "Transforms a function application to CPS style."
-  (if cons
-      (expr->cps (car cons)
-		 (let ((i (gensym))
-		       (rest-args (gensym)))
-		   `(lambda (&optional ,i &rest ,rest-args)
-		      (declare (ignorable ,i))
-		      (declare (ignore ,rest-args))
-		      ,(application->cps app-sym (cdr cons)
-					 k-expr
-					 (cons i args)
-					 env)))
-		 env)
-      (let ((r-args (reverse args)))
-	`(,app-sym ,(car r-args) ,k-expr ,@(cdr r-args)))))
+  (cond
+    ((and cons (constantp (car cons) env))
+     (application->cps app-sym (cdr cons) k-expr (cons (car cons) args) env))
+    (cons
+     (expr->cps (car cons)
+		(let ((i (gensym (or (ignore-errors (format nil "~A" (car cons))) "unknown")))
+		      (rest-args (gensym "other vals")))
+		  `(lambda (&optional ,i &rest ,rest-args)
+		     (declare (ignorable ,i))
+		     (declare (ignore ,rest-args))
+		     ,(application->cps app-sym (cdr cons)
+					k-expr
+					(cons i args)
+					env)))
+		env))
+    (t
+     (let ((r-args (reverse args)))
+       `(,app-sym ,(car r-args) ,k-expr ,@(cdr r-args))))))
 
 (defun funcall->cps (cons k-expr args env)
   "Transforms FUNCALL to CPS style."

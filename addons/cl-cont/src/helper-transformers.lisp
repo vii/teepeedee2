@@ -63,3 +63,9 @@ call. Effectively, we're compiling LIST call."
 breaks some CL-CONT code."
   (expr->cps (list->cons (cdr cons)) k-expr env))
 
+;;; Mysterious COMPILER::INTERNAL-THE on Lispworks
+#+lispworks
+(defcpstransformer compiler::internal-the (cons k-expr env)
+  "Ignore INTERNAL-THE and process its second argument."
+  (expr->cps (third cons) k-expr env))
+

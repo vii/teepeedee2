@@ -28,4 +28,8 @@
     (let ((i (random (length sequence))))
       (cons (elt sequence i) (random-shuffle (remove-if (lambda(x) (declare (ignore x)) t) sequence :start i :count 1))))))
 (defun random-elt (sequence)
-  (elt sequence (random (length sequence))))
+  (when sequence
+    (elt sequence (random (length sequence)))))
+(defun read-safely (&rest args)
+  (let ((*read-eval* nil))
+    (apply 'read args)))

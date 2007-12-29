@@ -5,11 +5,11 @@
   #+use-arnesi-for-continuations (lambda(&optional x) (arnesi:kall k x)))
 
 (defmacro without-call/cc (&body body)
-  `(progn ,@body))
+  `(locally ,@body))
 
 (cl-cont:defcpstransformer without-call/cc (cons k-expr env) 
   (declare (ignore env))
-  `(funcall ,k-expr (progn ,@(cdr cons))))
+  `(funcall ,k-expr (locally ,@(cdr cons))))
 
 (cl-cont:defcpstransformer handler-case (cons k-expr env)
   "Basic support for now."
@@ -21,6 +21,7 @@
   (declare (ignore env))
   `(funcall ,k-expr ,cons))
 
+#+extra-bugs-please 
 (defmacro cl-cont:call/cc (cc)
   "Implements delimited continuations."
   (declare (ignore cc))

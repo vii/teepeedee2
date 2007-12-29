@@ -48,7 +48,8 @@
 
 (defun socket-when-ready (events con callback)
   (con-set-callback con callback)
-  (register-fd events con))
+  (register-fd events con)
+  (values))
 
 (defun socket-close (fd)
   (deregister-fd fd)

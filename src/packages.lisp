@@ -36,6 +36,7 @@
    #:force-list
    #:force-class
    #:force-first
+   #:force-rest
    #:merge-constant-arguments
    #:aif
    #:acond
@@ -69,6 +70,7 @@
    #:me
    #:it
    #:defmyclass
+   #:defmystruct
    #:force-class
    #:signal-protect
    #:strcat
@@ -88,6 +90,8 @@
    #:without-call/cc
    #:with-call/cc
    #:call/cc
+
+   #:read-safely
 ))
 
 (defpackage #:teepeedee2.io
@@ -102,9 +106,9 @@
    #:without-call/cc
 
    #:with-sendbuf
+   #:sendbuf-add
    #:with-sendbuf-continue
    #:sendbuf-len
-   #:sendbuf-merge
    #:sendbuf
 
    #:recv
@@ -133,7 +137,7 @@
   (:nicknames #:tpd2.ml)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export
-   #:define-dtd #:ml-raw))
+   #:define-dtd #:output-raw-ml #:output-escaped-ml #:output-object-to-ml #:object-to-ml))
 
 (defpackage #:teepeedee2.webapp
   (:nicknames #:tpd2.webapp)
@@ -141,13 +145,19 @@
   (:export
    #:defpage))
 
+(defpackage #:teepeedee2.game
+  (:nicknames #:tpd2.game)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.webapp #:teepeedee2.ml)
+  (:export #:defgameclass #:play))
+
 #.`
 (defpackage #:teepeedee2
   (:nicknames #:tpd2)
-  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib #:tpd2.http #:tpd2.webapp)) syms)
+  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib #:tpd2.http #:tpd2.webapp #:tpd2.game)) syms)
 	 (dolist (p tpd-pkgs)
 	   (do-external-symbols (sym (find-package p)) (push sym syms)))
 	 (list
 	  `(:use #:common-lisp ,@tpd-pkgs)
 	  `(:export ,@syms))))
+
 

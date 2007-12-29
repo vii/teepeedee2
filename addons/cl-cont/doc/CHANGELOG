@@ -1,3 +1,8 @@
+*** 0.3.3 ***
+- Special handling of COMPILER::INTERNAL-THE on Lispworks
+- Fixing a test case with a function call and empty values argument:
+  (LIST (VALUES))
+
 *** 0.3.2 ***
 - CMUCL compiler optimizations break the transformer for large chucks
   of code. Turning off the optimizer for defun/cc.

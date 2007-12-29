@@ -210,17 +210,25 @@ list of expressions for the tag."
 		       (apply (f/cc-function ,inst) #'values args))))
     inst))
 
+(defun fdesignator-to-function/cc (fdesignator)
+  (let ((lookup 
+	 (if (symbolp fdesignator)
+	     (fdefinition fdesignator)
+	     fdesignator)))
+    (typecase lookup
+      (funcallable/cc (f/cc-function lookup))
+      (t (lambda(cc &rest args)
+	   (funcall cc (apply lookup args)))))))
+(declaim (inline fdesignator-to-function/cc))
+
 (defun funcall/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
-  (typecase fdesignator
-    (funcallable/cc (apply (f/cc-function fdesignator) k args))
-    (t (funcall k (apply fdesignator args)))))
+  (apply (fdesignator-to-function/cc fdesignator) k args))
+(declaim (inline funcall/cc))
 
 (defun apply/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
-  (typecase fdesignator
-    (funcallable/cc (apply #'apply (f/cc-function fdesignator) k args))
-    (t (funcall k (apply #'apply fdesignator args)))))
+  (apply #'apply (fdesignator-to-function/cc fdesignator) k args))
 
 (defun lambda-expr->cps (cons k-expr env)
   "Converts a LAMBDA expression to CPS style."
@@ -448,16 +456,13 @@ and runs a CPS code walker on it."
 ;;; VALUES
 (defcpstransformer values (cons k-expr env)
   "Transforms a VALUES expression to CPS style."
-  (cond ((not (cdr cons))
-	 `(funcall ,k-expr))
-	(t
-	 (expr->cps `(list ,@(cdr cons))
-		    (let ((args (gensym))
-			  (rest (gensym)))
-		      `(lambda (&optional ,args &rest ,rest)
-			(declare (ignore ,rest))
-			(apply ,k-expr ,args)))
-		    env))))
+  (expr->cps `(list ,@(cdr cons))
+	     (let ((args (gensym))
+		   (rest (gensym)))
+	       `(lambda (,args &rest ,rest)
+		  (declare (ignore ,rest))
+		  (apply ,k-expr ,args)))
+	     env))
 
 ;;; VALUES-LIST
 (defcpstransformer values-list (cons k-expr env)

@@ -86,6 +86,10 @@
 		     (+ a b)) 1 2))
   3)
 
+(deftest funcall-8
+    (with-call/cc (list (values)))
+  (nil))
+
 ;; quote
 (deftest quote-1
     (with-call/cc 'a)

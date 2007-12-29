@@ -114,3 +114,15 @@
 #+allegro (deftest list-on-acl-1
 	      (list-on-acl)
 	    (1 2))
+
+;;; DOLIST on Lispworks (needed special handling for
+;;; COMPILER::INTERNAL-THE)
+#+lispworks
+(deftest do-list-on-lispworks-1
+    (with-call/cc
+      (let ((i 0))
+	(dolist (item (list 1 2 3 4))
+	  (incf i item))
+	i))
+  10)
+

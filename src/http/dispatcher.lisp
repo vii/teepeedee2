@@ -23,7 +23,7 @@
 				 (funcall (my error-responder) me path params)))
       (error ()
 	(my build-http-response 
-	 :body (with-sendbuf () "<h1>Server failed</h1>")
+	 :body (with-sendbuf () "<h1>I programmed this incorrectly. Sorry</h1>")
 	 :code 500
 	 :banner "Internal error")))))
 

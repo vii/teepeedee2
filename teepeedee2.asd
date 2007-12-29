@@ -57,9 +57,12 @@
 							   (:file "html" :depends-on ("define-dtd"))))
 				     (:module :webapp
 					      :depends-on (:http :ml)
-					      :components ((:file "page")))))
+					      :components ((:file "page")))
+				     (:module :game
+					      :depends-on (:webapp :ml )
+					      :components ((:file "framework")))))
 
-	       (:module :t 
+	       #+never (:module :t 
 			:depends-on (:src)
 			:components (
 				     (:file "suite")
@@ -71,6 +74,6 @@
 		      :cl-cont
 		      :cffi
 		      :iterate
-		      :fiveam
+		      #+never :fiveam
 		      :parenscript
 		      :cl-utilities))

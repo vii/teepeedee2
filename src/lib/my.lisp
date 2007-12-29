@@ -1,5 +1,35 @@
 (in-package #:tpd2.lib)
 
+(defgeneric copy (original))
+(defgeneric assign (original copy))
+
+(defmethod assign ((original array) (copy array))
+  (loop for i from 0 upto (array-total-size original)
+       do (setf (row-major-aref copy i) (copy (row-major-aref original i)))))
+
+(defmethod copy ((original number))
+  original)
+(defmethod copy ((original symbol))
+  original)
+(defmethod copy ((original cons))
+  (cons (copy (car original)) (copy (cdr original))))
+;(defmethod copy ((original structure-object)) XXX disabled as copy-structure is shallow
+;  (copy-structure original))
+(defmethod copy ((original array))
+  (let ((new
+	 (apply #'make-array
+		(list* (array-dimensions original)
+		       :element-type (array-element-type original)
+		       :adjustable (adjustable-array-p original)
+		       :fill-pointer (when (array-has-fill-pointer-p original)
+				       (fill-pointer original))))))
+    (assign original new)
+    new))
+(defmethod copy ((original standard-object))
+  (let ((new (make-instance (class-of original))))
+    (assign original new)
+    new))
+
 (defgeneric my-auto-prefices (instance))
 
 (defmethod my-auto-prefices (instance)
@@ -16,50 +46,71 @@
 (defmethod my-auto-prefices ((class class))
   (list (class-name class)))
 
-(defun generate-defmyclass (&key name superclasses slots conc-name predicate-sym)
+(defun parse-defstruct (name-and-options)
+  (values
+   (force-first name-and-options)
+   (mapcan (lambda(x) (when (eq (first x) :include) (rest x))) (force-rest name-and-options))))
+
+(defun generate-defmyclass-defstruct (&key name superclasses slots conc-name predicate-sym)
   `(eval-always
-     (prog1
-	 (defclass ,name (,@superclasses)
-	   ,(mapcar (lambda(slot-spec)
-		      (let ((slot-name (first slot-spec)))
-			`(,slot-name
-			  :initarg ,(intern (symbol-name slot-name) :keyword)
-			  ,@(awhen (rest slot-spec)
-				   (when (not (keywordp (second slot-spec)))
-				     `(:initform ,(second slot-spec))))
-			  :accessor ,(intern (strcat conc-name slot-name))))) slots))
-       (defun ,(intern (strcat 'make- name)) (&rest args)
-	 (apply #'make-instance ',name args))
-       (defmethod assign ((original ,name) (copy ,name))
-	 ,@(mapcar (lambda(slot) 
-		     (let ((slot-name (first slot)))
-		       `(setf (slot-value copy ',slot-name) (copy (slot-value original ',slot-name))))) slots)
-	 ,@(when superclasses
-		 `((call-next-method)))
-	 copy)
-       (defmethod my-auto-prefices ((class (eql (find-class ',name))))
-	 (cons ',name (mapcan 'my-auto-prefices ',superclasses)))
-       (defgeneric ,predicate-sym (var))
-       (defmethod ,predicate-sym (var)
-	 (declare (ignore var))
-	 nil)
-       (defmethod ,predicate-sym ((var ,name))
-	 (declare (ignore var))
-	 t))))
+     (defclass ,name (,@superclasses)
+       ,(mapcar (lambda(slot-spec)
+		  (let ((slot-name (force-first slot-spec)))
+		    `(,slot-name
+		      :initarg ,(intern (symbol-name slot-name) :keyword)
+		      ,@(awhen (force-rest slot-spec)
+			       (when (not (keywordp (second slot-spec)))
+				 `(:initform ,(second slot-spec))))
+		      :accessor ,(intern (strcat conc-name slot-name))))) slots))
+     (defun ,(intern (strcat 'make- name)) (&rest args)
+       (apply #'make-instance ',name args))
+     (defgeneric ,predicate-sym (var))
+     (defmethod ,predicate-sym (var)
+       (declare (ignore var))
+       nil)
+     (defmethod ,predicate-sym ((var ,name))
+       (declare (ignore var))
+       t)))
+
+(defmacro defmyclass-defstruct (name-and-options &rest slots)
+  (multiple-value-bind (name superclasses)
+      (parse-defstruct name-and-options)
+    (generate-defmyclass-defstruct
+     :name name 
+     :superclasses superclasses
+     :slots slots
+     :conc-name (strcat name "-")
+     :predicate-sym (intern (strcat name '-p)))))
+
+(defun generate-defstruct (&key defstruct name-and-options slots)
+  (multiple-value-bind (name superclasses)
+      (parse-defstruct name-and-options)
+    ` (eval-always
+	(progn
+	  (,defstruct ,name-and-options ,@slots)
+	  (defmethod assign ((original ,name) (copy ,name))
+	    ,@(mapcar (lambda(slot) 
+		       (let ((slot-name (force-first slot)))
+			 `(setf (slot-value copy ',slot-name) (copy (slot-value original ',slot-name))))) slots)
+	    ,@(when superclasses
+		    `((call-next-method)))
+	   copy)
+	  (defmethod my-auto-prefices ((class (eql (find-class ',name))))
+	    (cons ',name (mapcan 'my-auto-prefices ',superclasses)))
+	  (find-class ',(force-first name-and-options))))))
+
+(defmacro defmystruct (name-and-options &rest slots)
+  (generate-defstruct 
+   :defstruct 'defstruct 
+   :name-and-options name-and-options 
+   :slots slots))
 
 (defmacro defmyclass (name-and-options &rest slots)
-  (let ((name (if (atom name-and-options)
-		  name-and-options
-		  (first name-and-options)))
-	(options (rest (force-list name-and-options))))
-    (check-type name symbol)
-    (generate-defmyclass 
-     :name name 
-     :superclasses (mapcan (lambda(x) (when (eq (first x) :include) (rest x))) options)
-     :slots (mapcar 'force-list slots)
-     :conc-name (strcat name "-")
-     :predicate-sym (intern (strcat name '-p )))))
-
+  (generate-defstruct 
+   :defstruct 'defmyclass-defstruct
+   :name-and-options name-and-options 
+   :slots slots))
+    
 (defun my-function (func prefices)
   (let ((possibilities (mapcar (lambda(prefix) (intern (strcat prefix '- func) (symbol-package prefix))) prefices)))
     (or (find-if 'fboundp possibilities) (first possibilities))))
