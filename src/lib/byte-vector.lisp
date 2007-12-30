@@ -13,6 +13,7 @@
   (map 'string 'code-char vec))
 
 (defun-consistent force-byte-vector (val)
+  (declare (optimize speed (safety 0)))
   (typecase val
     (null #.(make-byte-vector 0))
     (string (utf8-encode val))
@@ -20,6 +21,8 @@
     (byte-vector val)
     (sequence (map 'byte-vector 'identity val))
     (t (utf8-encode (force-string val)))))
+
+(declaim (ftype (function (t) byte-vector) force-byte-vector-consistent-internal))
 
 (defmacro with-pointer-to-vector-data ((ptr lisp-vector) &body body)
   (check-symbols ptr)
@@ -33,8 +36,7 @@
 	   (when ,real-vector
 	     (setf ,lisp-vector ,real-vector))
 	   (cffi:with-pointer-to-vector-data (,ptr ,lisp-vector)
-	     (when ,offset
-	       (cffi:incf-pointer ,ptr ,offset))
+	     (cffi:incf-pointer ,ptr ,offset)
 	     (setf ,tmp (locally ,@body)))
 	   ,tmp)))))
 
@@ -68,6 +70,7 @@
   (aref +byte-to-digit-table+ byte))
 
 (defun byte-vector-parse-integer (string &optional (base 10))
+  (declare (optimize speed))
   (let ((i 0) (val 0) (sign 1))
     (flet ((cur ()
 	     (aref string i))

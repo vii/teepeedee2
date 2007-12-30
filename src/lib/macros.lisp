@@ -68,26 +68,26 @@
      (maphash (lambda (,key ,value) ,@body) ,table)
      ,result-form))
 
-(defun generate-case-key (keyform &key test (transform ''identity) clauses)
-  (once-only (keyform test transform)
+(defun generate-case-key (keyform &key test (transform 'identity) clauses)
+  (once-only (keyform)
     (flet ((apply-transform (form)
-	     `(funcall ,transform ,form)))
+	     `(,transform ,form)))
       `(cond ,@(mapcar 
 		(lambda(clause) 
 		  (list* (typecase (first clause)
 			   ((member t otherwise) t)
-			     (list `(member ,keyform (list ,(mapcar #'apply-transform (first clause))) :test ,test))
-			     (t `(funcall ,test ,keyform ,(apply-transform (first clause)))))
+			     (list `(member ,keyform (list ,(mapcar #'apply-transform (first clause))) :test (function ,test)))
+			     (t `(funcall (function ,test) ,keyform ,(apply-transform (first clause)))))
 			 (rest clause))) clauses)))))
 
 (defmacro case-func (keyform func &rest clauses)
   (generate-case-key keyform :test func :clauses clauses))
 
 (defmacro case-equalp (keyform &rest clauses)
-  `(case-func ,keyform 'equalp ,@clauses))
+  `(case-func ,keyform equalp ,@clauses))
 
 (defmacro case-= (keyform &rest clauses)
-  `(case-func ,keyform '= ,@clauses))
+  `(case-func ,keyform = ,@clauses))
 
 (defmacro def-if-unbound (def name args &body body)
   `(eval-always

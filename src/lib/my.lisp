@@ -167,18 +167,24 @@
 	(if (keywordp lambda-list)
 	    (values lambda-list (first body) (rest body))
 	    (values nil lambda-list body))
-      (multiple-value-bind (declarations body)
-	  (separate-declarations declarations-and-body)
-	(multiple-value-bind 
-	      (def name lambda-list)
-	    (my-make-def class func args)
-	  `(,def ,name ,@(force-list combination-type) ,lambda-list
-		 ,@declarations
-		 (labels ((my-call ()
-			  (let ((me ,class))
-			    (with-shorthand-accessor (my ,class me)
-			      ,@body))))
-		   (my-call))))))))
+      (multiple-value-bind (declarations-and-body inline)
+	  (if (equalp '(my-declare-fast-inline) (first declarations-and-body))
+	    (values (cons '(declare (optimize speed)) (rest declarations-and-body)) t)
+	    (values declarations-and-body nil))
+	(multiple-value-bind (declarations body)
+	    (separate-declarations declarations-and-body)
+	  (multiple-value-bind 
+		(def name lambda-list)
+	      (my-make-def class func args)
+	    `(progn (,def ,name ,@(force-list combination-type) ,lambda-list
+		   ,@declarations
+		   (labels ((my-call ()
+			      (let ((me ,class))
+				(with-shorthand-accessor (my ,class me)
+				  ,@body))))
+		     (my-call)))
+		    ,@(when inline (list `(declaim (inline ,name))))
+		    ',name)))))))
 
 (defun my-call ()
   "Inside a my-defun, #'my-call is the function call again"

@@ -2,10 +2,14 @@
 
 (eval-always
   (defun make-byte-vector (len)
-    (cffi-sys::make-shareable-byte-vector len)))
+    (make-array len :element-type '(unsigned-byte 8))))
+
+(declaim (inline make-byte-vector))
 
 (deftype byte-vector (&optional (len '*))
   `(vector (unsigned-byte 8) ,len))
+(deftype simple-byte-vector (&optional (len '*))
+  `(simple-array (unsigned-byte 8) (,len)))
 
 #+sbcl
 (defun-consistent byte-vector-to-string (vec)
@@ -33,3 +37,5 @@
 (defun read-safely (&rest args)
   (let ((*read-eval* nil))
     (apply 'read args)))
+(defun read-safely-from-string (string)
+  (with-input-from-string (*standard-input* (force-string string)) (read-safely)))

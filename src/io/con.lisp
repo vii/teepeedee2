@@ -23,6 +23,8 @@
   t)
 (defmethod normal-connection-error ((e match-failed))
    t)
+(defmethod normal-connection-error ((e syscall-failed))
+  t)
 
 (my-defun con run ()
   (restart-case
@@ -48,6 +50,7 @@
      (recvbuf-recv (my recv) me #'my-call))))
 
 (my-defun con 'recvline (done)
+  (declare (optimize speed))
   (acond
    ((recvbuf-eat-to-delimiter (my recv) +newline+)
     (funcall done it))

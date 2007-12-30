@@ -79,17 +79,22 @@
 (defmacro def-simple-syscall (name &rest args)
   (let ((direct-sym (direct-syscall-sym name))
 	(syscall-name (syscall-name name))
-	(arg-names (mapcar #'first args)))
+	(arg-names (mapcar #'first args))
+	(func (intern (strcat 'syscall- name))))
     `(progn
       (def-syscall ,name ,@args)
-      (defun ,(intern (strcat 'syscall- name)) ,arg-names
+      (defun ,func ,arg-names
+	(declare (optimize speed (safety 0)))
 	(loop
 	    (let ((val (,direct-sym ,@arg-names)))
-	      (if (or (/= val -1) (= +syscall-error-number+ +EAGAIN+))
-		  (return val)
-		  (if (= +syscall-error-number+ +EINTR+)
-		      (format t "Restarting system call: ~A~&" ,syscall-name)
-		      (error 'syscall-failed :errno +syscall-error-number+ :syscall ,syscall-name)))))))))
+	      (cond ((or (/= val -1) (= +syscall-error-number+ +EAGAIN+))
+		     (return val))
+		    ((= +syscall-error-number+ +EINTR+)
+		     nil)
+		    (t
+		     (error 'syscall-failed :errno +syscall-error-number+ :syscall ,syscall-name))))))
+      (declaim (inline ,func))
+      ',func)))
 
 
 (def-simple-syscall close

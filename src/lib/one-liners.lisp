@@ -34,7 +34,7 @@
               :element-type (array-element-type vector)
               :displaced-to vector
               :displaced-index-offset start))
-
+(declaim (inline make-displaced-vector))
 
 (defun cdr-assoc (alist key &key (test 'eq))
   (cdr (assoc key alist :test test)))

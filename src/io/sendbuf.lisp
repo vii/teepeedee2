@@ -1,44 +1,50 @@
 (in-package #:tpd2.io)
 
 (defstruct sendbuf
-  (head nil)
-  (tail nil)
-  (num-bufs 0)
-  (len 0))
+  (head nil :type list)
+  (tail nil :type list)
+  (num-bufs 0 :type (integer 0 #x1000000))
+  (len 0 :type (integer 0 #x1000000)))
 
 (my-defun sendbuf add (x)
+  (my-declare-fast-inline)
   (cond ((sendbuf-p x)
 	 (my merge x))
-	(t (let ((buf (force-byte-vector x)))
-	     (unless (zerop (length buf))
-	       (incf (my num-bufs))
-	       (incf (my len) (length buf))
-	       (let ((n (cons buf nil)))
-		 (cond ((my head)
-			(setf (cdr (my tail)) n)
-			(setf (my tail) n))
-		       (t (setf (my head) n
-				(my tail) n))))))))
+	(x
+	 (let ((buf (force-byte-vector x)))
+	   (unless (zerop (length buf))
+	     (incf (my num-bufs))
+	     (incf (my len) (length buf))
+	     (let ((n (cons buf nil)))
+	       (cond ((my head)
+		      (setf (cdr (my tail)) n)
+		      (setf (my tail) n))
+		     (t (setf (my head) n
+			      (my tail) n))))))))
   (values))
 
 (my-defun sendbuf merge (other)
-  (cond ((my head)
-	(setf (cdr (my tail)) (its head other)
-	      (my tail) (its tail other)))
-	(t (setf (my head) (its head other)
-		 (my tail) (its tail other))))
-  (incf (my len) (its len other))
-  (incf (my num-bufs) (its num-bufs other))
-  (setf (its num-bufs other) 'merged
-	(its head other) 'merged
-	(its tail other) 'merged
-	(its len other) 'merged)
+  (my-declare-fast-inline)
+  (cond 
+    ((my head)
+     (setf (cdr (my tail)) (sendbuf-head other))
+     (when (sendbuf-tail other)
+       (setf (my tail) (sendbuf-tail other))))
+    (t (setf (my head) (sendbuf-head other)
+	     (my tail) (sendbuf-tail other))))
+
+  (incf (my len) (sendbuf-len other))
+  (incf (my num-bufs) (sendbuf-num-bufs other))
+  (setf (sendbuf-num-bufs other) 0 
+	 (sendbuf-head other) nil
+	 (sendbuf-tail other) nil
+	 (sendbuf-len other) 0)
   (values))
 
 (defmacro with-sendbuf ((&optional (var (gensym "sendbuf"))) &body body)
   (check-symbols var)
   `(let ((,var (make-sendbuf)))
-     (macrolet ((with-sendbuf-continue ((&optional (var ',var)) &body body)
+     (macrolet ((with-sendbuf-continue ((&optional (var ',var)) &body body &environment env)
 		  `(progn
 		     ,@(loop for form in body
 			     collect 
@@ -46,8 +52,10 @@
 			       (quote
 				(second form))
 			       (t
+				(if (load-time-constantp form env)
+				`(sendbuf-add ,var (load-time-value (force-byte-vector ,form) t))
 				`(sendbuf-add ,var
-					      ,form))))
+					      ,form)))))
 		     (values))))
        (with-sendbuf-continue ()
 	   ,@body))

@@ -5,14 +5,13 @@
   (defvar *match-macro-helpers* nil)
 
   (progn
-    (defun force-to-match-data-type (val)
-      (force-byte-vector val))
-    (defun match-data-type-elt (val i)
-      (declare (type byte-vector val))
-      (declare (type fixnum i))
-      (aref val i))
+    (defmacro force-to-match-data-type (val)
+      `(force-byte-vector ,val))
+    (defmacro match-data-type-elt (val i)
+      `(aref ,val ,i))
     (defun parse-match-data-to-integer (str &optional (base 10))
-      (byte-vector-parse-integer str base))))
+      (byte-vector-parse-integer str base))
+    (declaim (inline parse-match-data-to-integer))))
 
 (defun match-bind-meta-form (form env)
   (flet ((meta-sym (sym)
@@ -60,9 +59,9 @@
 		  (values f vars))))))
       (t 
        (generate-match-bind `(:progn ,@(force-list form)) env))))
-    (t (values `(:value ,form) nil))))
+    (t (values `(:value (force-to-match-data-type ,form)) nil))))
 
-(defmacro match-bind (bindings string &body body &environment env)
+(defmacro match-bind-or-return-fail-match (bindings string &body body &environment env)
   "The bindings syntax is composed of binding-forms.
 
 binding-form ::= symbol -> match a word and set symbol to its value
@@ -74,17 +73,26 @@ binding-form ::= symbol -> match a word and set symbol to its value
 "
   (multiple-value-bind (matcher vars)
       (generate-match-bind 
-       (if 
-	(and (symbolp (first bindings)) 
-	     (not (keywordp (first bindings)))
-	     (not (eq 'quote (first bindings))))
+       (if (and (symbolp (first bindings)) 
+		(not (keywordp (first bindings)))
+		(not (eq 'quote (first bindings))))
 	`(:progn ,@bindings)
 	bindings)
        env)
        
     `(let ,vars
-       (match ,string ,matcher)
-       ,@body)))
+       (if (eq 'fail-match (match ,string ,matcher))
+	   'fail-match
+	   (locally ,@body)))))
+
+
+(defmacro match-bind (bindings string &body body)
+  (with-unique-names (ret)
+    `(let ((,ret (multiple-value-list (match-bind-or-return-fail-match ,bindings ,string ,@body))))
+       (when (eql (first ,ret) 'fail-match)
+	 (error 'match-failed :matching ',bindings :string ,string))
+       (values-list ,ret))))
+
 
 (define-condition match-failed 
     (error)
@@ -92,38 +100,41 @@ binding-form ::= symbol -> match a word and set symbol to its value
    (string :initarg :string)))
 
 
-(defmacro with-match-primitives ((string pos end &optional matching) &body body)
-  `(labels 
-       ((peek ()
-	  (subseq ,string (min ,pos ,end)))
-	(peek-starts-with (val &key (test 'eql))
-	  (and (can-peek (length val))
-	       (not (loop for i below (length val)
-			  thereis (not (funcall test (match-data-type-elt val i) (match-data-type-elt ,string (+ ,pos i))))))))
-	(can-peek (&optional (amt 1))
-	  (>= (- ,end ,pos) amt))
-	(peek-one ()
-	  (unless (can-peek)
-	    (fail-match))
-	  (match-data-type-elt ,string ,pos))
-	(fail-match ()
-	  (error 'match-failed :matching ',matching :string ,string))
-	(eat (&optional (len 1))
-	  (incf ,pos len)
-	  (when (> ,pos ,end)
-	    (fail-match))))
-     (macrolet 
-	 ((try-match (&rest matches)
-	    (with-unique-names (save ret success)
-	      `(let ((,save ,',pos) (,success t))
-		 (let ((,ret
-			(handler-case (locally ,@matches)
-			  (match-failed () 
-			    (setf ,',pos ,save)
-			    (setf ,success nil)
-			    nil))))
-		   (values ,success ,ret))))))
-       ,@body)))
+(defmacro with-match-primitives ((string pos end) &body body)
+  (with-unique-names (fail-match-action)
+    `(block match-enclosure
+       (let ((,fail-match-action (lambda()(return-from match-enclosure 'fail-match))))
+	 (labels 
+	     ((peek ()
+		(subseq ,string (min ,pos ,end)))
+	      (peek-starts-with (val &key (test 'eql))
+		(and (can-peek (length val))
+		     (not (loop for i below (length val)
+				thereis (not (funcall test (match-data-type-elt val i) (match-data-type-elt ,string (+ ,pos i))))))))
+	      (can-peek (&optional (amt 1))
+		(>= (- ,end ,pos) amt))
+	      (peek-one ()
+		(unless (can-peek)
+		  (fail-match))
+		(match-data-type-elt ,string ,pos))
+	      (fail-match ()
+		(funcall ,fail-match-action))
+	      (eat (&optional (len 1))
+		(incf ,pos len)
+		(when (> ,pos ,end)
+		  (fail-match))))
+	   (macrolet 
+	       ((try-match (&rest matches)
+		  (with-unique-names (save ret success old-fail-match-action block)
+		    `(let ((,save ,',pos) ,ret ,success (,old-fail-match-action ,',fail-match-action))
+		       (block ,block
+			 (setf ,',fail-match-action (lambda() (setf ,',pos ,save) (return-from ,block)))
+			 (setf ,ret
+			       (locally ,@matches))
+			 (setf ,success t))
+		       (setf ,',fail-match-action ,old-fail-match-action)
+		       (values ,success ,ret)))))
+	     ,@body))))))
 
 (defmacro define-match-helper (name lambda-list &body body)
   (let ((helper (list* lambda-list body)))
@@ -144,8 +155,9 @@ binding-form ::= symbol -> match a word and set symbol to its value
   (with-unique-names (pos end string)
     `(let ((,string (force-to-match-data-type ,str)))
        (without-call/cc ; this macro is too much of an ugly beast for the CPS transformer
+	 (declare (optimize speed (safety 0)))
 	 (let ((,pos 0) (,end (length ,string)))
-	   (with-match-primitives (,string ,pos ,end ,matching)
+	   (with-match-primitives (,string ,pos ,end)
 	     (macrolet
 		 ,(loop for (name . helper) in *match-macro-helpers* 
 			collect `(,name ,@helper))
@@ -238,7 +250,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	     do (eat 1))))
 		   
 (define-match-helper whitespace ()
-  (match-any-value #\Space #\Tab #\Linefeed #\Return #\Page))
+  (:char-range (or #\Space #\Tab #\Linefeed #\Return #\Page)))
 
 (define-match-macro-helper try-match-lookahead (&rest matches)
   (with-unique-names (success)
@@ -374,18 +386,12 @@ binding-form ::= symbol -> match a word and set symbol to its value
      (:char)))
 
 (defmacro if-match ((bindings string) &optional (then t) else)
-  (with-unique-names (args)
-    `(if (without-call/cc ;as handler-case is not a strong point of the cl-cont:with-call-cc
-	   (handler-case (match-bind ,bindings ,string)
-	     (match-failed () nil)
-	     (:no-error (&rest ,args)
-	       (declare (ignore ,args))
-	       t)))
-	 ,then
-	 ,else)))
+  `(if (eq (match-bind-or-return-fail-match ,bindings ,string t) 'fail-match)
+       ,else
+       ,then))
 
 (defmacro case-match-fold-ascii-case (keyform &rest clauses)
-  (generate-case-key keyform :test ''byte-vector=-fold-ascii-case :transform ''force-to-match-data-type :clauses clauses))
+  (generate-case-key keyform :test 'byte-vector=-fold-ascii-case :transform 'force-to-match-data-type :clauses clauses))
 
 
 (defmacro match-replace-helper (match replacement string)
@@ -393,7 +399,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
     (flet ((generate-replacement-form (replacement)
 	     replacement))
       `(let (,r)
-	 (match-bind ((,before (:until-and-eat 
+	 (match-bind-or-return-fail-match ((,before (:until-and-eat 
 				(:or 
 				 (:progn ,match '(setf ,r ,(generate-replacement-form replacement)) (,after (:rest))) 
 				 :$))))

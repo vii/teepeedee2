@@ -60,7 +60,11 @@
 					      :components ((:file "page")))
 				     (:module :game
 					      :depends-on (:webapp :ml )
-					      :components ((:file "framework")))))
+					      :components ((:file "framework") 
+							   (:file "controllers" :depends-on ("framework"))
+							   (:file "card")
+							   (:file "truc" :depends-on ("card" "controllers"))
+							   (:file "web" :depends-on ("truc"))))))
 
 	       #+never (:module :t 
 			:depends-on (:src)

@@ -6,6 +6,7 @@
   (error-responder 'default-http-error-page))
 
 (my-defun dispatcher build-http-response (&key (code 200) (banner "OK") headers body)
+  (my-declare-fast-inline)
   (with-sendbuf (response)
     "HTTP/1.1 " code " " banner +newline+
     "Content-Length: " (sendbuf-len body) +newline+
@@ -23,7 +24,7 @@
 				 (funcall (my error-responder) me path params)))
       (error ()
 	(my build-http-response 
-	 :body (with-sendbuf () "<h1>I programmed this incorrectly. Sorry</h1>")
+	 :body (with-sendbuf () "<h1>I made a mistake. Sorry</h1>")
 	 :code 500
 	 :banner "Internal error")))))
 
@@ -33,7 +34,7 @@
 (my-defun dispatcher 'default-http-error-page (path params)
   (declare (ignore params path))
   (with-sendbuf () 
-    "<h1>Error</h1>"))
+    "<h1>Where? What? Ask for something else.</h1>"))
 
 
 (defvar *default-dispatcher* (make-dispatcher))

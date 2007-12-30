@@ -22,6 +22,7 @@
    #:utf8-encode
    #:with-pointer-to-vector-data
    #:byte-vector
+   #:simple-byte-vector
    #:byte-vector-cat
    #:byte-to-ascii-upper
    #:byte-vector-parse-integer
@@ -65,6 +66,7 @@
    #:its
    #:with-shorthand-accessor
    #:my-defun
+   #:my-declare-fast-inline
    #:my-call
    #:my
    #:me
@@ -92,6 +94,7 @@
    #:call/cc
 
    #:read-safely
+   #:read-safely-from-string
 ))
 
 (defpackage #:teepeedee2.io
@@ -137,7 +140,7 @@
   (:nicknames #:tpd2.ml)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export
-   #:define-dtd #:output-raw-ml #:output-escaped-ml #:output-object-to-ml #:object-to-ml))
+   #:define-dtd #:output-raw-ml #:output-escaped-ml #:output-object-to-ml #:object-to-ml #:with-ml-output #:without-ml-output))
 
 (defpackage #:teepeedee2.webapp
   (:nicknames #:tpd2.webapp)

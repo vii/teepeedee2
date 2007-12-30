@@ -2,8 +2,8 @@
 
 (defun percent-hexpair-decode (encoded)
   (match-replace-all 
-   ("%" (word (:string 2))) 
-   (byte-vector-parse-integer word 16)
+   ("%" (word '(:string 2))) 
+   (vector (byte-vector-parse-integer word 16))
    encoded))
 
 (defun url-encoding-decode (encoded)

@@ -38,18 +38,20 @@
 		      :allowed-children children
 		      :forbidden-child form)))))
 
-(defun-consistent escape-data (value)
-  (flet ((xml-entity (c)
-	   (force-byte-vector
-	    (case c
-	      (#.(char-code #\<) "&lt;")
-	      (#.(char-code #\>) "&gt;")
-	      (#.(char-code #\&) "&amp;")
-	      (#.(char-code #\') "&apos;")
-	      (t c)))))
-    (match-replace-all ((c (:char-range '(or #\< #\> #\& #\'))))
-		       (xml-entity c)
-		       value)))
+(defun escape-data (value)
+  (when value
+    (flet ((xml-entity (c)
+	     (force-byte-vector
+	      (case c
+		(#.(char-code #\<) "&lt;")
+		(#.(char-code #\>) "&gt;")
+		(#.(char-code #\&) "&amp;")
+		(#.(char-code #\') "&apos;")
+		(t c)))))
+      (match-replace-all ((c (:char-range '(or #\< #\> #\& #\'))))
+			 (xml-entity c)
+			 (force-string value)))))
+(declaim (inline escape-data))
 
 (defmacro output-escaped-ml (value)
   `(output-raw-ml (escape-data ,value)))
@@ -61,6 +63,8 @@
 
 (defgeneric object-to-ml (object))
 
+(defmacro without-ml-output (&body body)
+  `(locally ,@body (values)))
 
 (defun-consistent escape-attribute-value (value)
   (escape-data value))
@@ -110,5 +114,3 @@
 					   `(escape-data ,form)) body)
 			       ,@(unless (and ,etag-optional (not body))
 					 (list ,(strcat "</" name ">"))))))))))))))
-
-
