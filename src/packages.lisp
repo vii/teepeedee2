@@ -113,6 +113,7 @@
    #:with-sendbuf-continue
    #:sendbuf-len
    #:sendbuf
+   #:sendbuf-to-byte-vector
 
    #:recv
    #:recvline
@@ -140,7 +141,18 @@
   (:nicknames #:tpd2.ml)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export
-   #:define-dtd #:output-raw-ml #:output-escaped-ml #:output-object-to-ml #:object-to-ml #:with-ml-output #:without-ml-output))
+   #:define-dtd 
+   #:output-raw-ml 
+   #:output-escaped-ml 
+   #:output-ml-comment 
+   #:output-object-to-ml 
+   #:object-to-ml 
+   #:with-ml-output 
+   #:without-ml-output
+
+   #:css-html-style
+   #:css-attrib
+))
 
 (defpackage #:teepeedee2.webapp
   (:nicknames #:tpd2.webapp)

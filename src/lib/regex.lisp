@@ -4,14 +4,14 @@
   (defvar *match-helpers* nil)
   (defvar *match-macro-helpers* nil)
 
-  (progn
-    (defmacro force-to-match-data-type (val)
-      `(force-byte-vector ,val))
-    (defmacro match-data-type-elt (val i)
-      `(aref ,val ,i))
-    (defun parse-match-data-to-integer (str &optional (base 10))
-      (byte-vector-parse-integer str base))
-    (declaim (inline parse-match-data-to-integer))))
+  (defmacro force-to-match-data-type (val)
+    `(force-byte-vector ,val))
+  (defmacro match-data-type-elt (val i)
+    `(aref ,val ,i)))
+
+(defun parse-match-data-to-integer (str &optional (base 10))
+  (byte-vector-parse-integer str base))
+(declaim (inline parse-match-data-to-integer))
 
 (defun match-bind-meta-form (form env)
   (flet ((meta-sym (sym)
@@ -123,6 +123,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 		(incf ,pos len)
 		(when (> ,pos ,end)
 		  (fail-match))))
+	   (declare (inline peek peek-starts-with can-peek peek-one fail-match eat))
 	   (macrolet 
 	       ((try-match (&rest matches)
 		  (with-unique-names (save ret success old-fail-match-action block)
@@ -157,6 +158,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
        (without-call/cc ; this macro is too much of an ugly beast for the CPS transformer
 	 (declare (optimize speed (safety 0)))
 	 (let ((,pos 0) (,end (length ,string)))
+	   (declare (type (integer 0 #.most-positive-fixnum) ,pos ,end))
 	   (with-match-primitives (,string ,pos ,end)
 	     (macrolet
 		 ,(loop for (name . helper) in *match-macro-helpers* 
@@ -164,6 +166,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	       (labels
 		   ,(loop for (name . helper) in *match-helpers* 
 			  collect `(,name ,@helper))
+		 (declare (ignorable ,@(loop for (name  . helper) in *match-helpers* collect `(function ,name))))
 		 ,@matching))))))))
 
 
@@ -206,9 +209,9 @@ binding-form ::= symbol -> match a word and set symbol to its value
 (define-match-macro-helper with-return-matched (&body body)
   (with-unique-names (start end)
     `(let ((,start (peek)))
-	   ,@body
-	   (let ((,end (peek)))
-	     (subseq ,start 0 (- (length ,start) (length ,end)))))))
+       ,@body
+       (let ((,end (peek)))
+	 (subseq ,start 0 (- (length ,start) (length ,end)))))))
 
 (define-match-macro-helper match-multiple (min max &body body)
   (once-only (min max)

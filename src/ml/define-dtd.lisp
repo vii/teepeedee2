@@ -53,10 +53,19 @@
 			 (force-string value)))))
 (declaim (inline escape-data))
 
-(defmacro output-escaped-ml (value)
-  `(output-raw-ml (escape-data ,value)))
-(defmacro output-raw-ml (value)
-  `(sendbuf-add ml-sendbuf ,value))
+(defmacro output-escaped-ml (&rest args)
+  `(with-ml-output        
+       ,@args))
+
+(defmacro output-raw-ml (&rest body)
+  `(with-sendbuf-continue (ml-sendbuf) 
+     ,@body))
+
+(defmacro output-ml-comment (&rest body)
+  `(with-ml-output
+     (output-raw-ml "<!--")
+     ,@body
+     (output-raw-ml "-->")))
 
 (defmacro output-object-to-ml (object)
   `(output-raw-ml (object-to-ml ,object)))
@@ -70,10 +79,15 @@
   (escape-data value))
 
 (defmacro with-ml-output (&body body)
-  `(macrolet ((with-ml-output (&body body)
-			      `(with-sendbuf-continue (ml-sendbuf) ,@body)))
-     (with-sendbuf (ml-sendbuf)
-       ,@body)))
+  `(macrolet	      
+       ((with-ml-output (&body body)
+			`(output-raw-ml
+			  ,@(mapcar (lambda(form)
+				      (if (member (force-first form) '(output-raw-ml with-ml-output-raw without-ml-output))
+					  form
+					  `(escape-data ,form))) body))))
+     (with-sendbuf (ml-sendbuf) 
+       (with-ml-output ,@body))))
 
 (defmacro define-dtd (pkg &rest tags-and-defpackage-arguments)
   (multiple-value-bind
@@ -102,15 +116,16 @@
 			      (separate-keywords contents)
 			
 			    `(with-ml-output
-			       ,,(strcat "<" name)
-			       ,@(loop for (attr value) on attrs by #'cddr
-				       collect " "
-				       collect (string-downcase (force-string attr))
-				       collect "='"
-				       collect `(escape-attribute-value ,value)
-				       collect "'")
-			       ">"
-			       ,@(mapcar (lambda(form)
-					   `(escape-data ,form)) body)
-			       ,@(unless (and ,etag-optional (not body))
-					 (list ,(strcat "</" name ">"))))))))))))))
+				 (output-raw-ml
+				     ,,(strcat "<" name)
+				  ,@(loop for (attr value) on attrs by #'cddr
+					  collect " "
+					  collect (string-downcase (force-string attr))
+					  collect "='"
+					  collect `(escape-attribute-value ,value)
+					  collect "'")
+				  ">")
+			       ,@body
+			       (output-raw-ml
+				,@(unless (and ,etag-optional (not body))
+					  (list ,(strcat "</" name ">")))))))))))))))

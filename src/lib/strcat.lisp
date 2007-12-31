@@ -41,7 +41,7 @@
 		      for argname in argnames
 		      collect `(,argname ,arg))
 	       (declare (optimize speed (safety 0)))
-	       (declare (type string ,@argnames))
+	       (declare (type simple-string ,@argnames))
 	       (let ((,len (the fixnum (+ ,@(loop for argname in argnames collect `(the fixnum (length ,argname)))))))
 		 (let ((,result (make-string ,len))
 		       (,i 0))
@@ -54,7 +54,8 @@
 (defun strcat (&rest args)
   (declare (optimize speed))
   (apply #'strcat-go args))
-;(declaim (ftype (function (&rest t) string) strcat))
+(declaim (ftype (function (&rest t) string) strcat))
+(declaim (inline strcat))
 
 (defun strcat-bench ()
   (declare (optimize speed))

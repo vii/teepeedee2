@@ -152,6 +152,8 @@
        (defun ,name ,lambda-list
 	 (,real-function ,@lambda-list))
        (declaim (inline ,real-function ,name))
+       #+cmucl (declaim (extensions:constant-function ,real-function))
+       #+sbcl (sb-c:defknown ,real-function (t) t (sb-c:foldable))
        (define-compiler-macro ,name (&whole form &environment env ,@lambda-list)
 	 (if (and ,@(mapcar (lambda(l) `(load-time-constantp ,l env)) lambda-list))
 	     `(read-only-load-time-value (,',real-function ,,@lambda-list))
@@ -167,6 +169,7 @@
 	 (defun ,real-function ,lambda-list
 	   ,@body)
 	 (declaim (inline ,real-function))
+	 #+cmucl (declaim (extensions:constant-function ,real-function))
 	 (defmacro ,name (,@lambda-list &environment ,env)
 	   (if (and ,@(mapcar (lambda(l) `(load-time-constantp ,l ,env)) lambda-list))
 	       `(read-only-load-time-value (,',real-function ,,@lambda-list))

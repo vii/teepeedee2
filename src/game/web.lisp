@@ -117,9 +117,13 @@
 
   (<html
     (<head
-      (<title "Mopoko"))
+      (<title "mopoko.com")
+      (css-html-style 
+	(<body :font-family "georgia, serif")
+	((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "lighter")
+	(<h1 :font-size "400%" :text-align "right")))
     (<body
-      (<h1 "Mopoko")
+      (<h1 "mopoko" (<span :style (css-attrib :color "rgb(188,188,188)" :font-style "italic") ".com"))
       (<form :action "/game" :method "GET"
 	     (<p
 	       (<select :name "new-game"
@@ -159,7 +163,7 @@
 (my-defun web-state 'object-to-ml ()
   (<div :class "game-state"
 	(<h2 "Messages")
-	(<pre
+	(<div
 	  (output-raw-ml
 	   (my announcements))
 	  (without-ml-output (setf (my announcements) (tpd2.io:with-sendbuf ()))))

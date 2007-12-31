@@ -54,6 +54,7 @@
 					      :depends-on (:lib :io)
 					      :components (
 							   (:file "define-dtd")
+							   (:file "css" :depends-on ("html"))
 							   (:file "html" :depends-on ("define-dtd"))))
 				     (:module :webapp
 					      :depends-on (:http :ml)
@@ -66,7 +67,7 @@
 							   (:file "truc" :depends-on ("card" "controllers"))
 							   (:file "web" :depends-on ("truc"))))))
 
-	       #+never (:module :t 
+	       (:module :t 
 			:depends-on (:src)
 			:components (
 				     (:file "suite")
@@ -78,6 +79,6 @@
 		      :cl-cont
 		      :cffi
 		      :iterate
-		      #+never :fiveam
+		      :fiveam
 		      :parenscript
 		      :cl-utilities))

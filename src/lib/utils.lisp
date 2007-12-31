@@ -17,15 +17,19 @@
 
 (defun-consistent force-string (val)
   (declare (optimize speed))
-  (the string
-    (typecase val
-      (null "")
-      (symbol (symbol-name val))
-      (byte-vector (byte-vector-to-string val))
-      (string val)
-      (t  (let ((*print-pretty* nil)) (princ-to-string val))))))
+  (let ((str
+	 (the string
+	   (typecase val
+	     (null "")
+	     (symbol (symbol-name val))
+	     (byte-vector (byte-vector-to-string val))
+	     (string val)
+	     (t  (let ((*print-pretty* nil)) (princ-to-string val)))))))
+    (etypecase str
+      (simple-string str)
+      (string (replace (make-string (length str)) (the (and string (not simple-string)) str))))))
 
-(declaim (ftype (function (t) string) force-string-consistent-internal))
+(declaim (ftype (function (t) simple-string) force-string-consistent-internal))
 
 (defun random-shuffle (sequence)
   (awhen (not (zerop (length sequence)))
