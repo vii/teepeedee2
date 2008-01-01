@@ -1,6 +1,10 @@
 (in-package #:tpd2.http)
 
+(defun http-serve-timeout ()
+  60)
+
 (defprotocol http-serve (con)
+  (con-reset-timeout con (http-serve-timeout))
   (match-bind (method :whitespace url :whitespace?
 		      (:? "HTTP/" (version-major :integer 1) "." (version-minor :integer 0) :whitespace?) 
 		      :$)

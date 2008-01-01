@@ -122,8 +122,8 @@
 
 (my-defun truc-player 'object-to-ml ()
   (<div :class "truc-player"
-	(<h3 (my name))
-	(<p (my stack) " points.")
+	(output-raw-ml (call-next-method))
+	(<p (my stack) (format nil " point~P." (my stack)))
 	(cond 
 	  ((my folded)
 	   (<p :class "folded" "FOLDED"))
@@ -132,9 +132,10 @@
 
 (my-defun truc 'object-to-ml ()
   (<div :class "truc"
-	(loop for p in (my players)
-	      do (output-object-to-ml p))
-	(<h3 :class "stake" "Playing for "
+	(<div :class "players"
+	      (loop for p in (my players)
+		    do (output-object-to-ml p)))
+	(<h2 :class "stake" "Playing for "
 	     (my stake) (format nil " point~P" (my stake)))
 	(<div :class "table"
 	      (loop for p in (my players)

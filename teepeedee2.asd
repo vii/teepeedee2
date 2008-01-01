@@ -26,7 +26,9 @@
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
 							    (:file "byte-vector" :depends-on ("macros" "utils"))
 							    (:file "regex" :depends-on ("byte-vector"  "callcc"))
-							    (:file "callcc")))
+							    (:file "callcc")
+							    (:file "quick-queue" :depends-on ("utils" "my"))
+							    (:file "timeout" :depends-on ("quick-queue"))))
 				     
 				     (:module :io
 					       :depends-on (:lib)
@@ -58,7 +60,9 @@
 							   (:file "html" :depends-on ("define-dtd"))))
 				     (:module :webapp
 					      :depends-on (:http :ml)
-					      :components ((:file "page")))
+					      :components ((:file "page" :depends-on ("session"))
+							   (:file "session" :depends-on ("names"))
+							   (:file "names")))
 				     (:module :game
 					      :depends-on (:webapp :ml )
 					      :components ((:file "framework") 

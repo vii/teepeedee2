@@ -95,6 +95,11 @@
 
    #:read-safely
    #:read-safely-from-string
+
+   #:make-timeout
+   #:timeout-set
+   #:timeout-cancel
+   #:next-timeout
 ))
 
 (defpackage #:teepeedee2.io
@@ -123,6 +128,7 @@
    #:make-con-connect
    #:make-con-listen
    #:hangup
+   #:con-reset-timeout
 
    #:+newline+
 
@@ -133,6 +139,7 @@
   (:nicknames #:tpd2.http)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export 
+   #:percent-hexpair-encode
    #:dispatcher-register-path 
    #:*default-dispatcher*
    #:http-parse-and-generate-response))
@@ -156,9 +163,20 @@
 
 (defpackage #:teepeedee2.webapp
   (:nicknames #:tpd2.webapp)
-  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.http)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.http #:teepeedee2.io)
   (:export
-   #:defpage))
+   #:defpage
+   #:page-link
+   #:webapp-session
+   #:*webapp-session*
+   #:webapp-session-var
+   #:session-var
+   #:session-username
+   #:list-all-sessions
+   #:find-session
+   #:session-id
+   #:all-http-params
+   ))
 
 (defpackage #:teepeedee2.game
   (:nicknames #:tpd2.game)

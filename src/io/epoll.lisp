@@ -54,7 +54,7 @@
 	    (awhen (my 'mux-find-fd fd)
 	      (con-run it)
 	      (unless (zerop (logand (logior +POLLERR+ +POLLHUP+ +POLLRDHUP+) events))
-		(hangup it)))))))
+		(con-fail it)))))))
     (setf (my postpone-registration) nil)
     (adolist (my postponed-registrations)
       (my 'mux-add it))
@@ -88,8 +88,9 @@
     (my wait timeout)))
 
 (defun event-loop ()
-  (loop while (events-pending-p) do
-	(wait-for-next-event)))
+  (loop for timeout = (next-timeout)
+	while (or timeout (events-pending-p)) do
+	(wait-for-next-event timeout)))
 
 (defun event-loop-reset ()
   (setf *global-epoll*

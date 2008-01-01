@@ -4,9 +4,10 @@
   socket
   peer-info
   (recv (make-recvbuf) :type recvbuf)
+  timeout
 
   ready-callback
-  (err (constantly nil)))
+  err)
 
 (defun make-con (&rest args)
   (let ((con (apply '%make-con args)))
@@ -15,7 +16,20 @@
       (finalize con 
 		(lambda()
 		  (ignore-errors (socket-close sock)))))
+    (con-init con)
     con))
+
+(my-defun con init ()
+  (unless (my err)
+    (setf (my err)
+	  (lambda(err)
+	    (declare (ignore err))
+	    (my 'hangup))))
+  (unless (my timeout)
+    (setf (my timeout) (make-timeout :func (lambda()(my fail 'timeout))))))
+
+(my-defun con fail (&optional (e 'hangup))
+  (funcall (my err) e)) 
 
 (defgeneric normal-connection-error (e))
 (defmethod normal-connection-error (e))
@@ -34,7 +48,10 @@
 			  (invoke-restart 'hangup)))))
 	(funcall (my ready-callback)))
     (hangup ()
-      (my 'hangup))))
+      (my fail))))
+
+(my-defun con reset-timeout (delay)
+  (timeout-set (my timeout) delay))
 
 (defconstant +newline+ (force-byte-vector #(13 10)))
 
@@ -73,6 +90,7 @@
        (socket-when-ready-to-read (my socket) me #'my-call))))
 
 (my-defun con 'hangup ()
+  (timeout-cancel (my timeout))
   (when (my socket)
     (cancel-finalization me)
     (socket-close (my socket))

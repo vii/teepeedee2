@@ -7,7 +7,7 @@
    encoded))
 
 (defun url-encoding-decode (encoded)
-  (percent-hexpair-decode encoded))
+  (match-replace-all "+" (force-byte-vector " ") (percent-hexpair-decode encoded)))
 
 (defun percent-hexpair-encode (plain)
   (match-replace-all 

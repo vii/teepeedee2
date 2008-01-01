@@ -158,14 +158,7 @@
     ret))
 
 (defun launch-game (game players)
-  (play (funcall (gethash game *games*) players)))
+  (play (funcall (gethash (force-byte-vector game) *games*) players)))
 
 (eval-always
   (use-package '#:tpd2.ml.html))
-
-#+never
-(progn
-  (let ((socket (tpd2.io:make-con-listen :port 8888)))
-    (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
-
-  (sb-thread:make-thread (lambda() (tpd2.io:event-loop)) :name "EVENT-LOOP"))
