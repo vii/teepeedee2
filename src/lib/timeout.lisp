@@ -20,7 +20,7 @@
   (quick-queue-get *timeouts* (my time)))
 
 (defun time-for-delay (delay)
-  (assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
+  (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
   (+ (get-universal-time) delay))
 
 (my-defun timeout cancel ()
@@ -50,7 +50,7 @@
 	 (loop for cur = (quick-queue-entry-next base)
 	    while (not (eq cur base))
 	    do 
-	      (assert (eql (timeout-time cur) x))
+	      (debug-assert (eql (timeout-time cur) x))
 	      (timeout-run cur))))
   (setf *timeouts-last-checked* time)
   (loop for x from time below (+ time (quick-queue-len *timeouts*))
@@ -58,5 +58,5 @@
        (let ((base (quick-queue-get *timeouts* x)))
 	 (let ((timeout (quick-queue-entry-next base)))
 	   (when (not (eq base timeout))
-	     (assert (eql (timeout-time timeout) x))
+	     (debug-assert (eql (timeout-time timeout) x))
 	     (- x time))))))

@@ -15,6 +15,8 @@
    #:with-unique-names
    #:once-only
 
+
+
    #:make-byte-vector
    #:byte-vector-to-string
    #:make-byte-vector
@@ -57,6 +59,7 @@
    #:mv-filter
    #:defun-consistent
    #:make-displaced-vector
+   #:let-current-values
 
    #:read-only-load-time-value
    #:load-time-constantp
@@ -100,6 +103,9 @@
    #:timeout-set
    #:timeout-cancel
    #:next-timeout
+
+   #:debug-assert
+   #:debug-assert-skip
 ))
 
 (defpackage #:teepeedee2.io
@@ -139,6 +145,7 @@
   (:nicknames #:tpd2.http)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export 
+   #:test-http-request
    #:percent-hexpair-encode
    #:dispatcher-register-path 
    #:*default-dispatcher*
@@ -176,17 +183,56 @@
    #:find-session
    #:session-id
    #:all-http-params
+   #:html-action-form
+   #:html-action-link
    ))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :teepeedee2.ml.html)
+    (defpackage #:teepeedee2.ml.html
+      (:nicknames #:tpd2.ml.html))))
+  
 (defpackage #:teepeedee2.game
   (:nicknames #:tpd2.game)
-  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.webapp #:teepeedee2.ml)
-  (:export #:defgameclass #:play))
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.webapp #:tpd2.ml #:tpd2.ml.html)
+  (:export 
+   #:defgameclass 
+   #:defgame
+   #:defplayer
+   #:defrules
+   #:game
+   #:player
+   #:move
+   #:move-continuation
+   #:with-game
+   #:choices-list
+   #:play
+   
+   #:robot
+   #:robot-bully
+   #:robot-sensible
+   #:card
+   #:make-card-from-number
+   #:card-number
+   #:card-value
+   #:card-suite
+   #:make-card
+   #:+suits+
+   #:+cards-per-suit+
+
+   #:web-state-queue-choice 
+   #:current-web-controller
+   #:player-controller))
+
+
+(defpackage #:teepeedee2.game.truc
+  (:nicknames #:tpd2.game.truc)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
 
 #.`
 (defpackage #:teepeedee2
   (:nicknames #:tpd2)
-  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib #:tpd2.http #:tpd2.webapp #:tpd2.game)) syms)
+  ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib #:tpd2.http #:tpd2.webapp)) syms)
 	 (dolist (p tpd-pkgs)
 	   (do-external-symbols (sym (find-package p)) (push sym syms)))
 	 (list

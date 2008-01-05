@@ -12,7 +12,7 @@
 
 (my-defun mux add (con)
   (let ((fd (con-socket con)))
-    (assert (not (my find-fd fd)))
+    (debug-assert (not (my find-fd fd)))
     (when (>= fd (length (my fd-to-con)))
       (setf (my fd-to-con) (adjust-array (my fd-to-con) (* 2 (length (my fd-to-con))) :initial-element nil))
       (assert (> (length (my fd-to-con)) fd)))

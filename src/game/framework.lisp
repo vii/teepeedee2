@@ -1,15 +1,15 @@
 (in-package #:tpd2.game)
 
-(defgeneric move-continuation (k game-state move-type controller player-state choices &rest args))
-(defmethod move-continuation (k game-state move-type controller player-state choices &rest args)
-  (funcall k (apply 'move game-state move-type controller player-state choices args)))
+(defgeneric move-continuation (k controller player-state move-type choices &rest args))
+(defmethod move-continuation (k controller player-state move-type choices &rest args)
+  (funcall k (apply 'move controller player-state move-type choices args)))
 
 (defmacro with-game (&body body)
   `(with-call/cc
      ,@body))
 
-(defgeneric move (game-state move-type controller player-state choices &rest args))
-(defmethod move (game-state move-type controller player-state choices &rest args)
+(defgeneric move (controller player-state move-type choices &rest args))
+(defmethod move (controller player-state move-type choices &rest args)
   (declare (ignore args))
   (random-choice choices))
 
@@ -20,14 +20,6 @@
 	  it)
 	 (t
 	  (error "Forbidden move ~A: choose from ~A" choice choices))))
-
-(defmethod move (game-state move-type (stream stream) player-state choices &rest args)
-  (format stream "Details  ~{~A ~}~&Game state ~A~&Your state ~A~&Your private state ~A~&Your choices for ~A are ~A:~&" args game-state 
-	  (game-vars player-state) 
-	  (secret-game-vars player-state)  move-type choices)
-  (loop do
-	(handler-case (return-from move (validate-choice choices (read-safely stream)))
-	  (error (e) (format t "Sorry that move is not allowed; ~A~&" e)))))
 
 
 (defgeneric choices-list (choice))
@@ -90,7 +82,9 @@
   other-listeners)
 
 (defgameclass player
-    controller)
+    controller
+  game
+  waiting-for-input)
 
 (my-defun game listeners ()
   (append (mapcar 'player-controller (my players)) (my other-listeners)))
@@ -126,8 +120,14 @@
       (assert (eq 'defplayer defplayer-sym))
       `(eval-always
 	 (setf (gethash (force-byte-vector ,friendly-name) *games*) (lambda(controllers)
-						  (,(intern (strcat 'make- name)) :players
-						    (mapcar (lambda(c) (,(intern (strcat 'make- name '-player)) :controller c)) controllers))))
+						  (let ((game (,(intern (strcat 'make- name)))))
+						    (let ((players 
+							   (mapcar (lambda(c) 
+								     (,(intern (strcat 'make- name '-player)) 
+								       :game game 
+								       :controller c)) controllers)))
+						      (setf (game-players game) players))
+						    game)))
 	 ,(defgameclass-form (intern (strcat name '-player)) 
 			     (or df-superclasses (list 'player))
 			     df-options
@@ -137,28 +137,27 @@
 			     options
 			     slots))))))
 
-
 (defmacro defrules (game func lambda-list &body body)
   `(eval-always
      (with-call/cc
-       (my-defun ,game ,func ,lambda-list ,@body))
-     #+never (my-defun ,game ,func ,lambda-list ,@body)))
-
+       (my-defun ,game ,func ,lambda-list ,@body))))
 
 (defrules game secret-move (type player choices &rest args)
+  (check-type type keyword)
   (let ((ret (call/cc (lambda(cc)
-			(apply 'move-continuation cc me type (player-controller player) player choices 
+			(apply 'move-continuation cc (player-controller player) player type choices 
 			       args)
 			'waiting-for-move-from-call/cc))))
     (validate-choice choices ret)))
 
 (defrules game move (type player choices &rest args)
+  (debug-assert (not (player-waiting-for-input player)))
+  (setf (player-waiting-for-input player) t)
   (let ((ret (apply 'game-secret-move me type player choices args)))
     (my announce type :choice ret :player player)
+    (debug-assert (player-waiting-for-input player))
+    (setf (player-waiting-for-input player) nil)
     ret))
 
 (defun launch-game (game players)
   (play (funcall (gethash (force-byte-vector game) *games*) players)))
-
-(eval-always
-  (use-package '#:tpd2.ml.html))

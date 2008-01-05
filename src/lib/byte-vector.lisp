@@ -69,20 +69,25 @@
   (declare (type (unsigned-byte 8) byte))
   (aref +byte-to-digit-table+ byte))
 
+(declaim (ftype (function ( (unsigned-byte 8)) (integer -1 36)) byte-to-digit-consistent-internal))
+
+
 (defun byte-vector-parse-integer (string &optional (base 10))
   (declare (optimize speed))
+  (declare (type byte-vector string))
   (let ((i 0) (val 0) (sign 1))
     (flet ((cur ()
 	     (aref string i))
 	   (eat ()
 	     (incf i)))
-    (when (= (char-code #\-) (cur))
-      (setf sign -1)
-      (eat))
-    (loop while (> (length string) i) do
-	  (setf val (+ (byte-to-digit (cur)) (* val base)))
-	  (eat))
-    (* sign val))))
+      (declare (ftype (function () (unsigned-byte 8)) cur))
+      (when (= (char-code #\-) (cur))
+	(setf sign -1)
+	(eat))
+      (loop while (> (length string) i) do
+	    (setf val (+ (byte-to-digit (cur)) (* val base)))
+	    (eat))
+      (* sign val))))
 
 
 (defun byte-to-ascii-upper (x)

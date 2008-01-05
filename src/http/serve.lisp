@@ -27,17 +27,7 @@
 				     ("keep-alive" (setf connection-close nil))) 
 				   :whitespace?)
 		       value))))))
-	(let ((last-header-name))
-	  (loop for line = (io 'recvline con)
-		until (zerop (length line))
-		do (if-match ('(:s) line)
-			     (process-header last-header-name line)
-			     (match-bind 
-				 ((header-name (:until-and-eat :whitespace? ":" :whitespace?))
-				  (value (:until :whitespace? :$)))
-				 line
-			       (process-header header-name value)
-			       (setf last-header-name header-name))))))
+	(io 'process-headers con #'process-header))
       
       (let ((request-body
 	     (unless (zerop request-content-length)
@@ -47,7 +37,13 @@
 	    (hangup con)
 	    (io 'http-serve con))))))
 
-(defun http-parse-and-generate-response (url &key host request-body)
+(defun test-http-request (url &optional request-body)
+  (match-bind ((:? (protocol (:until-and-eat "://")) (hostname (:until "/"))) path)
+      url
+    (let ((*break-on-signals* t))
+      (http-parse-and-generate-response path :host hostname :request-body request-body))))
+
+(defun http-parse-and-generate-response (path-and-args &key host request-body)
   (let (params)
     (flet ((parse-params (str)
 	     (when str
@@ -55,7 +51,7 @@
 			       '(push (cons (url-encoding-decode name) (url-encoding-decode value)) params))
 		   str))))
       (match-bind ((path (:until-and-eat (:or :$ ("?" (q (:rest)))))))
-	  url
+	  path-and-args
 	(parse-params q)
 	(parse-params request-body)
 	(generate-http-response host path params)))))

@@ -20,6 +20,15 @@
 	  (my value-string)
 	  (string-capitalize (symbol-name (my suit)))))
 
+(my-defun card number ()
+  (+ (* (position (my suit) +suits+) +cards-per-suit+) (my value)))
+
+(defun make-card-from-number (number)
+  (multiple-value-bind
+	(s-n v)
+      (floor number +cards-per-suit+)
+    (make-card :suit (elt +suits+ s-n) :value v)))
+
 (my-defun card 'object-to-ml ()
   (<span
     :class "card"
@@ -31,12 +40,3 @@
 	     (:diamonds "diams")
 	     (t (string-downcase (symbol-name (my suit)))))
 	   ";")))
-
-(my-defun card number ()
-  (+ (* (position (my suit) +suits+) +cards-per-suit+) (my value)))
-
-(defun make-card-from-number (number)
-  (multiple-value-bind
-	(s-n v)
-      (floor number +cards-per-suit+)
-    (make-card :suit (elt +suits+ s-n) :value v)))

@@ -80,10 +80,11 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	bindings)
        env)
        
-    `(let ,vars
-       (if (eq 'fail-match (match ,string ,matcher))
-	   'fail-match
-	   (locally ,@body)))))
+    (once-only (string)
+       `(let ,vars
+	  (if (eq 'fail-match (match ,string ,matcher))
+	      'fail-match
+	      (locally ,@body))))))
 
 
 (defmacro match-bind (bindings string &body body)

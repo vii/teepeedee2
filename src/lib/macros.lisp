@@ -1,5 +1,7 @@
 (in-package #:tpd2.lib)
 
+
+
 (defmacro eval-always (&body body)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      ,@body))
@@ -201,4 +203,8 @@
 	 ((t (lambda(,c) (declare (ignore ,c)) ,@cleanup)))
        ,protected)))
 
+
+(defmacro let-current-values (vars &body body)
+  `(let ,(loop for v in vars collect `(,v ,v))
+     ,@body))
 

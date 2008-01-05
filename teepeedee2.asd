@@ -5,6 +5,8 @@
 (loop for addon in (directory "addons/*/") do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
+(proclaim '(optimize debug))
+
 (asdf:defsystem :teepeedee2
   :name "teepeedee2"
   :author "John Fremlin <john@fremlin.org>"
@@ -68,8 +70,11 @@
 					      :components ((:file "framework") 
 							   (:file "controllers" :depends-on ("framework"))
 							   (:file "card")
-							   (:file "truc" :depends-on ("card" "controllers"))
-							   (:file "web" :depends-on ("truc"))))))
+							   (:file "web" :depends-on ("controllers"))))
+				     (:module :truc
+					      :depends-on (:game)
+					      :components ( (:file "truc") (:file "web" :depends-on ("truc"))
+							    (:file "robots" :depends-on ("truc"))))))
 
 	       (:module :t 
 			:depends-on (:src)
@@ -84,5 +89,4 @@
 		      :cffi
 		      :iterate
 		      :fiveam
-		      :parenscript
 		      :cl-utilities))

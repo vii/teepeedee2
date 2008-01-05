@@ -62,3 +62,14 @@
 	      ,store)))
        `(cdr-assoc ,getter)))))
 
+(defmacro without-call/cc (&body body)
+  `(locally ,@body))
+
+(defmacro debug-assert (&rest args)
+  (with-unique-names (block)
+    `(without-call/cc
+       (block ,block
+	 (restart-case (assert ,@args)
+	   (debug-assert-skip ()
+	     :report "Accept that the assertion will fail this time and continue"
+	     (return-from ,block 'debug-assert-skip)))))))
