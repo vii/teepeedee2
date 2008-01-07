@@ -8,7 +8,7 @@
 
 (in-package :cont)
 
-(export '(defcpstransformer cpstransformer copy-transformation-contect))
+(export '(defcpstransformer cpstransformer copy-transformation-context))
 
 (defparameter *special-form-transformers* (make-hash-table :size 25)
   "A hashtable that maps symbols to functions. Each function acts as a
@@ -47,7 +47,7 @@ transformation."
 	     ht)
     nht))
 
-(defun copy-transformation-contect (ctx)
+(defun copy-transformation-context (ctx)
   "Copies transformation context. This is used for cases when the
 context has to be 'frozen' in time and used at a later transformation
 stage."

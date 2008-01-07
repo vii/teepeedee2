@@ -211,14 +211,14 @@ list of expressions for the tag."
     inst))
 
 (defun fdesignator-to-function/cc (fdesignator)
-  (let ((lookup 
-	 (if (symbolp fdesignator)
-	     (fdefinition fdesignator)
-	     fdesignator)))
+  "Converts a function designator to a function/cc."
+  (let ((lookup (if (symbolp fdesignator)
+		    (fdefinition fdesignator)
+		    fdesignator)))
     (typecase lookup
       (funcallable/cc (f/cc-function lookup))
-      (t (lambda(cc &rest args)
-	   (funcall cc (apply lookup args)))))))
+      (t (lambda(k &rest args)
+	   (funcall k (apply lookup args)))))))
 (declaim (inline fdesignator-to-function/cc))
 
 (defun funcall/cc (fdesignator k &rest args)
@@ -229,6 +229,7 @@ list of expressions for the tag."
 (defun apply/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
   (apply #'apply (fdesignator-to-function/cc fdesignator) k args))
+(declaim (inline apply/cc))
 
 (defun lambda-expr->cps (cons k-expr env)
   "Converts a LAMBDA expression to CPS style."
@@ -238,6 +239,7 @@ list of expressions for the tag."
     (let ((k (gensym)))
       `(make-funcallable (lambda (,k ,@arg-list)
 			   (declare (ignorable ,k))
+			   (declare (optimize (compilation-speed 2) (debug 0) (space 3)))
 			   ,@(extract-declarations body)
 			   ,(expr-sequence->cps (remove-declarations body) k env))))))
 
@@ -361,7 +363,7 @@ and runs a CPS code walker on it."
 	       ,@(extract-declarations fn-forms)
 	       ,(if in-env-p
 		    `(transform-forms-in-env ,(remove-declarations fn-forms) ,k
-					     ,(copy-transformation-contect *ctx*))
+					     ,(copy-transformation-context *ctx*))
 		    (expr-sequence->cps (remove-declarations fn-forms) k env)))))
 
 (defun declare-function-names-local (names)
@@ -402,7 +404,7 @@ and runs a CPS code walker on it."
        ,@(extract-declarations forms)
        ,(with-local-function-names (mapcar #'car fn-list)
           `(transform-forms-in-env ,(remove-declarations forms) ,k-expr
-				   ,(copy-transformation-contect *ctx*))))))
+				   ,(copy-transformation-context *ctx*))))))
 
 (defcpstransformer labels (cons k-expr env)
   "Converts a LABELS expression to CPS style."
@@ -418,7 +420,7 @@ and runs a CPS code walker on it."
 			fn-list)
 	 ,@(extract-declarations forms)
 	 (transform-forms-in-env ,(remove-declarations forms) ,k-expr
-				 ,(copy-transformation-contect *ctx*))))))
+				 ,(copy-transformation-context *ctx*))))))
 
 ;;; MACROLET
 (defcpstransformer macrolet (cons k-expr env)
@@ -428,7 +430,7 @@ and runs a CPS code walker on it."
   `(macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
      (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
-			     ,(copy-transformation-contect *ctx*))))
+			     ,(copy-transformation-context *ctx*))))
 
 ;;; SYMBOL-MACROLET
 (defcpstransformer symbol-macrolet (cons k-expr env)
@@ -438,7 +440,7 @@ and runs a CPS code walker on it."
   `(symbol-macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
      (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
-			     ,(copy-transformation-contect *ctx*))))
+			     ,(copy-transformation-context *ctx*))))
 
 ;;; LOCALLY
 (defcpstransformer locally (cons k-expr env)

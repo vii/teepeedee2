@@ -9,6 +9,11 @@
   (expr-sequence->cps (cdr cons) k-expr env))
 
 ;;; Turning off WITH-CALL/CC
+(defmacro without-call/cc (&body body)
+  "A macro that allows writing macros to produce non-CPS code
+uniformly within and without with-call/cc."
+  `(locally ,@body))
+
 (defcpstransformer without-call/cc (cons k-expr env)
   (declare (ignore env))
   `(funcall ,k-expr (progn ,@(cdr cons))))

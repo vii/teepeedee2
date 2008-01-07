@@ -21,7 +21,6 @@
 	 (t
 	  (error "Forbidden move ~A: choose from ~A" choice choices))))
 
-
 (defgeneric choices-list (choice))
 (defgeneric choices-list-form (first &rest rest))
 
@@ -65,6 +64,7 @@
 					  (remf n :secret)
 					  (remf n :documentation)
 					  n)))) slots))
+
 	 (defmethod game-vars append ((,name ,name))
 	   (list
 	    ,@(loop for slot in slots 
@@ -77,9 +77,17 @@
 		    collect (slot-to-cons slot))))
 	 (find-class ',name)))))
 
+(defgeneric game-name (game))
+
 (defgameclass game
+    game-over
     players
   other-listeners)
+
+(my-defun game finished (winner)
+  (setf (my game-over) t)
+  (my announce :game-over :player winner)
+  (values))
 
 (defgameclass player
     controller
@@ -135,7 +143,10 @@
 	 ,(defgameclass-form name
 			     (or superclasses (list 'game))
 			     options
-			     slots))))))
+			     slots)
+
+	 (defmethod game-name ((,name ,name))
+	   (force-byte-vector ,friendly-name)))))))
 
 (defmacro defrules (game func lambda-list &body body)
   `(eval-always
@@ -144,10 +155,11 @@
 
 (defrules game secret-move (type player choices &rest args)
   (check-type type keyword)
-  (let ((ret (call/cc (lambda(cc)
-			(apply 'move-continuation cc (player-controller player) player type choices 
-			       args)
-			'waiting-for-move-from-call/cc))))
+  (let ((ret (call/cc 
+	      (lambda(cc)
+		(apply 'move-continuation cc (player-controller player) player type choices 
+		       args)
+		'with-call/cc))))
     (validate-choice choices ret)))
 
 (defrules game move (type player choices &rest args)

@@ -20,7 +20,8 @@
   (announcements (tpd2.io:with-sendbuf ()))
   (waiting-for-input nil)
   (queued-choices nil)
-  game-state)
+  game-state
+  resigned)
 
 (defun make-web-state (&rest args)
   (let ((state (apply '%make-web-state args)))
@@ -28,7 +29,9 @@
     state))
 
 (my-defun web-state 'player-controller-name ()
-  (session-username (my session)))
+  (if (my resigned)
+      "(resigned)"
+      (session-username (my session))))
 
 (my-defun web-state 'inform :before (game-state message &rest args)
 	  (declare (ignore args))
@@ -67,6 +70,7 @@
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
   (declare (ignore args))
+  (my add-announcement (<p "New game."))
   (setf (my queued-choices) nil))
 
 (my-defun web-state 'inform (game-state message &rest args)
@@ -130,17 +134,19 @@
     (<title "mopoko " (string-downcase (force-string title)))
     (css-html-style 
       (<body :font-family "georgia, serif" :margin-left "5%" :margin-right "5%")
-      ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0 0 0 0")
+      ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0.1 0.1 0.1 0.1")
       (<h1 :font-size "400%" :text-align "right")
       (".change-name" :font-size "75%" :text-align "right")
       (".players" :width "100%" :margin-top "2em")
-      (".messages" :margin-top "2em" :border-top "thin black solid")
+      (".messages" :margin-top "2em" :border-top "thin rgb(188,188,188) solid")
+      (".close-game" :text-align "right" :float "right")
+      (".close-game:before" :content "\"+ \"")
       (".players DIV" :width "25%" :display "table-cell" :vertical-align "top"))))
 
 (defun standard-page-body-start (title)
   (declare (ignore title))
   (<div :class "header"
-	(<h1 "mopoko" (<span :style (css-attrib :color "rgb(188,188,188)" :font-style "italic") ".com"))
+	(<h1 "mopoko" (<span :style (css-attrib :color "rgb(188,188,188)") ".com"))
 	(<div :class "change-name" 
 	      (html-action-form "Your name " ((new-name (session-username (webapp-session))))
 		(setf (session-username (webapp-session)) new-name)
@@ -161,9 +167,9 @@
 	   (output-raw-ml
 	    (content-game-messages)))))))
 
-(defun handle-challenge (game player)
+(defun handle-challenge (game player-session-id)
   (with-ml-output
-    (let ((other (find-session player)))
+    (let ((other (find-session player-session-id)))
       (when other
 	(unless
 	    (loop for pair in (webapp-session-var 'challengers) thereis
@@ -284,12 +290,23 @@
 	      do (output-object-to-ml p))))
 	  
 
+(my-defun game 'object-to-ml :around ()
+   (if (my game-over)
+     (<p "Game over.")
+     (call-next-method)))
+
 (defun current-web-controller (controller)
   (and (web-state-p controller)
        (eql *webapp-session* (web-state-session controller))))
 
 (my-defun web-state 'object-to-ml ()
   (<div :class "game-state"
+	(<p :class "close-game" 
+	    (html-action-link "Close game."
+	      (without-ml-output
+		(setf (my resigned) t)
+		(deletef me (session-var (my session) 'game-states)))))
+
 	(output-object-to-ml (my game-state))
 	
 	(when (my waiting-for-input)
@@ -302,13 +319,25 @@
 	      (output-raw-ml
 	       (my announcements))
 	      (without-ml-output (setf (my announcements) (tpd2.io:with-sendbuf ())))
-	      (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
-		    (unless (current-web-controller controller)
-		      (let ((controller controller))
-			(html-action-form (with-ml-output "Talk to " (player-controller-name controller) " ") 
-			    (text)
-			  (player-controller-message controller *webapp-session* text)
-			  (values))))))))
+	      (cond 
+		((its game-over (my game-state))
+		 (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
+		       (unless (current-web-controller controller)
+			 (let-current-values (controller)
+			   (html-action-link "Play again"
+			     (without-ml-output
+			       (typecase controller
+				 (web-state (handle-challenge (game-name (my game-state)) (session-id (web-state-session controller))))
+				 (t (launch-game (game-name (my game-state)) (list (make-web-state :session (webapp-session)) controller)))
+				 )))))))
+		 (t
+		 (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
+		       (unless (current-web-controller controller)
+			 (let-current-values (controller)
+			   (html-action-form (with-ml-output "Talk to " (player-controller-name controller) " ") 
+			       (text)
+			     (player-controller-message controller *webapp-session* text)
+			     (values))))))))))
 
 (defpage "/" ()
   (standard-page ("start")))

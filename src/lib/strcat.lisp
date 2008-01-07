@@ -8,8 +8,8 @@
 (declaim (inline strcat-go))
 
 #+replace-is-not-slow-like-a-dog
-(define-compiler-macro strcat (&rest original-args)
-  (let ((args (merge-constant-arguments original-args :join 'strcat-go :process-one 'force-string)))
+(define-compiler-macro strcat (&rest original-args &environment env)
+  (let ((args (merge-constant-arguments original-args :join 'strcat-go :process-one 'force-string :env env)))
     (if (not (rest args))
 	(first args)
 	(with-unique-names (len result i)

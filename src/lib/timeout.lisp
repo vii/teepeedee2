@@ -11,7 +11,7 @@
     timeout))
 
 (defvar *timeouts* (make-quick-queue))
-(defvar *timeouts-last-checked* (get-universal-time))
+(defvar *timeout-started* nil)
 
 (my-defun timeout due (time)
   (>= time (my time)))
@@ -45,18 +45,20 @@
     (funcall (my func))))
 
 (defun next-timeout (&optional (time (get-universal-time)))
-  (loop for x from *timeouts-last-checked* upto time do
-       (let ((base (quick-queue-get *timeouts* x)))
-	 (loop for cur = (quick-queue-entry-next base)
-	    while (not (eq cur base))
-	    do 
-	      (debug-assert (eql (timeout-time cur) x))
-	      (timeout-run cur))))
-  (setf *timeouts-last-checked* time)
+  (when *timeout-started*
+    (loop for x from *timeout-started* upto time do
+	  (let ((base (quick-queue-get *timeouts* x)))
+	    (loop for cur = (quick-queue-entry-next base)
+		  while (not (eq cur base))
+		  do 
+		  (debug-assert (eql (timeout-time cur) x) (cur x))
+		  (timeout-run cur))))
+    (setf *timeout-started* nil))
   (loop for x from time below (+ time (quick-queue-len *timeouts*))
-       thereis 
-       (let ((base (quick-queue-get *timeouts* x)))
-	 (let ((timeout (quick-queue-entry-next base)))
-	   (when (not (eq base timeout))
-	     (debug-assert (eql (timeout-time timeout) x))
-	     (- x time))))))
+	thereis 
+	(let ((base (quick-queue-get *timeouts* x)))
+	  (let ((timeout (quick-queue-entry-next base)))
+	    (when (not (eq base timeout))
+	      (debug-assert (eql (timeout-time timeout) x) (timeout x))
+	      (setf *timeout-started* time)
+	      (- x time))))))

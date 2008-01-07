@@ -1,3 +1,10 @@
+*** 0.3.4 ***
+(Thanks to John Fremlin)
+- Fixing copy-transformation-context typo
+- Adding without-call/cc macro to mimic the transformer
+- Fixing apply/cc and funcall/cc when called with defun/cc names as
+  symbols
+
 *** 0.3.3 ***
 - Special handling of COMPILER::INTERNAL-THE on Lispworks
 - Fixing a test case with a function call and empty values argument:

@@ -15,6 +15,13 @@
        chosen-card
        (folded nil))))
 
+(my-defun truc-player shuffle-init ()
+  (setf (my cards) nil)
+  (setf (my wins) 0)
+  (setf (my folded) nil)
+  (setf (my chosen-card) nil))
+
+
 (my-defun card truc-ranking ()
   (let ((val (position (my value) (reverse +truc-ranking+))))
     (debug-assert val)
@@ -31,7 +38,7 @@
 (my-defun truc chosen-card-values ()
    (remove-if (lambda(c)(eql -1 c)) (mapcar (lambda(p) (its chosen-card-value p)) (my players))))
 
-(defrules truc determine-round-winner ()
+(my-defun truc determine-round-winner ()
   (let ((winning-card 
 	 (reduce 'max (my chosen-card-values) :initial-value -1)))
     (let ((winners (loop for p in (my players)
@@ -45,60 +52,70 @@
 	  (deletef winner (my players))
 	  (push winner (my players)))))))
 
-
-(defrules truc deal ()
+(my-defun truc shuffle ()
   (setf (my stake) 1)
   (setf (my ordered-winners) nil)
+  (let ((shuffle (random-shuffle +truc-deck+)))
+    (loop for player in (my players) do
+	  (truc-player-shuffle-init player)
+	  (setf (its cards player) (subseq shuffle 0 3))
+	  (setf shuffle (subseq shuffle 3))))
+  (setf (my players) (random-shuffle (my players)))
+  (my announce :new-state))
+
+
+(defrules truc deal ()
   (loop do
-	(let ((shuffle (random-shuffle +truc-deck+)))
-	  (loop for player in (my players) do
-		(setf (its wins player) 0)
-		(setf (its folded player) nil)
-		(setf (its chosen-card player) nil)
-		(setf (its cards player) (subseq shuffle 0 3))
-		(setf shuffle (subseq shuffle 3))))
-	(setf (my players) (random-shuffle (my players)))
-	(my announce :new-state)
+	(my shuffle)
 	while
 	(loop for player in (reverse (my players))
 	      always (my move :reject-cards player :boolean))))
 
-(defrules truc play-rubber ()
-  (my deal)
-  (block rounds
-    (flet ((play-round ()
-	     (loop for p in (my players)
-		   do (setf (its chosen-card p) nil))
-	     (loop for player in (my players)
-		   unless (its folded player)
-			  do
-		   (when (> +truc-winning-stack+ (+ (its stack player) (my stake)))
-			    (let ((new-stake 
-				   (my move :select-new-stake player `(:integer ,(my stake) ,(1+ +truc-winning-stack+)))))
-			      (when (> new-stake (my stake))
-				(loop for p in (my players)
-				      do (unless 
-					     (or
-					      (eql p player)
-					      (its folded p)
-					      (>= (1+ (its stack p)) +truc-winning-stack+)
-					      (my move :accept-new-stake p :boolean :new-stake new-stake))
-					   (setf (its folded p) t)
-					   (let ((active-players (filter (lambda(p)(not (its folded p))) (my players)))) 
-					     (when (>= 1 (length active-players))
-					       (return-from rounds)))))
-				(setf (my stake) new-stake))))
-		   (setf (its chosen-card player) 
-			 (let ((card (my move :select-card player `(:one ,@(its cards player)))))
-			   (deletef card (its cards player) :count 1)
-			   card)))
-	     (my determine-round-winner)))
+(my-defun truc too-few-players ()
+  (let ((active-players (filter (lambda(p)(not (its folded p))) (my players)))) 
+    (>= 1 (length active-players))))
 
-	     (loop for round from 3 downto 1
-		   until (let ((wins (mapcar (lambda(p)(its wins p)) (my players)))) 
-			   (>= (- (reduce 'max wins) (reduce 'min wins)) round))
-		   do (play-round))))
-    (my determine-rubber-winner))
+(defrules truc play-round ()
+  (loop for p in (my players)
+	do (setf (its chosen-card p) nil))
+  (loop for player in (my players)
+	unless (its folded player)
+	do
+	(when (> +truc-winning-stack+ (+ (its stack player) (my stake)))
+	  (let ((new-stake 
+		 (my move :select-new-stake player `(:integer ,(my stake) ,(1+ +truc-winning-stack+)))))
+	    (when (> new-stake (my stake))
+	      (loop for p in (my players)
+		    do (unless 
+			   (or
+			    (eql p player)
+			    (its folded p)
+			    (>= (1+ (its stack p)) +truc-winning-stack+)
+			    (my move :accept-new-stake p :boolean :new-stake new-stake))
+			 (setf (its folded p) t)
+			 (when (my too-few-players)
+			   (return-from truc-play-round))))
+	      (setf (my stake) new-stake))))
+	(setf (its chosen-card player) 
+	      (let ((card (my move :select-card player `(:one ,@(its cards player)))))
+		(deletef card (its cards player) :count 1)
+		card)))
+  (my determine-round-winner))
+
+(defrules truc play-rubber ()
+  (loop do
+	(my shuffle)
+	while
+	(loop for player in (reverse (my players))
+	      always (my move :reject-cards player :boolean)))
+
+  (loop for round from 3 downto 1
+	do (my play-round)
+	until (or
+	       (let ((wins (mapcar (lambda(p)(its wins p)) (my players)))) 
+		 (>= (- (reduce 'max wins) (reduce 'min wins)) round))
+	       (my too-few-players)))
+  (my determine-rubber-winner))
 
 (my-defun truc determine-rubber-winner ()
   (let* ((active-players (filter (lambda(p)(not (its folded p))) (my players)))
@@ -120,6 +137,6 @@
   (with-game
     (loop until (loop for p in (my players) thereis 
 		      (when (<= +truc-winning-stack+ (its stack p)) 
-			(my announce :game-over :player p)
+			(my finished p)
 			t))
 	  do (my play-rubber))))

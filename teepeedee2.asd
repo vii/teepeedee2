@@ -5,7 +5,7 @@
 (loop for addon in (directory "addons/*/") do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
-(proclaim '(optimize debug))
+(proclaim '(optimize speed))
 
 (asdf:defsystem :teepeedee2
   :name "teepeedee2"

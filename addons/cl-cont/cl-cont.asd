@@ -6,7 +6,7 @@
 
 (defsystem cl-cont
   :name "cl-cont"
-  :version "0.3.3"
+  :version "0.3.4"
   :maintainer "Slava Akhmechet"
   :author "Slava Akhmechet"
   :licence "LLGPL"

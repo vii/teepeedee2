@@ -38,7 +38,7 @@
 		      :allowed-children children
 		      :forbidden-child form)))))
 
-(defun escape-data (value)
+(defun-consistent escape-data (value)
   (when value
     (flet ((xml-entity (c)
 	     (force-byte-vector
@@ -51,7 +51,6 @@
       (match-replace-all ((c (:char-range '(or #\< #\> #\& #\'))))
 			 (xml-entity c)
 			 (force-string value)))))
-(declaim (inline escape-data))
 
 (defmacro output-escaped-ml (&rest args)
   `(with-ml-output        
@@ -78,16 +77,25 @@
 (defun-consistent escape-attribute-value (value)
   (escape-data value))
 
+(defun with-ml-output-form-to-list (form)
+  (typecase form
+    (null nil)
+    (list
+     (case (first form) 
+       (with-ml-output (mapcan 'with-ml-output-form-to-list (rest form)))
+       (output-raw-ml (copy-list (rest form)))
+       (without-ml-output (list form))
+       (t (list `(escape-data ,form)))))
+    (t (list `(escape-data ,form)))))
+
 (defmacro with-ml-output (&body body)
   `(macrolet	      
        ((with-ml-output (&body body)
 			`(output-raw-ml
-			  ,@(mapcar (lambda(form)
-				      (if (member (force-first form) '(output-raw-ml with-ml-output-raw without-ml-output))
-					  form
-					  `(escape-data ,form))) body))))
-     (with-sendbuf (ml-sendbuf) 
-       (with-ml-output ,@body))))
+			  ,@(mapcan 'with-ml-output-form-to-list body))))
+     (let ((ml-sendbuf (with-sendbuf ())))
+       (with-ml-output ,@body)
+       ml-sendbuf)))
 
 (defmacro define-dtd (pkg &rest tags-and-defpackage-arguments)
   (multiple-value-bind
@@ -126,6 +134,6 @@
 					  collect "'")
 				  ">")
 			       ,@body
-			       (output-raw-ml
-				,@(unless (and ,etag-optional (not body))
-					  (list ,(strcat "</" name ">")))))))))))))))
+			       
+			       ,@(unless (and (not body) ,etag-optional)
+					 (list `(output-raw-ml "</" ,,(force-string name) ">"))))))))))))))

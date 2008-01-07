@@ -46,16 +46,10 @@
 
 (defmacro with-sendbuf-continue ((var) &body body &environment env)
   `(progn
-     ,@(loop for form in body
+     ,@(loop for form in (merge-constant-arguments body :join 'byte-vector-cat :env env)
 	     collect 
-	     (case (force-first form) 
-	       (quote
-		(second form))
-	       (t
-		(if (load-time-constantp form env)
-		    `(sendbuf-add ,var (load-time-value (force-byte-vector ,form) t))
-		    `(sendbuf-add ,var
-				  ,form)))))
+	     `(sendbuf-add ,var
+			   ,form))
      (values)))
 
 (defmacro with-sendbuf ((&optional (var (gensym "sendbuf"))) &body body)

@@ -5,7 +5,7 @@
 (my-defun truc-player 'object-to-ml ()
   (<div :class "truc-player"
 	(output-raw-ml (call-next-method))
-	(<p (my stack) (format nil " point~P." (my stack)))
+	(<p (my stack) (format nil " chip~P." (my stack)))
 	(cond 
 	  ((my folded)
 	   (<p :class "folded" "FOLDED"))
