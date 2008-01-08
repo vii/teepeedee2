@@ -380,7 +380,7 @@
 
 
 
-#+never
+
 (progn
   (defgamepages)
 
@@ -388,3 +388,4 @@
     (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
 
   (sb-thread:make-thread (lambda() (tpd2.io:event-loop)) :name "EVENT-LOOP"))
+
