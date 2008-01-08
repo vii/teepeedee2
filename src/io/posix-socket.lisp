@@ -30,6 +30,14 @@
 	    (-1 nil)
 	    (t s))))
 
+(defun socket-writev (fd iovec count)
+  (declare (optimize speed))
+  (let ((s
+	 (socket-io-syscall (syscall-writev fd iovec count))))
+    (case-= s
+	    (-1 nil)
+	    (t s))))
+
 (defun socket-accept (fd)
   (cffi:with-foreign-object (sa 'sockaddr_in)
     (let ((s

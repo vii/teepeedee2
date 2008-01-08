@@ -110,6 +110,11 @@
   (buf :pointer)
   (size :unsigned-long))
 
+(def-simple-syscall writev
+    (fd :int)
+  (iov :pointer)
+  (iovcnt :int))
+
 (def-simple-syscall sendfile
     (out_fd :int)
   (in_fd :int)
@@ -384,6 +389,12 @@
   (apply 'new-socket-helper 
 	 :action 'syscall-connect
 	 args))
+
+(defconstant +max-iovecs+ 1024)
+
+(cffi:defcstruct iovec
+    (base :pointer)
+  (len :uint32))
 
 (cffi:defcstruct timeval
   (sec :uint32)

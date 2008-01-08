@@ -2,6 +2,7 @@
 
 (eval-always
   (defun make-byte-vector (len)
+    (declare (optimize speed))
     (make-array len :element-type '(unsigned-byte 8))))
 
 (declaim (inline make-byte-vector))
@@ -32,9 +33,13 @@
 (declaim (ftype (function (t) simple-string) force-string-consistent-internal))
 
 (defun random-shuffle (sequence)
-  (awhen (not (zerop (length sequence)))
-    (let ((i (random (length sequence))))
-      (cons (elt sequence i) (random-shuffle (remove-if (lambda(x) (declare (ignore x)) t) sequence :start i :count 1))))))
+  (loop while (not (zerop (length sequence)))
+	collect
+	(let ((i (random (length sequence))))
+	  (prog1
+	      (elt sequence i) 
+	    (setf sequence (remove-if (lambda(x) (declare (ignore x)) t) sequence :start i :count 1))))))
+
 (defun random-elt (sequence)
   (when sequence
     (elt sequence (random (length sequence)))))

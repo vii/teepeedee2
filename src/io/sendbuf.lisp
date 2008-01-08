@@ -62,6 +62,7 @@
 (my-defun sendbuf done ()
   (not (my head)))
 
+#+tpd2-sendbuf-send-with-write
 (my-defun sendbuf send (con done)
   (loop for buf = (car (my head))
 	while 		   
@@ -77,6 +78,37 @@
   (if (my head)
     (socket-when-ready-to-write (con-socket con) con #'my-call)
     (funcall done)))
+
+
+#-tpd2-sendbuf-send-with-write
+(my-defun sendbuf send (con done)
+  (declare (optimize speed))
+  (when (my head)
+    (let ((count (min +max-iovecs+ (my num-bufs))))
+      (cffi:with-foreign-object (vecs 'iovec count)
+	(loop for i below count
+	      for buf in (my head)
+	      do 
+	      (with-pointer-to-vector-data (ptr buf)
+		(cffi:with-foreign-slots ((base len) (cffi:mem-aref vecs 'iovec i) iovec)
+		  (setf base ptr)
+		  (setf len (length buf)))))
+	(let ((s (socket-writev (con-socket con) vecs count)))
+	  (when s
+	    (loop until (zerop s)
+		  do
+		  (let ((buf (car (my head))))
+		    (cond ((>= s (length buf))
+			   (decf s (length buf))
+			   (setf (my head) 
+				 (cdr (my head))))
+			  (t
+			   (setf (car (my head)) (make-displaced-vector buf :start s))
+			   (setf s 0))))))))))
+  (if (my head)
+      (socket-when-ready-to-write (con-socket con) con #'my-call)
+      (funcall done)))
+
 
 (my-defun sendbuf to-byte-vector ()
   (declare (optimize speed))

@@ -46,11 +46,11 @@
 		(#.(char-code #\<) "&lt;")
 		(#.(char-code #\>) "&gt;")
 		(#.(char-code #\&) "&amp;")
-		(#.(char-code #\') "&apos;")
+		(#.(char-code #\') "&#39;")
 		(t c)))))
       (match-replace-all ((c (:char-range '(or #\< #\> #\& #\'))))
 			 (xml-entity c)
-			 (force-string value)))))
+			 value))))
 
 (defmacro output-escaped-ml (&rest args)
   `(with-ml-output        
@@ -62,9 +62,7 @@
 
 (defmacro output-ml-comment (&rest body)
   `(with-ml-output
-     (output-raw-ml "<!--")
-     ,@body
-     (output-raw-ml "-->")))
+     (output-raw-ml "<!--" ,@body "-->")))
 
 (defmacro output-object-to-ml (object)
   `(output-raw-ml (object-to-ml ,object)))

@@ -40,42 +40,46 @@
 (my-defun web-state add-announcement (a)
   (tpd2.io:sendbuf-add (my announcements) a))
 
+(my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
+  (let ((sender (getf args :sender)) (msg (getf args :text)))
+    (my add-announcement (<p :class "message" (player-controller-name sender) ": " (<Q msg)))))
+
 (my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
-  (my add-announcement (<p (player-name (getf args :player)) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
+  (my add-announcement (<p :class "game-message" (player-name (getf args :player)) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :reject-cards)) &rest args)
-  (my add-announcement (<p (player-name (getf args :player)) 
+  (my add-announcement (<p :class "game-message" (player-name (getf args :player)) 
 			   (if (getf args :choice) " wants to change cards."
 			       " is satisfied with the cards."))))
 
 (my-defun web-state 'inform (game-state (message (eql :accept-new-stake)) &rest args)
-  (my add-announcement (<p (player-name (getf args :player)) 
+  (my add-announcement (<p :class "game-message" (player-name (getf args :player)) 
 			   (if (getf args :choice) " saw the raise."
 			       " folded."))))
 
 (my-defun web-state 'inform (game-state (message (eql :select-new-stake)) &rest args)
   (let ((choice (getf args :choice)))
     (unless (eql choice (its stake game-state))
-      (my add-announcement (<p (player-name (getf args :player)) " raised to " choice " chips.")))))
+      (my add-announcement (<p :class "game-message" (player-name (getf args :player)) " raised to " choice " chips.")))))
 
 (my-defun web-state 'inform (game-state (message (eql :winner)) &rest args)
   (my add-announcement 
-      (<p (player-name (getf args :player)) " won"
+      (<p :class "game-message" (player-name (getf args :player)) " won"
 	  (awhen (getf args :chips)
 	    (with-ml-output " " it " chips"))
 	  ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :game-over)) &rest args)
-  (my add-announcement (<h2 (player-name (getf args :player)) " won the game.")))
+  (my add-announcement (<h2 :class "game-message" (player-name (getf args :player)) " won the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
   (declare (ignore args))
-  (my add-announcement (<p "New game."))
+  (my add-announcement (<p :class "game-message" "New game."))
   (setf (my queued-choices) nil))
 
 (my-defun web-state 'inform (game-state message &rest args)
   (my add-announcement 
-      (<p (format nil "~A ~{~A ~}"  message (mapcar (lambda(a)(if (player-p a) (player-name a) a)) args)))))
+      (<p :class "game-message" (format nil "~A ~{~A ~}"  message (mapcar (lambda(a)(if (player-p a) (player-name a) a)) args)))))
 
 (defmethod move-continuation (k (controller web-state) player-state move-type choices &rest args)
   (its add-move-state controller
@@ -134,19 +138,30 @@
     (<title "mopoko " (string-downcase (force-string title)))
     (css-html-style 
       (<body :font-family "georgia, serif" :margin-left "5%" :margin-right "5%")
-      ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0.1 0.1 0.1 0.1")
+      ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0.1em 0.1em 0.1em 0.1em")
       (<h1 :font-size "400%" :text-align "right")
+      (".game-message" :font-style "italic")
       (".change-name" :font-size "75%" :text-align "right")
       (".players" :width "100%" :margin-top "2em")
-      (".messages" :margin-top "2em" :border-top "thin rgb(188,188,188) solid")
-      (".close-game" :text-align "right" :float "right")
+      (".messages-and-talk"
+       :margin-top "2em" 
+       :margin-left "5em"
+       :text-align "right")
+      (".messages" :overflow "auto" :max-height "10em" )
+      (".game-header"  :float "left")
       (".close-game:before" :content "\"+ \"")
-      (".players DIV" :width "25%" :display "table-cell" :vertical-align "top"))))
+      (".players > DIV" 
+       :float "right" 
+       :padding "0.4em 0.4em 2em 0.4em"
+       :border-top "2px rgb(88,88,88) solid"
+       )
+      (".talk input[type=\"text\"]" :width "60%")
+      (".players > DIV + DIV" :border-right "2px rgb(88,88,88) solid"))))
 
 (defun standard-page-body-start (title)
   (declare (ignore title))
   (<div :class "header"
-	(<h1 "mopoko" (<span :style (css-attrib :color "rgb(188,188,188)") ".com"))
+	(<h1 "mopoko" (<span :style (css-attrib :color "rgb(188,188,188)")  ".com"))
 	(<div :class "change-name" 
 	      (html-action-form "Your name " ((new-name (session-username (webapp-session))))
 		(setf (session-username (webapp-session)) new-name)
@@ -274,15 +289,18 @@
 		 (<p friendly-move-type "."))
 		(t
 		 (<p friendly-move-type
-		     (output-raw-ml (html-action-form 		     
-					(cond ((eql (force-first (my choices)) :integer)
-					       (with-ml-output " from " (apply 'min (choices-list (my choices))) " to " 
-							       (apply 'max (choices-list (my choices))) ". "))
-					      (t
-					       (format nil " ~{~A ~}" (my args)) " from " (format nil "~A" (my choices) )))
-					((choice (first (choices-list (my choices)))))
-				      (my queue-choice (read-safely-from-string choice))
-				      (values)))))))))
+		     (cond ((eql (force-first (my choices)) :integer)
+			    (with-ml-output " from " (apply 'min (choices-list (my choices))) " to " 
+					    (apply 'max (choices-list (my choices))) ". "))
+			   (t
+			    (with-ml-output (format nil " ~{~A ~}" (my args)) " from " (format nil "~A" (my choices) ))))
+     
+		     (output-raw-ml 
+		      (html-action-form 		     
+		       ""
+		       ((choice (first (choices-list (my choices)))))
+		       (my queue-choice (read-safely-from-string choice))
+		       (values)))))))))
 
 (my-defun game 'object-to-ml ()
   (<div :class "players"
@@ -299,13 +317,44 @@
   (and (web-state-p controller)
        (eql *webapp-session* (web-state-session controller))))
 
+(my-defun web-state resign ()
+  (without-ml-output
+    (setf (my resigned) t)
+    (deletef me (session-var (my session) 'game-states))))
+  
 (my-defun web-state 'object-to-ml ()
   (<div :class "game-state"
-	(<p :class "close-game" 
-	    (html-action-link "Close game."
-	      (without-ml-output
-		(setf (my resigned) t)
-		(deletef me (session-var (my session) 'game-states)))))
+	(<div :class "game-header"
+	      (<h2 :class "game-title"
+		   (string-capitalize (force-string (game-name (my game-state)))))
+
+	      (when (its game-over (my game-state))
+		(<p :class "close-game"		
+		  (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
+			(unless (current-web-controller controller)
+			  (let-current-values (controller)
+			    (html-action-link "Close and play again."
+			      (without-ml-output
+				(my resign)
+			      (typecase controller
+				(web-state (handle-challenge (game-name (my game-state)) (session-id (web-state-session controller))))
+				(t (launch-game (game-name (my game-state)) (list (make-web-state :session (webapp-session)) controller)))
+				))))))))
+
+	      (<p :class "close-game" 
+		  (html-action-link "Close game."
+		    (my resign))))
+
+	(<div :class "messages-and-talk"
+	  (<div :class "messages"
+		(output-raw-ml
+		 (tpd2.io:sendbuf-to-byte-vector (my announcements))))
+	  (<div :class "talk"
+		(html-action-form "Talk " 
+		  (text)
+		  (without-ml-output
+		    (game-announce (my game-state) :talk :sender me :text text)))))
+	
 
 	(output-object-to-ml (my game-state))
 	
@@ -313,31 +362,7 @@
 	  (<div :class "moves"
 		(loop for m in (my waiting-for-input)
 		      do 
-		      (output-object-to-ml m))))
-	(<div :class "messages"
-	      (<h2 "Messages")
-	      (output-raw-ml
-	       (my announcements))
-	      (without-ml-output (setf (my announcements) (tpd2.io:with-sendbuf ())))
-	      (cond 
-		((its game-over (my game-state))
-		 (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
-		       (unless (current-web-controller controller)
-			 (let-current-values (controller)
-			   (html-action-link "Play again"
-			     (without-ml-output
-			       (typecase controller
-				 (web-state (handle-challenge (game-name (my game-state)) (session-id (web-state-session controller))))
-				 (t (launch-game (game-name (my game-state)) (list (make-web-state :session (webapp-session)) controller)))
-				 )))))))
-		 (t
-		 (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
-		       (unless (current-web-controller controller)
-			 (let-current-values (controller)
-			   (html-action-form (with-ml-output "Talk to " (player-controller-name controller) " ") 
-			       (text)
-			     (player-controller-message controller *webapp-session* text)
-			     (values))))))))))
+		      (output-object-to-ml m))))))
 
 (defpage "/" ()
   (standard-page ("start")))

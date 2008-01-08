@@ -10,7 +10,7 @@
   (with-sendbuf (response)
     "HTTP/1.1 " code " " banner +newline+
     "Content-Length: " (sendbuf-len body) +newline+
-    "Content-Type: text/html" +newline+
+    "Content-Type: text/html;charset=utf-8" +newline+
     headers
     +newline+
     body))

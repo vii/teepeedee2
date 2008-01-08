@@ -15,8 +15,8 @@
 (my-defun truc 'object-to-ml ()
   (<div :class "truc"
 	(output-raw-ml (call-next-method))
-	(<h2 :class "stake" "Playing for "
-	     (my stake) (format nil " point~P" (my stake)))
+	(<p :class "stake" "Playing for "
+	     (my stake) (format nil " chip~P" (my stake)) ".")
 	(<div :class "table"
 	      (loop for p in (my players)
 		    when (and (not (its folded p)) (its chosen-card p))
@@ -28,8 +28,11 @@
 		    (<p "Your cards are: " 
 			(loop for card in (sort (copy-list (its cards p)) '> :key 'card-number-truc-ranking) do
 			      (output-escaped-ml " ")
-			      (let-current-values (p card)
-				(html-action-link (output-object-to-ml (make-card-from-number card))
-						  (web-state-queue-choice (player-controller p) :select-card card)
-						  (values))))
+			      (cond ((loop for m in (its waiting-for-input (player-controller p)) 
+					   thereis (eql (its move-type m) :select-card))
+				     (let-current-values (p card)
+				       (html-action-link (output-object-to-ml (make-card-from-number card))
+					 (web-state-queue-choice (player-controller p) :select-card card)
+					 (values))))
+				    (t (output-raw-ml (output-object-to-ml (make-card-from-number card))))))
 			".")))))

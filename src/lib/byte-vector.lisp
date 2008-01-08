@@ -1,12 +1,20 @@
 (in-package #:tpd2.lib)
 
-#+sbcl
-(defun-consistent utf8-encode (str)
-  (babel:string-to-octets str :encoding :utf-8))
-
 (def-if-unbound defun-consistent utf8-encode (str) ; XXX not implemented
   (assert (every (lambda(x) (> 128 (char-int x))) str))
   (map '(vector (unsigned-byte 8)) 'char-code str))
+
+(defun-consistent utf8-encode (str) ; XXX not implemented
+  (declare (type string str))
+  (declare (optimize speed))
+  (block encode
+    (let ((vec (make-byte-vector (length str))))
+      (loop for i fixnum from 0 for s across str do
+	    (let ((c (char-code s)))
+	      #+sbcl (when (> c 127)
+		       (return-from encode (babel:string-to-octets str :encoding :utf-8)))
+	      (setf (aref vec i) (char-code s))))
+	    vec)))
 
 
 (def-if-unbound defun-consistent byte-vector-to-string (vec)
@@ -41,6 +49,7 @@
 	   ,tmp)))))
 
 (defun byte-vector-cat (&rest args)
+  (declare (optimize speed))
   (let ((vecs (mapcar (lambda(x)(force-byte-vector x)) args)))
     (let ((len (reduce '+ (mapcar 'length vecs))))
       (let ((ret (make-byte-vector len)) (i 0))
@@ -48,6 +57,7 @@
 	      (replace ret v :start1 i)
 	      (incf i (length v)))
 	ret))))
+(declaim (inline byte-vector-cat))
 
 (defconstant +byte-to-digit-table+
   (make-array 256 :element-type '(integer -1 36) 

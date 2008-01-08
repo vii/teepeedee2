@@ -27,19 +27,17 @@
 							   ,value))))))
 	 ',normal-func-name)))
 
-(defun page-link (page &rest args)
-  (sendbuf-to-byte-vector
-   (with-sendbuf (sendbuf)
-     page
-     "?"
-     +webapp-session-id-param+
-     "="
-     (awhen *webapp-session*
-       (session-id it))
-     (loop for (param val) on args by #'cddr
-	   do (with-sendbuf-continue (sendbuf)
-		"&"
-		(symbol-name param)
-		"="
-		(percent-hexpair-encode val))))))
-   
+(defmacro page-link (page &rest args)
+  `(sendbuf-to-byte-vector
+    (with-sendbuf (sendbuf)
+      ,page
+      "?"
+      +webapp-session-id-param+
+      "="
+      (awhen *webapp-session*
+	(session-id it))
+      ,@(loop for (param val) on args by #'cddr
+	      collect "&"
+	      collect (symbol-name param)
+	      collect "="
+	      collect `(percent-hexpair-encode ,val)))))
