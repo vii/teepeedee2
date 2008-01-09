@@ -142,7 +142,7 @@
       (<h1 :font-size "400%" :text-align "right")
       (".game-message" :font-style "italic")
       (".change-name" :font-size "75%" :text-align "right")
-      (".players" :width "100%" :margin-top "2em")
+      
       (".messages-and-talk"
        :margin-top "2em" 
        :margin-left "5em"
@@ -150,13 +150,20 @@
       (".messages" :overflow "auto" :max-height "10em" )
       (".game-header"  :float "left")
       (".close-game:before" :content "\"+ \"")
-      (".players > DIV" 
-       :float "right" 
-       :padding "0.4em 0.4em 2em 0.4em"
-       :border-top "2px rgb(88,88,88) solid"
+      (".players"        
+       :float "right"
+       :margin-top "2em"
        )
-      (".talk input[type=\"text\"]" :width "60%")
-      (".players > DIV + DIV" :border-right "2px rgb(88,88,88) solid"))))
+      (".players > DIV"
+       :padding "0.4em 0.4em 0.4em 0.4em"
+       :float "left"
+       :border-top "2px solid rgb(88,88,88)"
+       )
+      (".separate" 
+       :height "4em"
+       :border-right "2px solid rgb(88,88,88)")
+
+      (".talk input[type=\"text\"]" :width "60%"))))
 
 (defun standard-page-body-start (title)
   (declare (ignore title))
@@ -305,7 +312,10 @@
 (my-defun game 'object-to-ml ()
   (<div :class "players"
 	(loop for p in (my players)
-	      do (output-object-to-ml p))))
+	      for once = t then nil
+	      unless once do (<div :class "separate")
+	      do (output-object-to-ml p))
+	(<div :style (css-attrib :clear "both" :float "none" :border "none"))))
 	  
 
 (my-defun game 'object-to-ml :around ()
@@ -381,11 +391,5 @@
 
 
 
-(progn
-  (defgamepages)
 
-  (let ((socket (tpd2.io:make-con-listen :port 8888)))
-    (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
-
-  (sb-thread:make-thread (lambda() (tpd2.io:event-loop)) :name "EVENT-LOOP"))
 

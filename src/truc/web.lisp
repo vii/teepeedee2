@@ -36,3 +36,12 @@
 					 (values))))
 				    (t (output-raw-ml (output-object-to-ml (make-card-from-number card))))))
 			".")))))
+
+(progn
+  (eval-when (:execute)
+    (tpd2.game::defgamepages))
+
+  (let ((socket (tpd2.io:make-con-listen :port 8888)))
+    (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
+
+  (sb-thread:make-thread (lambda() (tpd2.io:event-loop)) :name "EVENT-LOOP"))
