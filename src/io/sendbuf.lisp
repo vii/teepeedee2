@@ -121,4 +121,7 @@
 
 (my-defun sendbuf 'print-object (stream)
   (cond (*print-readably* (call-next-method))
-	(t (write (force-string (my to-byte-vector)) :stream stream :escape t))))
+	(t (write (force-string (my to-byte-vector)) :stream stream))))
+
+(my-defun sendbuf empty ()
+  (not (my head)))

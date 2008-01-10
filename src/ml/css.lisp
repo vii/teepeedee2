@@ -242,8 +242,7 @@
 				  for properties = (rest sp)
 				  do
 				  (validate selector properties)
-				  append (css-output-selector-form selector properties))
-			   "//"))))
+				  append (css-output-selector-form selector properties))))))
 
 (defmacro css-attrib (&rest properties)
   (validate-properties properties)

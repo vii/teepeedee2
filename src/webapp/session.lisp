@@ -1,12 +1,12 @@
 (in-package #:tpd2.webapp)
 
 (defstruct (session (:constructor %make-session))
-  (id (random 1000000000000))
+  (id (random-web-sparse-key 10))
   variables
   (username (random-name))
   timeout)
 
-(defvar *sessions* (make-hash-table))
+(defvar *sessions* (make-hash-table :test #'equalp))
 
 (defun make-session (&rest args)
   (let ((session (apply '%make-session args)))
@@ -25,7 +25,7 @@
   (timeout-set (my timeout) (* 10 60)))
 
 (defun find-session (id)
-  (awhen (gethash (byte-vector-parse-integer (force-byte-vector id)) *sessions*)
+  (awhen (gethash id *sessions*)
     (session-reset-timeout it)
     it))
 

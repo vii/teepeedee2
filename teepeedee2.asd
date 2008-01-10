@@ -5,7 +5,7 @@
 (loop for addon in (directory "addons/*/") do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
-(proclaim '(optimize speed))
+(proclaim '(optimize debug))
 
 (asdf:defsystem :teepeedee2
   :name "teepeedee2"
@@ -24,6 +24,7 @@
 							    (:file "once-only")
 							    (:file "one-liners")
 							    (:file "utils" :depends-on ("macros" "once-only"))
+							    (:file "superquote" :depends-on ("utils"))
 							    (:file "strcat" :depends-on ("macros" "utils"))
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
 							    (:file "byte-vector" :depends-on ("macros" "utils"))
@@ -64,7 +65,9 @@
 					      :depends-on (:http :ml)
 					      :components ((:file "page" :depends-on ("session"))
 							   (:file "session" :depends-on ("names"))
-							   (:file "names")))
+							   (:file "names")
+							   (:file "actions" :depends-on ("page"))
+							   (:file "channel" :depends-on ("page"))))
 				     (:module :game
 					      :depends-on (:webapp :ml )
 					      :components ((:file "framework") 
@@ -89,4 +92,5 @@
 		      :cffi
 		      :iterate
 		      :fiveam
-		      :cl-utilities))
+		      :cl-utilities
+		      :parenscript))

@@ -61,7 +61,7 @@
        (generate-match-bind `(:progn ,@(force-list form)) env))))
     (t (values `(:value (force-to-match-data-type ,form)) nil))))
 
-(defmacro match-bind-or-return-fail-match (bindings string &body body &environment env)
+(defmacro match-bind-internal (bindings string error &body body &environment env)
   "The bindings syntax is composed of binding-forms.
 
 binding-form ::= symbol -> match a word and set symbol to its value
@@ -83,17 +83,16 @@ binding-form ::= symbol -> match a word and set symbol to its value
     (once-only (string)
        `(let ,vars
 	  (if (eq 'fail-match (match ,string ,matcher))
-	      'fail-match
+	      ,error
 	      (locally ,@body))))))
+
+(defmacro match-bind-or-return-fail-match (bindings string &body body)
+  `(match-bind-internal ,bindings ,string 'fail-match ,@body))
 
 
 (defmacro match-bind (bindings string &body body)
-  (with-unique-names (ret)
-    `(let ((,ret (multiple-value-list (match-bind-or-return-fail-match ,bindings ,string ,@body))))
-       (when (eql (first ,ret) 'fail-match)
-	 (error 'match-failed :matching ',bindings :string ,string))
-       (values-list ,ret))))
-
+  (once-only (string)
+    `(match-bind-internal ,bindings ,string (error 'match-failed :matching ',bindings :string ,string) ,@body)))
 
 (define-condition match-failed 
     (error)

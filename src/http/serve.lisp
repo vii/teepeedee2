@@ -32,18 +32,21 @@
       (let ((request-body
 	     (unless (zerop request-content-length)
 	       (io 'recv con request-content-length))))
-	(io 'send con (http-parse-and-generate-response url :host host :request-body request-body))
-	(if connection-close
-	    (hangup con)
-	    (io 'http-serve con))))))
+	(io 'parse-and-dispatch con url :request-body request-body :host host))
+      (if connection-close
+	  (hangup con)
+	  (io 'http-serve con)))))
 
 (defun test-http-request (url &optional request-body)
-  (match-bind ((:? (protocol (:until-and-eat "://")) (hostname (:until "/"))) path)
+  (match-bind ((:? (protocol (:until-and-eat "://")) (hostname (:until "/"))) path-and-args)
       url
     (let ((*break-on-signals* t))
-      (http-parse-and-generate-response path :host hostname :request-body request-body))))
+      (with-output-to-string (stream)
+	(multiple-value-bind (path params)
+	    (http-parse path-and-args :request-body request-body)
+	  (dispatch (tpd2.io::make-con :socket stream) (constantly nil) path :host hostname :params params))))))
 
-(defun http-parse-and-generate-response (path-and-args &key host request-body)
+(defun parse-and-dispatch (con done path-and-args &key request-body host)
   (let (params)
     (flet ((parse-params (str)
 	     (when str
@@ -54,5 +57,5 @@
 	  path-and-args
 	(parse-params q)
 	(parse-params request-body)
-	(generate-http-response host path params)))))
+	(dispatch con done path :params params :host host)))))
 

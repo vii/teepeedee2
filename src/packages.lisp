@@ -9,6 +9,12 @@
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
   (:export 
+   #:superquote
+   #:superquote-function
+   #:unquote
+   #:unquote-splice
+
+
    #:finalize
    #:cancel-finalization
 
@@ -123,6 +129,7 @@
    #:sendbuf-add
    #:with-sendbuf-continue
    #:sendbuf-len
+   #:sendbuf-empty
    #:sendbuf
    #:sendbuf-to-byte-vector
 
@@ -147,7 +154,9 @@
   (:export 
    #:test-http-request
    #:percent-hexpair-encode
-   #:dispatcher-register-path 
+   #:dispatcher-register-path
+   #:build-http-response
+   #:respond-http
    #:*default-dispatcher*
    #:http-parse-and-generate-response))
 
@@ -166,12 +175,21 @@
 
    #:css-html-style
    #:css-attrib
+
+   #:js-html-script
+   #:js-attrib
 ))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :teepeedee2.ml.html)
+    (defpackage #:teepeedee2.ml.html
+      (:nicknames #:tpd2.ml.html))))
 
 (defpackage #:teepeedee2.webapp
   (:nicknames #:tpd2.webapp)
-  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.http #:teepeedee2.io)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.http #:teepeedee2.io #:teepeedee2.ml.html #:teepeedee2.ml)
   (:export
+   #:defactionpage
    #:defpage
    #:page-link
    #:webapp-session
@@ -185,12 +203,11 @@
    #:all-http-params
    #:html-action-form
    #:html-action-link
+   #:action-script-helper
+   #:register-channel-page
    ))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (unless (find-package :teepeedee2.ml.html)
-    (defpackage #:teepeedee2.ml.html
-      (:nicknames #:tpd2.ml.html))))
+
   
 (defpackage #:teepeedee2.game
   (:nicknames #:tpd2.game)

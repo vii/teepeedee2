@@ -5,8 +5,10 @@
   (paths (make-hash-table :test 'equalp))
   (error-responder 'default-http-error-page))
 
-(my-defun dispatcher build-http-response (&key (code 200) (banner "OK") headers body)
-  (my-declare-fast-inline)
+(defun dispatch (con done path &key params host)
+  (dispatcher-respond (find-dispatcher host) con done path params))
+
+(defun build-http-response (&key code banner headers body)
   (with-sendbuf (response)
     "HTTP/1.1 " code " " banner +newline+
     "Content-Length: " (sendbuf-len body) +newline+
@@ -14,17 +16,22 @@
     headers
     +newline+
     body))
+(declaim (inline build-http-response))
 
-(my-defun dispatcher respond (path params)
+(defun respond-http (con done &key (code (force-byte-vector 200)) (banner (force-byte-vector "OK"))
+		     headers body)
+  (send con done (build-http-response :code code :banner banner :headers headers :body body)))
+(declaim (inline respond-http))
+
+(my-defun dispatcher respond (con done path params)
   (let ((f (gethash path (my paths))))
     (handler-case 
 	(if f
-	    (my build-http-response :body
-				 (funcall f me path params))
-	    (my build-http-response :code 404 :banner "Not found" :body
-				 (funcall (my error-responder) me path params)))
+	    (funcall f me con done path params)
+	    (respond-http con done :code  404 :banner  "Not found"
+		:body (funcall (my error-responder) me path params)))
       (error ()
-	(my build-http-response 
+	(respond-http con done
 	 :body (with-sendbuf () "<h1>I made a mistake. Sorry</h1>")
 	 :code 500
 	 :banner "Internal error")))))
@@ -45,8 +52,6 @@
 (defun find-dispatcher (host)
   (or (cdr-assoc *dispatchers* host :test 'equalp) *default-dispatcher*))
 
-(defun generate-http-response (host path params)
-  (let ((dispatcher (find-dispatcher host)))
-    (dispatcher-respond dispatcher path params)))
+
 
 

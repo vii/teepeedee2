@@ -109,29 +109,6 @@
 		   (funcall (its cc waiting) (its choice qc))
 		   (return-from web-state-try-to-move)))))
 
-(defmacro html-action-link (text &body body)
-  (with-unique-names (params)
-    `(<A :href (page-link "/action" 
-			  :id (register-action-id (lambda(,params)(declare (ignore ,params)) ,@body))) ,text)))
-
-(defmacro html-action-form (title lambda-list &body body)
-  `(<form :method :post :action 
-	  (page-link "/action" :id 
-		     (register-action-id 
-		      (lambda(params)
-			(let ,(loop for p in lambda-list collect
-				    `(,(force-first p) (or (cdr-assoc params ,(force-byte-vector (force-first p)) 
-								      :test 'byte-vector=-fold-ascii-case)
-							   ,(second (force-list p)))))
-			  ,@body))))
-	  (<p
-	    ,title
-	    ,@(loop for nv in lambda-list collect
-		    (destructuring-bind (name &optional value)
-			(force-list nv)
-		      `(<input :type :text :name ,(force-byte-vector name) 
-			       ,@(when value `(:value ,value)))))
-	    (<input :type :submit :value "Send"))))
 
 (defun standard-page-head (title)
   (<head
@@ -147,7 +124,7 @@
        :margin-top "2em" 
        :margin-left "5em"
        :text-align "right")
-      (".messages" :overflow "auto" :max-height "10em" )
+      (".messages-and-talk > .scroll-to-bottom" :overflow "auto" :max-height "15em" )
       (".game-header"  :float "left")
       (".close-game:before" :content "\"+ \"")
       (".players"        
@@ -187,7 +164,8 @@
 	    (standard-page-body-start ,title))
 	   ,@body
 	   (output-raw-ml
-	    (content-game-messages)))))))
+	    (content-game-messages)
+	    (action-script-helper)))))))
 
 (defun handle-challenge (game player-session-id)
   (with-ml-output
@@ -222,19 +200,12 @@
 			(<h2 :class "start-game" (<A :href (page-link (game-start-page game)) "Play " (string-downcase (force-string game)))))))))
 
 
-(defun register-action-id (function)
-  (let ((id (random 1000000000)))
-    (push (cons id function) (webapp-session-var 'actions))
-    id))
-
   
-(defpage "/action" (id all-http-params)
-  (let ((ml 		   
-	 (awhen (and id (assoc (byte-vector-parse-integer id) (webapp-session-var 'actions)))
-	   (prog1 (with-ml-output (output-raw-ml (funcall (cdr it) all-http-params)))
-	     (deletef it (webapp-session-var 'actions))))))
-    (standard-page ("") 
-		   (output-raw-ml ml))))
+(defactionpage (ml)
+  (standard-page ("") 
+		 (output-raw-ml ml)))
+
+(register-channel-page)
 
 (defun page-start-game (name)
   (webapp-session)
@@ -356,7 +327,7 @@
 		    (my resign))))
 
 	(<div :class "messages-and-talk"
-	  (<div :class "messages"
+	  (<div :class "scroll-to-bottom"
 		(output-raw-ml
 		 (tpd2.io:sendbuf-to-byte-vector (my announcements))))
 	  (<div :class "talk"
@@ -387,9 +358,3 @@
   (web-state-add-announcement controller
 			      (<p :class "message" (<span :class "sender" (session-username sender))
 				  " " message)))
-
-
-
-
-
-
