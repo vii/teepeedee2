@@ -13,7 +13,7 @@
   (remhash (my id) *frames*))
 
 (my-defun frame reset-timeout ()
-  (timeout-set (my timeout) (* 2 (tpd2.http:http-serve-timeout))))
+  (timeout-set (my timeout) (* 5 60)))
 
 (my-defun frame 'initialize-instance :after (&key)
   (setf (gethash (my id) *frames*) me)

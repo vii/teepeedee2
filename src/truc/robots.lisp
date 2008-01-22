@@ -139,7 +139,7 @@
 			       maximize (its stack player)))
 	(least (reduce 'min (choices-list choices)))
 	(wp (its win-probability player-state)))
-    (let ((most (max (min (- +truc-winning-stack+ (its stack player-state)) (reduce 'max (choices-list choices))) least)))
+    (let ((most (min (- +truc-winning-stack+ (its stack player-state)) (reduce 'max (choices-list choices)))))
       (cond ((>= (+ max-other-stack (its stake (its game player-state))) +truc-winning-stack+)
 	     most)
 	    ((= most least)
@@ -151,7 +151,7 @@
 
 (defmethod move ((controller robot-bully) (player-state truc-player) (move-type (eql :select-new-stake)) choices &rest args)
   (declare(ignore args))
-  (max (reduce 'min (choices-list choices))
+  (min (reduce 'max (choices-list choices))
        (- +truc-winning-stack+ (its stack player-state))))
 
 

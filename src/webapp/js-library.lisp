@@ -36,23 +36,7 @@
      (let ((element (find-element element-id)))
        (+= element.inner-h-t-m-l content)))
 
-    (defun set-status-from-ready-state (ready-state)
-      (case ready-state
-	(2 (set-status "waiting"))
-	(3 (set-status "loading"))
-	(4 (set-status nil))))
 
-    (defun set-status (status)
-      (return)
-      (reset-element-id (unquote +html-id-async-status+)
-		    (if status (+ ". . . " status) "")))
-    (defun set-status-failed (initial-status)
-      (set-status (unquote (with-ml-to-string (<span :class "error" "failed . . . retrying"))))
-      (let ((msg (+ initial-status " failed")))
-	(setf (aref msg 0) (.to-upper-case (aref msg 0) ))
-	(debug-log "async request failed")
-	#+XXXXX (error-message msg)
-	))
     (defun make-xml-http-request ()
       (if (slot-value window '*X-M-L-Http-Request )
 	  (return (new *X-M-L-Http-Request))
@@ -84,7 +68,6 @@
        (let ((req  (make-xml-http-request)))
 	 (setf req.onreadystatechange 
 	       (lambda ()
-		 (set-status-from-ready-state req.ready-state)
 		 (case req.ready-state
 		   (4 
 		    (async-request-done req url)))))
@@ -96,13 +79,10 @@
 	     (ignore-errors
 	       (tmp.abort))))
 
-	 (set-status initial-status)
-
 	 (req.open "GET" url t)
 	 (req.send ""))
        (:catch (e)
 	 (debug-log "async request was not started" url initial-status e)
-	 (set-status-failed initial-status e)
 	 (return -1)))
       (return 0))
 

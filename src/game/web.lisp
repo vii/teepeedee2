@@ -14,10 +14,6 @@
 (my-defun web-state resigned ()
   (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
 
-
-(my-defun web-state 'player-controller-name ()
-  (frame-username (my frame)))
-
 (my-defun web-state 'inform :before (game-state message &rest args)
   (declare (ignore args))
   (setf (my game-state) game-state))
@@ -28,41 +24,41 @@
 
 (my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
   (let ((sender (getf args :sender)) (msg (getf args :text)))
-    (my add-announcement (<p :class "game-talk-message" (player-controller-name sender) ": " (<Q msg)))))
+    (my add-announcement (<p :class "game-talk-message" (output-raw-ml (player-controller-name-to-ml sender)) ": " (<Q msg)))))
 
 (my-defun web-state 'inform (game-state (message (eql :new-player)) &rest args)
-   (my add-announcement (<p :class "game-message" (player-controller-name (first args)) " has joined the game.")))
+   (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (first args))) " has joined the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :resigned)) &rest args)
-   (my add-announcement (<p :class "game-message" (player-controller-name (first args)) " has resigned.")))
+   (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (first args))) " has resigned.")))
 
 (my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
-  (my add-announcement (<p :class "game-message" (player-name (getf args :player)) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
+  (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :reject-cards)) &rest args)
-  (my add-announcement (<p :class "game-message" (player-name (getf args :player)) 
+  (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player))))
 			   (if (getf args :choice) " wants to change cards."
 			       " is satisfied with the cards."))))
 
 (my-defun web-state 'inform (game-state (message (eql :accept-new-stake)) &rest args)
-  (my add-announcement (<p :class "game-message" (player-name (getf args :player)) 
+  (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player))))
 			   (if (getf args :choice) " saw the raise."
 			       " folded."))))
 
 (my-defun web-state 'inform (game-state (message (eql :select-new-stake)) &rest args)
   (let ((choice (getf args :choice)))
     (unless (eql choice (its stake game-state))
-      (my add-announcement (<p :class "game-message" (player-name (getf args :player)) " raised to " choice " chips.")))))
+      (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " raised to " choice " chips.")))))
 
 (my-defun web-state 'inform (game-state (message (eql :winner)) &rest args)
   (my add-announcement 
-      (<p :class "game-message" (player-name (getf args :player)) " won"
+      (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " won"
 	  (awhen (getf args :chips)
 	    (with-ml-output " " it " chips"))
 	  ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :game-over)) &rest args)
-  (my add-announcement (<h2 :class "game-message" (player-name (getf args :player)) " won the game.")))
+  (my add-announcement (<h2 :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " won the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
   (declare (ignore args))
@@ -71,8 +67,10 @@
 
 (my-defun web-state 'inform (game-state message &rest args)
   (my add-announcement 
-      (<p :class "game-message" 
-	  (format nil "~A ~{~A ~}"  message (mapcar (lambda(a)(if (player-p a) (player-name a) a)) args)))))
+      (<p :class "game-message"
+	  message
+	  " "
+	  (output-object-to-ml args))))
 
 (defmethod move-continuation (k (controller web-state) player-state move-type choices &rest args)
   (its add-move-state controller
@@ -236,6 +234,9 @@
     (game-resign (my game-state) me)
     (my notify)))
 
+(my-defun web-state 'player-controller-name-to-ml ()
+  (<span :class "username" (frame-username (my frame))))
+
 (my-defun web-state 'object-to-ml ()
   (<div :class "game-state" :id (my id)
 	(output-raw-ml (call-next-method))
@@ -275,8 +276,9 @@
 
 (my-defun player 'object-to-ml ()
   (<div :class "player"
-	(<h3 (my name) (when (my waiting-for-input)
-			 (<span :class "turn" "'s turn")))))
+	(<h3 (output-raw-ml (player-controller-name-to-ml (my controller)) )
+	     (when (my waiting-for-input)
+	       (<span :class "turn" "'s turn")))))
 
 (defmethod player-controller-message ((controller web-state) sender message)
   (web-state-add-announcement controller

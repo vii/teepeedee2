@@ -16,9 +16,11 @@
   timeout
   game-generator)
 
-(my-defun unassigned-controller 'player-controller-name ()
+(my-defun unassigned-controller 'player-controller-name-to-ml ()
 ;  (strcat "Unassigned (" (timeout-remaining (my timeout)) " seconds left)")
-  "Unassigned")
+  (<span :class "unassigned-player" 
+	 (html-action-link "Unassigned" 
+	   (my assign-robot))))
 
 (my-defun unassigned-controller player-state ()
   (find me (game-players (my game)) :key 'player-controller))
@@ -27,12 +29,14 @@
   (deletef me (game-generator-unassigned-controllers-waiting (my game-generator))))
 
 (my-defun unassigned-controller assign (other)
-  (setf (player-controller (my player-state)) other)
-  (my del)
-  (timeout-cancel (my timeout))
-  (game-announce (my game) :new-player other)
-  (loop for i in (reverse (my move-states)) do
-	(move-state-continue i other)))
+  (when (my game)
+    (setf (player-controller (my player-state)) other)
+    (my del)
+    (timeout-cancel (my timeout))
+    (game-announce (my game) :new-player other)
+    (setf (my game) nil)
+    (loop for i in (reverse (my move-states)) do
+	  (move-state-continue i other))))
 
 (my-defun unassigned-controller assign-robot ()
    (my assign (random-elt *bots*)))
@@ -56,7 +60,7 @@
 	(setf (unassigned-controller-game uc) game)
 
 	(setf (unassigned-controller-timeout uc) 
-	      (make-timeout :delay 10 
+	      (make-timeout :delay 5 
 			    :func (lambda()(unassigned-controller-assign-robot uc))))
 	(appendf (my unassigned-controllers-waiting) (list uc))
 	(play game)

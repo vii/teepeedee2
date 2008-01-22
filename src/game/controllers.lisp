@@ -2,19 +2,18 @@
 
 (defstruct robot)
 
-(my-defun robot 'player-controller-name ()
-  "<Ralph>")
+(my-defun robot 'player-controller-name-to-ml ()
+  (<span :class "robot" "Ralph"))
 
 (defstruct (robot-bully (:include robot)))
 
-(my-defun robot-bully 'player-controller-name ()
-  "<Nelson>")
+(my-defun robot-bully 'player-controller-name-to-ml ()
+  (<span :class "robot" "Nelson"))
 
 (defstruct (robot-sensible (:include robot)))
 
-(my-defun robot-sensible 'player-controller-name ()
-  "<Martin>")
-
+(my-defun robot-sensible 'player-controller-name-to-ml ()
+  (<span :class "robot" "Martin"))
 
 (defvar *bots* (list (make-robot) (make-robot-bully) (make-robot-sensible)))
 
@@ -29,7 +28,3 @@
 	(handler-case (return-from move (validate-choice choices (read-safely stream)))
 	  (error (e) (format t "Sorry that move is not allowed; ~A~&" e)))))
 
-(defmethod player-controller-name ((controller stream))
-  "Operator")
-(defgeneric player-controller-message (controller sender message))
-(defmethod player-controller-message (controller sender message))

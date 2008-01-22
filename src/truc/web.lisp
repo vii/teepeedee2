@@ -20,7 +20,7 @@
 	(<div :class "table"
 	      (loop for p in (my players)
 		    when (and (not (its folded p)) (its chosen-card p))
-		    do (<p (its name p) ": " (output-object-to-ml (make-card-from-number (its chosen-card p))))))
+		    do (<p (output-raw-ml (tpd2.game::player-controller-name-to-ml (player-controller  p))) ": " (output-object-to-ml (make-card-from-number (its chosen-card p))))))
 	
 	(loop for p in (my players)
 	      when (and (current-web-controller (player-controller p)) (its cards p)) do
@@ -54,7 +54,8 @@
     (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
 
   #+sbcl
-  (preserve-specials (*trace-output* *standard-output* *error-output* *debug-io* swank::*emacs-connection*)
+  (preserve-specials (*trace-output* *standard-output* *error-output* *debug-io* 
+				     swank::*emacs-connection*)
     (sb-thread:make-thread 
      (lambda() 
        (with-restored-specials

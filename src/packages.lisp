@@ -261,7 +261,7 @@
    #:with-game
    #:choices-list
    #:play
-   
+   #:launch-game
    #:robot
    #:robot-bully
    #:robot-sensible
@@ -282,6 +282,11 @@
 (defpackage #:teepeedee2.game.truc
   (:nicknames #:tpd2.game.truc)
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
+(defpackage #:teepeedee2.game.dating
+  (:nicknames #:tpd2.game.dating)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
 
 #.`
 (defpackage #:teepeedee2

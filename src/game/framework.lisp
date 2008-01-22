@@ -80,13 +80,6 @@
   (loop for l in (my listeners)
 	do (apply 'inform l me message args)))
 
-(defgeneric player-controller-name (controller))
-(defmethod player-controller-name (controller)
-  controller)
-
-(my-defun player name ()
-  (player-controller-name (my controller)))
-
 (defstruct game-generator
   make-game
   unassigned-controllers-waiting)
@@ -178,3 +171,5 @@
 (defrules game new-state ()
   (my announce :new-state)
   (loop for p in (my players) do (my secret-move :ready-to-play p '(:one t))))
+
+(defgeneric player-controller-name-to-ml (controller))
