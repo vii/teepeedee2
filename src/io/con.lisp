@@ -50,8 +50,9 @@
     (hangup ()
       (my fail))))
 
-(my-defun con reset-timeout (delay)
-  (timeout-set (my timeout) delay))
+(my-defun con 'reset-timeout (delay)
+  (timeout-set (my timeout) delay)
+  (values))
 
 (defconstant +newline+ (force-byte-vector #(13 10)))
 

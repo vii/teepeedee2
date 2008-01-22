@@ -2,57 +2,76 @@
 
 (defvar *channels* (trivial-garbage:make-weak-hash-table :weakness :value :test 'equalp))
 
-(defstruct (channel (:constructor %make-channel))
+(defmyclass channel
   (id (random-web-sparse-key 10))
   (state 0)
   (subscribers nil))
 
-(defun make-channel (&rest args)
-  (let ((channel (apply '%make-channel args)))
-    (channel-init channel)
-    channel))
-
-(my-defun channel init ()
+(my-defun channel 'initialize-instance :after (&key)
   (setf (gethash (my id) *channels*) me))
 
 (my-defun channel notify ()
-  (incf (my state)))
+  (let ((subscribers (my subscribers)))
+    (setf (my subscribers) nil)
+    (incf (my state))
+    (loop for s in subscribers do (funcall s))
+    (values)))
 
 (my-defun channel subscribe (f)
   (push f (my subscribers)))
 (my-defun channel unsubscribe (f)
   (deletef f (my subscribers)))
 
-(defgeneric channel-update (channel subscriber-state))
+(defun find-channel (id)
+  (gethash id *channels*))
 
-(defconstant +channel-page-name+ "/*channel*")
+(defgeneric channel-update (channel subscriber-state))
 
 (defun channel-respond-page (dispatcher con done path all-http-params)
   (declare (ignore dispatcher path))
-  (apply-page-call 'channel-respond con done (channels)))
+  (apply-page-call 'channel-respond con done (.channels.)))
 
-(defun channel-respond (con done &key channels)
+(defun channel-string-to-states (channels)
   (let ((channel-states))
-    (match-bind (:* (channel (:until-and-eat "|")) (state (:until-and-eat ";")) 
-		    '(push (cons channel (byte-vector-parse-integer state)) channel-states))
+    (match-bind (:* (channel (:until-and-eat "|")) (state (:until-and-eat (:or ";" :$))) 
+		    '(awhen (find-channel channel) (push (cons it (byte-vector-parse-integer state)) channel-states)))
 	channels)
+    channel-states))
 
-    (flet ((finished ()
-	     (let ((sendbuf
-		    (with-ml-output
-		      (loop for (channel . state) in channel-states do
-			    (unless (eql state (channel-state channel))
-			       (output-raw-ml (channel-update channel state)))))))
-	       (when (not (sendbuf-empty sendbuf))
-		 (respond-http con done :body sendbuf)
-		 t))))
-    (let (func)
+(defun channel-respond-body (channel-states)
+  (let (at-least-one)
+    (let ((sendbuf
+	   (with-ml-output
+	     (loop for (channel . state) in channel-states do
+		   (unless (eql state (channel-state channel))
+		     (setf at-least-one t)
+		     (output-raw-ml (js-to-string (channel 
+						   (unquote (force-string (channel-id channel))) 
+						   (unquote (channel-state channel)))))
+		     (output-raw-ml (channel-update channel state))))
+	     (output-raw-ml (js-to-string (trigger-fetch-channels))))))
+      (when at-least-one
+	sendbuf))))
+
+(defun channel-respond (con done &key .channels.)
+  (let ((channel-states (channel-string-to-states .channels.)))
+    (flet ((finished () 
+	     (unless (tpd2.io::con-socket con)
+	       (return-from finished t))
+	     (awhen (channel-respond-body channel-states)
+	       (respond-http con done :body it)
+	       t)))
       (unless (finished)
-	(flet ((unsubscribe ()
-		 (loop for (channel . state) in channel-states do (channel-unsubscribe channel func))))
-	  (setf func
-		(lambda() (when (finished) (unsubscribe))))
-	  (loop for (channel . state) in channel-states do (channel-subscribe channel func))))))))
+	(let (func)
+	  (flet ((unsubscribe ()
+		   (loop for (channel . state) in channel-states do (channel-unsubscribe channel func))))
+	    (setf func
+		  (lambda() (when (finished) (unsubscribe))))
+	    (loop for (channel . state) in channel-states do (channel-subscribe channel func))))))))
 
 (defun register-channel-page ()
   (dispatcher-register-path *default-dispatcher*  +channel-page-name+ #'channel-respond-page))
+
+(my-defun channel 'object-to-ml ()
+  (js-html-script (channel (unquote (force-string (my id))) (unquote (my state)))))
+

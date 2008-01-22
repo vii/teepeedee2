@@ -4,7 +4,7 @@
   60)
 
 (defprotocol http-serve (con)
-  (con-reset-timeout con (http-serve-timeout))
+  (reset-timeout con (http-serve-timeout))
   (match-bind (method :whitespace url :whitespace?
 		      (:? "HTTP/" (version-major :integer 1) "." (version-minor :integer 0) :whitespace?) 
 		      :$)
@@ -46,16 +46,18 @@
 	    (http-parse path-and-args :request-body request-body)
 	  (dispatch (tpd2.io::make-con :socket stream) (constantly nil) path :host hostname :params params))))))
 
-(defun parse-and-dispatch (con done path-and-args &key request-body host)
-  (let (params)
-    (flet ((parse-params (str)
-	     (when str
-	       (match-bind (:* (name (:until-and-eat "=")) (value (:until-and-eat (:or :$ "&")))
-			       '(push (cons (url-encoding-decode name) (url-encoding-decode value)) params))
-		   str))))
-      (match-bind ((path (:until-and-eat (:or :$ ("?" (q (:rest)))))))
-	  path-and-args
-	(parse-params q)
-	(parse-params request-body)
-	(dispatch con done path :params params :host host)))))
+(defprotocol parse-and-dispatch (con path-and-args &key request-body host)
+  (let (params tmp)
+    (without-call/cc
+      (flet ((parse-params (str)
+	       (when str
+		 (match-bind (:* (name (:until-and-eat "=")) (value (:until-and-eat (:or :$ "&")))
+				 '(push (cons (url-encoding-decode name) (url-encoding-decode value)) params))
+		     str))))
+	(match-bind ((path (:until-and-eat (:or :$ ("?" (q (:rest)))))))
+	    path-and-args
+	  (parse-params q)
+	  (parse-params request-body)
+	  (setf tmp path))))
+    (io 'dispatch con tmp :params params :host host)))
 

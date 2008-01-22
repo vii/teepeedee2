@@ -1,13 +1,20 @@
 (in-package #:tpd2.lib)
 
+
 (eval-always
   (defvar *match-helpers* nil)
   (defvar *match-macro-helpers* nil)
+  (deftype match-data-type () 'simple-byte-vector)
+  (deftype match-data-index-type () '(integer 0 #.most-positive-fixnum))
 
   (defmacro force-to-match-data-type (val)
-    `(force-byte-vector ,val))
-  (defmacro match-data-type-elt (val i)
-    `(aref ,val ,i)))
+    `(force-simple-byte-vector ,val))
+  (defun match-data-type-elt (val i)
+    (declare (optimize (safety 0) speed))
+    (declare (type match-data-type val))
+    (declare (type match-data-index-type i))
+    (aref val i))
+  (declaim (inline match-data-type-elt)))
 
 (defun parse-match-data-to-integer (str &optional (base 10))
   (byte-vector-parse-integer str base))
@@ -104,6 +111,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
   (with-unique-names (fail-match-action)
     `(block match-enclosure
        (let ((,fail-match-action (lambda()(return-from match-enclosure 'fail-match))))
+	 (declare (type function ,fail-match-action))
 	 (labels 
 	     ((peek ()
 		(subseq ,string (min ,pos ,end)))
@@ -112,6 +120,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 		     (not (loop for i below (length val)
 				thereis (not (funcall test (match-data-type-elt val i) (match-data-type-elt ,string (+ ,pos i))))))))
 	      (can-peek (&optional (amt 1))
+		(declare (type match-data-index-type amt))
 		(>= (- ,end ,pos) amt))
 	      (peek-one ()
 		(unless (can-peek)
@@ -120,6 +129,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	      (fail-match ()
 		(funcall ,fail-match-action))
 	      (eat (&optional (len 1))
+		(declare (type match-data-index-type len))
 		(incf ,pos len)
 		(when (> ,pos ,end)
 		  (fail-match))))
@@ -128,6 +138,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	       ((try-match (&rest matches)
 		  (with-unique-names (save ret success old-fail-match-action block)
 		    `(let ((,save ,',pos) ,ret ,success (,old-fail-match-action ,',fail-match-action))
+		       (declare (type match-data-index-type ,save))
 		       (block ,block
 			 (setf ,',fail-match-action (lambda() (setf ,',pos ,save) (return-from ,block)))
 			 (setf ,ret
@@ -158,14 +169,14 @@ binding-form ::= symbol -> match a word and set symbol to its value
        (without-call/cc ; this macro is too much of an ugly beast for the CPS transformer
 	 (declare (optimize speed (safety 0)))
 	 (let ((,pos 0) (,end (length ,string)))
-	   (declare (type (integer 0 #.most-positive-fixnum) ,pos ,end))
+	   (declare (type match-data-index-type ,pos ,end))
 	   (with-match-primitives (,string ,pos ,end)
 	     (macrolet
 		 ,(loop for (name . helper) in *match-macro-helpers* 
 			collect `(,name ,@helper))
 	       (labels
 		   ,(loop for (name . helper) in *match-helpers* 
-			  collect `(,name ,@helper))
+			  collect `(,name ,(first helper) (declare (optimize speed (safety 0))) ,@(rest helper)))
 		 (declare (ignorable ,@(loop for (name  . helper) in *match-helpers* collect `(function ,name))))
 		 ,@matching))))))))
 
@@ -186,15 +197,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 (define-match-helper match-end ()
   (when (can-peek)
     (fail-match))
-  (values))
-       
-(defun eql-fold-ascii-case (a b)
-  (= (byte-to-ascii-upper a) (byte-to-ascii-upper b)))
-
-(defun byte-vector=-fold-ascii-case (a b)
-  (and (= (length a) (length b))
-       (loop for i from 0 below (length a)
-	     always (eql-fold-ascii-case (aref a i) (aref b i)))))
+  (force-to-match-data-type nil))
 
 (define-match-helper match-value (value &key (test 'eql))
   (let ((val (force-to-match-data-type value)))
@@ -227,6 +230,11 @@ binding-form ::= symbol -> match a word and set symbol to its value
   (if matches
       `(aif-match ,(first matches) it (match-or ,@(rest matches)))
       `(fail-match)))
+
+(define-match-macro-helper :or? (&rest matches)
+  (if (rest matches)
+    `(aif-match ,(first matches) it (:or? ,@(rest matches)))
+    `(aif-match ,(first matches) it)))
 
 (define-match-macro-helper match-any-value (&rest values)
   `(match-or ,@(loop for v in values
@@ -279,6 +287,8 @@ binding-form ::= symbol -> match a word and set symbol to its value
 	(while (and (<= 0 digit) (> base digit)))
 	(eat-one)
 	(while (can-peek)))
+      (when (zerop len)
+	(fail-match))
       (parse-match-data-to-integer (subseq str 0 len) base))))
   
 (define-match-macro-helper :+ (&rest matches)
@@ -323,6 +333,7 @@ binding-form ::= symbol -> match a word and set symbol to its value
 (define-match-macro-helper :until-and-eat (&rest matches)
   (with-unique-names (start len)
     `(let ((,start (peek)) (,len 0))
+       (declare (type fixnum ,len))
        (loop until (try-match (locally ,@matches))
 	     do (eat 1)
 	     (incf ,len))
@@ -396,29 +407,37 @@ binding-form ::= symbol -> match a word and set symbol to its value
 (defmacro case-match-fold-ascii-case (keyform &rest clauses)
   (generate-case-key keyform :test 'byte-vector=-fold-ascii-case :transform 'force-to-match-data-type :clauses clauses))
 
-
-(defmacro match-replace-helper (match replacement string)
+(defmacro match-replace-helper (match-replacements string)
   (with-unique-names (before r after)
-    (flet ((generate-replacement-form (replacement)
-	     replacement))
-      `(let (,r)
-	 (match-bind-or-return-fail-match ((,before (:until-and-eat 
-				(:or 
-				 (:progn ,match '(setf ,r ,(generate-replacement-form replacement)) (,after (:rest))) 
-				 :$))))
+      `(let ((,r (force-to-match-data-type "")))
+	 (match-bind-internal 
+	     ((,before (:until-and-eat 
+			(:or
+			 ,@(loop for (match replacement) on match-replacements by #'cddr 
+				 collect `(:progn ,match '(setf ,r (force-to-match-data-type ,replacement))))
+			 :$)))
+	      (,after (:rest)))
 	     ,string
-	   (values ,before ,r ,after))))))
+	     (values (force-to-match-data-type "") (force-to-match-data-type "") (force-to-match-data-type ""))
+	   (values ,before ,r ,after)))))
 
-(defmacro match-replace-all (match replacement string)
+(defmacro match-replace-one (string &rest match-replacements)
+  (with-unique-names (before r after)
+    `(multiple-value-bind (,before ,r ,after)
+	 (match-replace-helper ,match-replacements ,string)
+       (concatenate-simple-byte-vectors (list ,before ,r ,after)))))
+
+(defmacro match-replace-all (string &rest match-replacements)
   (with-unique-names (f s before r after)
     `(flet ((,f (,s)
-	      (match-replace-helper ,match ,replacement ,s)))
-       (let ((,s ,string))
-	 (apply 'byte-vector-cat 
-		(iter
-		  (multiple-value-bind (,before ,r ,after)
-		      (,f ,s)
-		    (collect ,before)
-		    (while ,after)
-		    (collect ,r)
-		    (setf ,s ,after))))))))
+	      (match-replace-helper ,match-replacements ,s)))
+       (let ((,s (force-to-match-data-type ,string)))
+	 (concatenate-simple-byte-vectors
+	  (iter
+	    (multiple-value-bind (,before ,r ,after)
+		(,f ,s)
+	      (declare (type match-data-type ,before ,r ,after))
+	      (unless (zerop (length ,before)) (collect ,before))
+	      (unless (zerop (length ,r)) (collect ,r))
+	      (until (zerop (length ,after)))
+	      (setf ,s ,after))))))))

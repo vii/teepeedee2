@@ -122,7 +122,7 @@
   (let ((cards (its cards player-state)))
     (cond ((and (not (its chosen-card-values (its game player-state))) (= (length cards) 3))
 	  (elt 
-	   (sort (copy-list cards) '> :key (lambda(c) (its truc-ranking (make-card-from-number c))))
+	   (sort (copy-list cards) '> :key 'card-number-truc-ranking)
 	   (aref +best-starts+
 		 (its hand-number player-state))))
 	(t 
@@ -139,7 +139,7 @@
 			       maximize (its stack player)))
 	(least (reduce 'min (choices-list choices)))
 	(wp (its win-probability player-state)))
-    (let ((most (max (- +truc-winning-stack+ (its stack player-state)) least)))
+    (let ((most (max (min (- +truc-winning-stack+ (its stack player-state)) (reduce 'max (choices-list choices))) least)))
       (cond ((>= (+ max-other-stack (its stake (its game player-state))) +truc-winning-stack+)
 	     most)
 	    ((= most least)

@@ -58,9 +58,8 @@
 		  (let ((slot-name (force-first slot-spec)))
 		    `(,slot-name
 		      :initarg ,(intern (symbol-name slot-name) :keyword)
-		      ,@(awhen (force-rest slot-spec)
-			       (when (not (keywordp (second slot-spec)))
-				 `(:initform ,(second slot-spec))))
+		      :initform ,(when (and (force-rest slot-spec) (not (keywordp (second slot-spec))))
+				  (second slot-spec))
 		      :accessor ,(intern (strcat conc-name slot-name))))) slots))
      (defun ,(intern (strcat 'make- name)) (&rest args)
        (apply #'make-instance ',name args))
@@ -137,7 +136,12 @@
 (defun my-func-name-to-symbol (class func)
   (etypecase func
     (symbol (my-function func (my-auto-prefices class)))
-    (list (unquote-quoted-symbol func))))
+    (list 
+     (ecase (first func)
+       (quote
+	(unquote-quoted-symbol func))
+       (setf
+	(list 'setf (my-func-name-to-symbol class (second func))))))))
 
 (defmacro with-shorthand-accessor ((accessor class &optional (instance class)) &body body)
   (check-type class symbol)
@@ -153,15 +157,14 @@
 (defmacro my-defun (class func lambda-list &body body)
   (flet ((my-make-def (class func args)
 	   (multiple-value-bind (def my-arg)
-	       (if (and (structure-classp class)
-			(not (and (listp func) (eq (first func) 'quote) (fboundp (second func)) (subtypep (type-of (fdefinition (second func))) 'generic-function))))
-		   (values 'defun class)
-		   (values 'defmethod `(,class ,class)))
+	       (let ((func-sym (my-func-name-to-symbol class func)))
+		 (if (and (fboundp func-sym) (subtypep (type-of (fdefinition func-sym)) 'generic-function))
+		     (values 'defmethod `(,class ,class))
+		     (values 'defun class)))
 	     (if (and (listp func) (eq (first func) 'setf))
 		 (values def (list 'setf (my-func-name-to-symbol class (second func)))
 			 (list* (first args) my-arg (rest args)))
 		 (values def (my-func-name-to-symbol class func) (list* my-arg args))))))
-
     (check-type class symbol)
     (multiple-value-bind (combination-type args declarations-and-body)
 	(if (keywordp lambda-list)
@@ -169,20 +172,20 @@
 	    (values nil lambda-list body))
       (multiple-value-bind (declarations-and-body inline)
 	  (if (equalp '(my-declare-fast-inline) (first declarations-and-body))
-	    (values (cons '(declare (optimize speed)) (rest declarations-and-body)) t)
-	    (values declarations-and-body nil))
+	      (values (cons '(declare (optimize speed)) (rest declarations-and-body)) t)
+	      (values declarations-and-body nil))
 	(multiple-value-bind (declarations body)
 	    (separate-declarations declarations-and-body)
 	  (multiple-value-bind 
 		(def name lambda-list)
 	      (my-make-def class func args)
 	    `(progn (,def ,name ,@(force-list combination-type) ,lambda-list
-		   ,@declarations
-		   (labels ((my-call ()
-			      (let ((me ,class))
-				(with-shorthand-accessor (my ,class me)
-				  ,@body))))
-		     (my-call)))
+			  ,@declarations
+			  (labels ((my-call ()
+				     (let ((me ,class))
+				       (with-shorthand-accessor (my ,class me)
+					 ,@body))))
+			    (my-call)))
 		    ,@(when inline (list `(declaim (inline ,name))))
 		    ',name)))))))
 

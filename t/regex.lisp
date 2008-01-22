@@ -80,4 +80,30 @@
 		  (is (string= (force-string rvalue) value))))))
 		  
 	    
-      
+(test match-or
+  (test-match-bind-enters-body
+      ("c" (w (:or (:integer) "a" "b")) "b")
+      "cab"
+    (is (string= (force-string w) "a")))
+
+  (signals match-failed
+    (match-bind
+	("c" (w (:or (:integer) "a" "b")) "b")
+	"cub"))
+
+  (test-match-bind-enters-body
+      ("c" (w (:or? (:integer) "a" "b")) "ub")
+      "cub"))
+
+
+(test match-replace-all
+  (flet ((r (value)
+	   (match-replace-all value
+			      #\< "&lt;"
+			      #\> "&gt;"
+			      #\& "&amp;"
+			      #\' "&#39;")))
+    (is (string= "&amp;" (force-string (r "&"))))
+
+    (is (string= "&lt;h1&gt;The Good, the &#39;Bad&#39; &amp; the ugly&lt;/h1&gt;"
+		 (force-string (r "<h1>The Good, the 'Bad' & the ugly</h1>"))))))

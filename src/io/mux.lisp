@@ -15,7 +15,7 @@
     (debug-assert (not (my find-fd fd)))
     (when (>= fd (length (my fd-to-con)))
       (setf (my fd-to-con) (adjust-array (my fd-to-con) (* 2 (length (my fd-to-con))) :initial-element nil))
-      (assert (> (length (my fd-to-con)) fd)))
+      (debug-assert (> (length (my fd-to-con)) fd)))
     (setf (aref (my fd-to-con) fd) con)))
 
 (my-defun mux del (fd)

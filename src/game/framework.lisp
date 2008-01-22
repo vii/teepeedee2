@@ -1,17 +1,28 @@
 (in-package #:tpd2.game)
 
+(defgeneric move (controller player-state move-type choices &rest args))
+(defmethod move (controller player-state move-type choices &rest args)
+  (declare (ignore args))
+  (random-choice choices))
 (defgeneric move-continuation (k controller player-state move-type choices &rest args))
 (defmethod move-continuation (k controller player-state move-type choices &rest args)
   (funcall k (apply 'move controller player-state move-type choices args)))
+
+(defmyclass game
+    game-over
+  players
+  other-listeners)
+
+(defmacro defrules (game func lambda-list &body body)
+  `(eval-always
+     (with-call/cc
+       (my-defun ,game ,func ,lambda-list ,@body))))
+
 
 (defmacro with-game (&body body)
   `(with-call/cc
      ,@body))
 
-(defgeneric move (controller player-state move-type choices &rest args))
-(defmethod move (controller player-state move-type choices &rest args)
-  (declare (ignore args))
-  (random-choice choices))
 
 (defun validate-choice (choices choice)
   (acond ((and (not choice) (member nil (choices-list choices)))
@@ -19,7 +30,7 @@
 	 ((and choice (find choice (choices-list choices) :test 'equalp))
 	  it)
 	 (t
-	  (error "Forbidden move ~A: choose from ~A" choice choices))))
+	  'invalid-choice)))
 
 (defgeneric choices-list (choice))
 (defgeneric choices-list-form (first &rest rest))
@@ -44,52 +55,16 @@
   (random-elt (choices-list choices)))
 
 (eval-always
-  (defgeneric game-vars (obj) (:method-combination append))
-  (defgeneric secret-game-vars (obj) (:method-combination append))
   (defgeneric play (game)))
 
-(defmacro defgameclass (name-and-options &rest slots)
-  (let ((name (force-first name-and-options)))
-    (flet ((slot-to-cons (slot)
-	     `(cons 
-	       ,(or (getf (rest (force-rest slot)) :documentation) (symbol-name (force-first slot)))
-	       (,(intern (strcat name '- (force-first slot))) ,name))))
-      `(eval-always 
-	 (defmystruct ,name-and-options
-	     ,@(mapcar (lambda(s)
-			 (destructuring-bind (name &optional initform &rest args)
-			     (force-list s)
-			   `(,name ,initform
-				   ,@(let ((n (copy-list args))) 
-					  (remf n :secret)
-					  (remf n :documentation)
-					  n)))) slots))
-
-	 (defmethod game-vars append ((,name ,name))
-	   (list
-	    ,@(loop for slot in slots 
-		    unless (getf (rest (force-rest slot)) :secret) 
-		    collect (slot-to-cons slot))))
-	 (defmethod secret-game-vars append ((,name ,name))
-	   (list
-	    ,@(loop for slot in slots 
-		    when (getf (rest (force-rest slot)) :secret) 
-		    collect (slot-to-cons slot))))
-	 (find-class ',name)))))
-
 (defgeneric game-name (game))
-
-(defgameclass game
-    game-over
-    players
-  other-listeners)
 
 (my-defun game finished (winner)
   (setf (my game-over) t)
   (my announce :game-over :player winner)
   (values))
 
-(defgameclass player
+(defmyclass player
     controller
   game
   waiting-for-input)
@@ -112,12 +87,16 @@
 (my-defun player name ()
   (player-controller-name (my controller)))
 
+(defstruct game-generator
+  make-game
+  unassigned-controllers-waiting)
+
 (eval-always (defvar *games* (make-hash-table :test 'equalp)))
   
 (defmacro defgame (name superclasses slots defplayer &rest options)
-  (let ((friendly-name (or (getf options :documentation) (symbol-name name))))
+  (let ((game-name-string (force-byte-vector (or (getf options :documentation) (string-capitalize (symbol-name name))))))
     (flet ((defgameclass-form (name superclasses options slots)
-	     `(defgameclass (,name 
+	     `(defmyclass (,name 
 			   ,@(mapcar (lambda(c) `(:include ,c)) 
 				     superclasses)
 			   ,@options)
@@ -127,7 +106,9 @@
 	defplayer
       (assert (eq 'defplayer defplayer-sym))
       `(eval-always
-	 (setf (gethash (force-byte-vector ,friendly-name) *games*) (lambda(controllers)
+	 (setf (gethash ,game-name-string *games*) 
+	       (make-game-generator
+		:make-game (lambda(controllers)
 						  (let ((game (,(intern (strcat 'make- name)))))
 						    (let ((players 
 							   (mapcar (lambda(c) 
@@ -135,7 +116,7 @@
 								       :game game 
 								       :controller c)) controllers)))
 						      (setf (game-players game) players))
-						    game)))
+						    game))))
 	 ,(defgameclass-form (intern (strcat name '-player)) 
 			     (or df-superclasses (list 'player))
 			     df-options
@@ -144,23 +125,30 @@
 			     (or superclasses (list 'game))
 			     options
 			     slots)
-
 	 (defmethod game-name ((,name ,name))
-	   (force-byte-vector ,friendly-name)))))))
+	   ,game-name-string))))))
 
-(defmacro defrules (game func lambda-list &body body)
-  `(eval-always
-     (with-call/cc
-       (my-defun ,game ,func ,lambda-list ,@body))))
+(my-defun game generator ()
+  (gethash (my name) *games*))
+
+(defun find-game-generator (game-name)
+  (gethash (force-byte-vector game-name) *games*))
 
 (defrules game secret-move (type player choices &rest args)
   (check-type type keyword)
   (let ((ret (call/cc 
 	      (lambda(cc)
-		(apply 'move-continuation cc (player-controller player) player type choices 
+		(apply 'move-continuation 
+		       (lambda(&rest a)
+			 (unless (my game-over)
+			   (apply cc a)))
+		       (player-controller player) player type choices 
 		       args)
 		'with-call/cc))))
-    (validate-choice choices ret)))
+    (let ((vc (validate-choice choices ret)))
+      (when (eq vc 'invalid-choice)
+	(error "invalid choice picked ~A from ~A" ret choices))
+      vc)))
 
 (defrules game move (type player choices &rest args)
   (debug-assert (not (player-waiting-for-input player)))
@@ -171,5 +159,22 @@
     (setf (player-waiting-for-input player) nil)
     ret))
 
-(defun launch-game (game players)
-  (play (funcall (gethash (force-byte-vector game) *games*) players)))
+(defun launch-game (game-name players)
+  (play (funcall (game-generator-make-game (find-game-generator game-name)) players)))
+
+
+(my-defun game talk (sender text)
+  (my announce :talk :sender sender :text text))
+
+(my-defun game resign (player-controller)
+  (let ((p (find player-controller (my players) :key 'player-controller)))
+    (when p
+      (my announce :resigned player-controller)
+      (deletef p (my players))
+      (when (eql 1 (length (my players)))
+	(my finished (first (my players)))))))
+
+
+(defrules game new-state ()
+  (my announce :new-state)
+  (loop for p in (my players) do (my secret-move :ready-to-play p '(:one t))))

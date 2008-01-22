@@ -9,11 +9,13 @@
 (defgame truc ()
   (stake ordered-winners)
   (defplayer ()
-      ((cards nil :secret t)
+      ((cards nil)
        (wins 0)
        (stack 0)
        chosen-card
        (folded nil))))
+
+
 
 (my-defun truc-player shuffle-init ()
   (setf (my cards) nil)
@@ -60,16 +62,8 @@
 	  (truc-player-shuffle-init player)
 	  (setf (its cards player) (subseq shuffle 0 3))
 	  (setf shuffle (subseq shuffle 3))))
-  (setf (my players) (random-shuffle (my players)))
-  (my announce :new-state))
+  (setf (my players) (random-shuffle (my players))))
 
-
-(defrules truc deal ()
-  (loop do
-	(my shuffle)
-	while
-	(loop for player in (reverse (my players))
-	      always (my move :reject-cards player :boolean))))
 
 (my-defun truc too-few-players ()
   (let ((active-players (filter (lambda(p)(not (its folded p))) (my players)))) 
@@ -83,7 +77,7 @@
 	do
 	(when (> +truc-winning-stack+ (+ (its stack player) (my stake)))
 	  (let ((new-stake 
-		 (my move :select-new-stake player `(:integer ,(my stake) ,(1+ +truc-winning-stack+)))))
+		 (my move :select-new-stake player `(:integer ,(my stake) ,(1+ (min (* 2 (my stake)) +truc-winning-stack+))))))
 	    (when (> new-stake (my stake))
 	      (loop for p in (my players)
 		    do (unless 
@@ -105,6 +99,7 @@
 (defrules truc play-rubber ()
   (loop do
 	(my shuffle)
+	(my new-state)
 	while
 	(loop for player in (reverse (my players))
 	      always (my move :reject-cards player :boolean)))

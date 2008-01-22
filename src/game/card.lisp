@@ -1,7 +1,8 @@
 (in-package #:tpd2.game)
 
-(defconstant +suits+ '(:clubs :hearts :spades :diamonds))
-(defconstant +cards-per-suit+ 13)
+(eval-always
+  (defconstant +suits+ '(:clubs :hearts :spades :diamonds))
+  (defconstant +cards-per-suit+ 13))
 
 (defstruct card 
   (suit :clubs :type  #.`(member ,@+suits+))

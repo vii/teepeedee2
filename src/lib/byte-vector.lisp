@@ -14,7 +14,7 @@
 	      #+sbcl (when (> c 127)
 		       (return-from encode (babel:string-to-octets str :encoding :utf-8)))
 	      (setf (aref vec i) (char-code s))))
-	    vec)))
+      vec)))
 
 
 (def-if-unbound defun-consistent byte-vector-to-string (vec)
@@ -24,6 +24,7 @@
   (declare (optimize speed (safety 0)))
   (typecase val
     (null #.(make-byte-vector 0))
+    (simple-string (utf8-encode val))
     (string (utf8-encode val))
     (character (utf8-encode (string val)))
     (byte-vector val)
@@ -31,6 +32,19 @@
     (t (utf8-encode (force-string val)))))
 
 (declaim (ftype (function (t) byte-vector) force-byte-vector-consistent-internal))
+
+(defun-consistent force-simple-byte-vector (val)
+  (declare (optimize speed (safety 0)))
+  (let ((val (force-byte-vector val)))
+    (etypecase val
+      (simple-byte-vector val)
+      (byte-vector 
+       (let ((ret (make-byte-vector (length val))))
+	 (replace ret (the (and byte-vector (not simple-byte-vector)) val))
+	 ret)))))
+
+(declaim (ftype (function (t) simple-byte-vector) force-simple-byte-vector-consistent-internal))
+
 
 (defmacro with-pointer-to-vector-data ((ptr lisp-vector) &body body)
   (check-symbols ptr)
@@ -58,6 +72,22 @@
 	      (incf i (length v)))
 	ret))))
 (declaim (inline byte-vector-cat))
+
+(defun concatenate-simple-byte-vectors (args)
+  (declare (optimize speed (safety 0)))
+  (let ((len 0))
+    (declare (type fixnum len))
+    (loop for x in args do 
+	  (incf len (length (the simple-byte-vector x))))
+    (let ((ret (make-byte-vector len)) (i 0))
+      (declare (type fixnum i))
+      (loop for x in args do 
+	    (loop for c across (the simple-byte-vector x) do
+		  (setf (aref ret i) c)
+		  (incf i)))
+      ret)))
+(declaim (inline concatenate-simple-byte-vectors))
+
 
 (defconstant +byte-to-digit-table+
   (make-array 256 :element-type '(integer -1 36) 
@@ -101,6 +131,22 @@
 
 
 (defun byte-to-ascii-upper (x)
+  (declare (optimize speed (safety 0)))
+  (declare (type (unsigned-byte 8) x))
   (if (and (>= x (char-code #\a)) (<= x (char-code #\z)))
       (+ (- (char-code #\A) (char-code #\a)) x)
       x))
+(declaim (inline byte-to-ascii-upper))
+(declaim (ftype (function ((unsigned-byte 8)) (unsigned-byte 8)) byte-to-ascii-upper))
+
+(defun eql-fold-ascii-case (a b)
+  (declare (optimize speed (safety 0)))
+  (= (byte-to-ascii-upper a) (byte-to-ascii-upper b)))
+(declaim (inline eql-fold-ascii-case))
+
+(defun byte-vector=-fold-ascii-case (a b)
+  (declare (optimize speed (safety 0)))
+  (and (= (length a) (length b))
+       (loop for i from 0 below (length a)
+	     always (eql-fold-ascii-case (aref a i) (aref b i)))))
+(declaim (inline byte-vector=-fold-ascii-case))

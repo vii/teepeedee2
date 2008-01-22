@@ -12,7 +12,10 @@
 		(check-symbols con-var)
 		`(funcall (simple-io-function ,func) ,con-var ,@args)))
      (flet ((hangup (con)
-	      (declare (ignore con))))
+	      (declare (ignore con)))
+	    (reset-timeout (con timeout)
+	      (declare (ignore con timeout))))
+       (declare (ignorable #'hangup #'reset-timeout))
        ,@body)))
 
 (defmacro defun-simple-io (name lambda-list &body body)
@@ -36,6 +39,7 @@
   (loop for buf in (sendbuf-head sendbuf)
 	do (write-string (force-string buf) stream))
   (values))
+
 
 (defmacro defprotocol (name (con-var &rest args) &body body)
   (check-symbols con-var name)

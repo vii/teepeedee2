@@ -1,13 +1,16 @@
 (in-package #:tpd2.ml)
 
-(defun-consistent js-to-string (form)
+(defun-consistent js-to-string-func (form)
   (ps:ps* form))
+
+(defmacro js-to-string (&body body)
+  `(js-to-string-func (superquote (progn ,@body))))
 
 (defmacro js-html-script (&body body)
   `(tpd2.ml.html:<script :type "text/javascript" 			  
 			 (output-ml-comment
 			  #\Newline
-			  (js-to-string (superquote (progn ,@body)))
+			  (js-to-string ,@body)
 			  "//"
 			  )))
 
@@ -15,5 +18,5 @@
   `(sendbuf-to-byte-vector 
     (with-sendbuf ()
       "javascript:"
-      (js-to-string (superquote (progn ,@body))))))
+      (js-to-string ,@body))))
 

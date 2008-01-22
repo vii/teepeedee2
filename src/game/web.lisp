@@ -1,48 +1,40 @@
 (in-package #:tpd2.game)
 
-(defmystruct move-state
-    cc
+(defstruct queued-choice
   move-type
-  player-state
-  choices
-  args)
-
-(my-defun move-state game-state ()
-  (player-game (my player-state)))
-
-(defmystruct queued-choice
-    move-type
   choice)
 
-(defstruct (web-state (:constructor %make-web-state))
-  session
-  (id (random 10000000))
-  (announcements (tpd2.io:with-sendbuf ()))
+(defmyclass (web-state (:include simple-channel))
+    frame
+  (announcements nil)
   (waiting-for-input nil)
   (queued-choices nil)
-  game-state
-  resigned)
+  game-state)
 
-(defun make-web-state (&rest args)
-  (let ((state (apply '%make-web-state args)))
-    (push state (session-var (web-state-session state) 'game-states))
-    state))
+(my-defun web-state resigned ()
+  (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
+
 
 (my-defun web-state 'player-controller-name ()
-  (if (my resigned)
-      "(resigned)"
-      (session-username (my session))))
+  (frame-username (my frame)))
 
 (my-defun web-state 'inform :before (game-state message &rest args)
-	  (declare (ignore args))
-	  (setf (my game-state) game-state))
+  (declare (ignore args))
+  (setf (my game-state) game-state))
 
 (my-defun web-state add-announcement (a)
-  (tpd2.io:sendbuf-add (my announcements) a))
+  (appendf (my announcements) (list a))
+  (my notify))
 
 (my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
   (let ((sender (getf args :sender)) (msg (getf args :text)))
-    (my add-announcement (<p :class "message" (player-controller-name sender) ": " (<Q msg)))))
+    (my add-announcement (<p :class "game-talk-message" (player-controller-name sender) ": " (<Q msg)))))
+
+(my-defun web-state 'inform (game-state (message (eql :new-player)) &rest args)
+   (my add-announcement (<p :class "game-message" (player-controller-name (first args)) " has joined the game.")))
+
+(my-defun web-state 'inform (game-state (message (eql :resigned)) &rest args)
+   (my add-announcement (<p :class "game-message" (player-controller-name (first args)) " has resigned.")))
 
 (my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
   (my add-announcement (<p :class "game-message" (player-name (getf args :player)) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
@@ -79,7 +71,8 @@
 
 (my-defun web-state 'inform (game-state message &rest args)
   (my add-announcement 
-      (<p :class "game-message" (format nil "~A ~{~A ~}"  message (mapcar (lambda(a)(if (player-p a) (player-name a) a)) args)))))
+      (<p :class "game-message" 
+	  (format nil "~A ~{~A ~}"  message (mapcar (lambda(a)(if (player-p a) (player-name a) a)) args)))))
 
 (defmethod move-continuation (k (controller web-state) player-state move-type choices &rest args)
   (its add-move-state controller
@@ -89,10 +82,20 @@
 			:choices choices
 			:args args)))
 
+
+(defmethod move-continuation (k (controller web-state) 
+			      player-state 
+			      (move-type (eql :ready-to-play)) choices &rest args)
+  (funcall k t))
+
 (my-defun web-state add-move-state (move-state)
   (appendf (my waiting-for-input)
 	   (list move-state))
-  (my try-to-move))
+  (my try-to-move)
+  (my notify))
+
+(my-defun move-state queue-choice (choice)
+  (web-state-queue-choice (player-controller (my player-state)) (my move-type) choice))
 
 (my-defun web-state queue-choice (move-type choice)
   (appendf (my queued-choices)
@@ -105,149 +108,77 @@
 	(loop for qc in (my queued-choices)
 	      do (when (eql (its move-type qc) (its move-type waiting))
 		   (deletef qc (my queued-choices))
-		   (deletef waiting (my waiting-for-input))
-		   (funcall (its cc waiting) (its choice qc))
-		   (return-from web-state-try-to-move)))))
+		   (unless (eq 'invalid-choice (validate-choice (its choices waiting) (its choice qc)))
+		     (deletef waiting (my waiting-for-input))
+		     (funcall (its cc waiting) (its choice qc))
+		     (my notify)
+		     (return-from web-state-try-to-move))))))
 
-
-(defun standard-page-head (title)
-  (<head
-    (<title "mopoko " (string-downcase (force-string title)))
-    (css-html-style 
-      (<body :font-family "georgia, serif" :margin-left "5%" :margin-right "5%")
-      ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0.1em 0.1em 0.1em 0.1em")
-      (<h1 :font-size "400%" :text-align "right")
-      (".game-message" :font-style "italic")
-      (".change-name" :font-size "75%" :text-align "right")
+(defun webapp-page-head-css ()
+  (css-html-style 
+    (<body :font-family "georgia, serif" :margin-left "5%" :margin-right "5%")
+    ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0.1em 0.1em 0.1em 0.1em")
+    ("body:before" 
+     :display "block" 
+     :content "\"mopoko\""
+     :font-size "400%" 
+     :margin-right "0.5em"
+     :text-align "right")
+    (<input :color "inherit" :background-color "inherit" :border "none" :padding "0 0 0 0" :margin "0 0 0 0")
+    ("input[type=text]" :border-bottom "thin dashed black" :font-style "italic" :font-family "inherit" :font-size "inherit")
+    ("input[type=submit]" :color "blue" :text-decoration "underline" :display "inline" )
+    (".frame" 
+     :color "rgb(188,188,188)")
+    (".header:before"
+     :display "block" 
+     :content "\".com\""
+     :margin-top "-1em"
+     :font-size "200%" 
+     :color "rgb(188,188,188)"
+     :text-align "right")
+    (".game-message" :font-style "italic")
+    (".change-name" :font-size "75%" :text-align "right")
+    (".messages-and-talk"
+     :margin-top "2em" 
+     :margin-left "5em"
+     :text-align "right")
+    ('(strcat ".messages-and-talk > ." tpd2.webapp::+html-class-scroll-to-bottom+) :overflow "auto" :max-height "10em" )
+    (".game-header"  :float "left")
+    (".close-game:before" :content "\"+ \"")
+    (".players"        
+     :float "right"
+     :margin-top "2em"
+     )
+    (".game-header + .messages-and-talk + DIV"
+     :clear "both")
+    (".players > DIV"
+     :padding "0.4em 0.4em 0.4em 0.4em"
+     :float "left"
+     :border-top "2px solid rgb(88,88,88)"
+     )
+    (".separate" 
+     :height "4em"
+     :border-right "2px solid rgb(88,88,88)")
       
-      (".messages-and-talk"
-       :margin-top "2em" 
-       :margin-left "5em"
-       :text-align "right")
-      (".messages-and-talk > .scroll-to-bottom" :overflow "auto" :max-height "15em" )
-      (".game-header"  :float "left")
-      (".close-game:before" :content "\"+ \"")
-      (".players"        
-       :float "right"
-       :margin-top "2em"
-       )
-      (".players > DIV"
-       :padding "0.4em 0.4em 0.4em 0.4em"
-       :float "left"
-       :border-top "2px solid rgb(88,88,88)"
-       )
-      (".separate" 
-       :height "4em"
-       :border-right "2px solid rgb(88,88,88)")
+    (".talk input[type=\"text\"]" :width "60%")))
 
-      (".talk input[type=\"text\"]" :width "60%"))))
-
-(defun standard-page-body-start (title)
-  (declare (ignore title))
-  (<div :class "header"
-	(<h1 "mopoko" (<span :style (css-attrib :color "rgb(188,188,188)")  ".com"))
-	(<div :class "change-name" 
-	      (html-action-form "Your name " ((new-name (session-username (webapp-session))))
-		(setf (session-username (webapp-session)) new-name)
-		(values)))))
-
-(defmacro standard-page ((title) &rest body)
-  (once-only (title)
-    `(with-ml-output
-       (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
-		      " \"http://www.w3.org/TR/html4/loose.dtd\">")
-       (<html
-	 (output-raw-ml
-	  (standard-page-head ,title))
-	 (<body
-	   (output-raw-ml
-	    (standard-page-body-start ,title))
-	   ,@body
-	   (output-raw-ml
-	    (content-game-messages)
-	    (action-script-helper)))))))
-
-(defun handle-challenge (game player-session-id)
-  (with-ml-output
-    (let ((other (find-session player-session-id)))
-      (when other
-	(unless
-	    (loop for pair in (webapp-session-var 'challengers) thereis
-		  (destructuring-bind (g . p)
-		      pair
-		    (when (and (equalp g game) (eql p (session-id other)))
-		      (deletef pair (webapp-session-var 'challengers))
-		      (<h2 "Challenge accepted")
-		      (launch-game game (list (make-web-state :session (webapp-session))
-					      (make-web-state :session other)))
-		      t)))
-	  (<h2 "Challenge issued to " (session-username other))
-	  (pushnew (cons game (session-id (webapp-session))) (session-var other 'challengers) :test 'equalp)))
-      (values))))
-
-(defun content-game-messages ()
-  (<div :class "game-messages"
-	(loop for (g . p) in (webapp-session-var 'challengers) do
-	      (awhen (find-session p)
-		(<p :class "challenge" (session-username it) " wants to play " (string-downcase (force-string g)) ". "
-		    (let-current-values (g p)
-		      (html-action-link "Accept" (handle-challenge g p))))))
-	(if (webapp-session-var 'game-states)
-	    (loop for state in (webapp-session-var 'game-states) do
-		  (output-object-to-ml state))
-	    (<div :class "start-games"
-		  (loop for game being the hash-keys of *games* do
-			(<h2 :class "start-game" (<A :href (page-link (game-start-page game)) "Play " (string-downcase (force-string game)))))))))
+(defun webapp-page-head (title)
+  (<head
+    (<title "mopoko.com " (output-raw-ml title))
+    (output-raw-ml 
+     (<noscript
+       (output-raw-ml 
+	(<meta :http-equiv "refresh" :content (byte-vector-cat "200;" (page-link))))))
+    (output-raw-ml 
+     (webapp-page-head-css)
+     (js-library))))
 
 
-  
-(defactionpage (ml)
-  (standard-page ("") 
-		 (output-raw-ml ml)))
-
+(register-action-page)
 (register-channel-page)
 
-(defun page-start-game (name)
-  (webapp-session)
-  (standard-page ((strcat "Play " (string-capitalize (force-string name))))
-		 (<h4 "Match wits with a robot")
-		 (<ul
-		   (loop for bot in *bots* do
-			 (<li (let-current-values (bot)
-				(html-action-link (player-controller-name bot) 
-				  (launch-game name (list (make-web-state :session (webapp-session)) bot))
-				  (values))))))
-		 (<h4 "Challenge a player ")
-		 (<ul
-		   (loop for session in (list-all-sessions) unless (eql session (webapp-session))
-			 do
-			 (<li 
-			   (let-current-values (session name)
-			     (html-action-link (session-username session)
-			       (handle-challenge name (session-id session)))))))))
-
-(eval-always
-  (defun game-start-page (game-name)
-    (strcat "/play/" (string-downcase (force-string game-name)))))
-
-(defmacro defgamepages ()
-  `(progn 
-     ,@(loop for game being the hash-keys of *games* 
-	     collect
-	     `(defpage ,(game-start-page game) ()
-		(page-start-game ,game)))))
-
-(defgamepages)
-
-
-
-
-
 (defun keyword-to-friendly-string (keyword)
-  (string-capitalize (string-downcase (force-string (match-replace-all "-" " " keyword))) :end 1))
-
-(my-defun move-state queue-choice (choice)
-  (web-state-queue-choice (player-controller (my player-state)) (my move-type) choice))
+  (string-capitalize (string-downcase (force-string (match-replace-all keyword "-" " "))) :end 1))
 
 (my-defun move-state 'object-to-ml ()
   (<div :class "move-state"
@@ -275,10 +206,12 @@
      
 		     (output-raw-ml 
 		      (html-action-form 		     
-		       ""
-		       ((choice (first (choices-list (my choices)))))
-		       (my queue-choice (read-safely-from-string choice))
-		       (values)))))))))
+			  ""
+			  ((choice (first (choices-list (my choices)))))
+			(my queue-choice (read-safely-from-string choice))
+			(values)))))))))
+
+
 
 (my-defun game 'object-to-ml ()
   (<div :class "players"
@@ -290,71 +223,85 @@
 	  
 
 (my-defun game 'object-to-ml :around ()
-   (if (my game-over)
-     (<p "Game over.")
-     (call-next-method)))
+	  (if (my game-over)
+	      (<p "Game over.")
+	      (call-next-method)))
 
 (defun current-web-controller (controller)
   (and (web-state-p controller)
-       (eql *webapp-session* (web-state-session controller))))
+       (eql *webapp-frame* (web-state-frame controller))))
 
 (my-defun web-state resign ()
   (without-ml-output
-    (setf (my resigned) t)
-    (deletef me (session-var (my session) 'game-states))))
-  
+    (game-resign (my game-state) me)
+    (my notify)))
+
 (my-defun web-state 'object-to-ml ()
-  (<div :class "game-state"
+  (<div :class "game-state" :id (my id)
+	(output-raw-ml (call-next-method))
 	(<div :class "game-header"
 	      (<h2 :class "game-title"
 		   (string-capitalize (force-string (game-name (my game-state)))))
 
-	      (when (its game-over (my game-state))
-		(<p :class "close-game"		
-		  (loop for controller in (mapcar 'player-controller (its players (my game-state))) do
-			(unless (current-web-controller controller)
-			  (let-current-values (controller)
-			    (html-action-link "Close and play again."
-			      (without-ml-output
-				(my resign)
-			      (typecase controller
-				(web-state (handle-challenge (game-name (my game-state)) (session-id (web-state-session controller))))
-				(t (launch-game (game-name (my game-state)) (list (make-web-state :session (webapp-session)) controller)))
-				))))))))
-
-	      (<p :class "close-game" 
-		  (html-action-link "Close game."
-		    (my resign))))
+	      (<p :class "close-game"		
+		  (cond ((its game-over (my game-state))
+			 (html-replace-link "Play again."
+			   (web-game-start (game-generator (my game-state)))))
+			(t
+			 (html-action-link "Resign."
+			   (my resign))))))
 
 	(<div :class "messages-and-talk"
-	  (<div :class "scroll-to-bottom"
-		(output-raw-ml
-		 (tpd2.io:sendbuf-to-byte-vector (my announcements))))
-	  (<div :class "talk"
-		(html-action-form "Talk " 
-		  (text)
-		  (without-ml-output
-		    (game-announce (my game-state) :talk :sender me :text text)))))
+	      (<div :class tpd2.webapp::+html-class-scroll-to-bottom+
+		    (output-object-to-ml (my announcements)))
+	      (<div :class "talk"
+		    (html-action-form "Talk " 
+			(text)
+		      (without-ml-output
+			(game-talk (my game-state) me text)
+			))))
 	
+	(when (my resigned)
+	  (<p "Resigned."))
 
-	(output-object-to-ml (my game-state))
-	
-	(when (my waiting-for-input)
-	  (<div :class "moves"
-		(loop for m in (my waiting-for-input)
-		      do 
-		      (output-object-to-ml m))))))
+	(unless (my resigned)
+	  (output-object-to-ml (my game-state))
+	  
+	  (when (my waiting-for-input)
+	    (<div :class "moves"
+		  (loop for m in (my waiting-for-input)
+			do 
+			(output-object-to-ml m)))))))
 
-(defpage "/" ()
-  (standard-page ("start")))
-
-	    
 (my-defun player 'object-to-ml ()
   (<div :class "player"
 	(<h3 (my name) (when (my waiting-for-input)
-	  (<span :class "turn" "'s turn")))))
+			 (<span :class "turn" "'s turn")))))
 
 (defmethod player-controller-message ((controller web-state) sender message)
   (web-state-add-announcement controller
-			      (<p :class "message" (<span :class "sender" (session-username sender))
+			      (<p :class "message" (<span :class "sender" (frame-username sender))
 				  " " message)))
+
+(defun webapp-play-bot (game-name bot)
+  (let ((game-state
+	 (make-web-state :frame (webapp-frame))))
+    (launch-game game-name (list bot game-state))
+    (webapp ()
+     (webapp-display game-state))))
+
+(defun web-game-start (game-generator)
+  (let ((c (make-web-state :frame (webapp-frame))))
+    (game-generator-join-or-start game-generator c)
+    (webapp ""
+      (webapp-display c))))
+
+(defpage "/" ()
+  (webapp ""
+    (webapp-select-one ""
+		       (loop for game-name being the hash-keys of *games* collect game-name)
+		       :display (lambda(g) (output-raw-ml 
+				       "Play " g))
+		       :replace
+		       (lambda(game-name)
+			 (web-game-start (find-game-generator game-name))))))

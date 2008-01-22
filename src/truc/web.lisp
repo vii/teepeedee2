@@ -37,14 +37,26 @@
 				    (t (output-raw-ml (output-object-to-ml (make-card-from-number card))))))
 			".")))))
 
-(progn
-  (eval-when (:execute)
-    (eval '(tpd2.game::defgamepages)))
+(defmacro preserve-specials (specials &body body)
+  (let ((tmps (mapcar (lambda(x)(gensym (symbol-name x))) specials)))
+    `(let ,(loop for s in specials
+		 for m in tmps
+		 collect `(,m ,s))
+       (macrolet ((with-restored-specials (&body body)
+		  `(let ,',(loop for s in specials
+				 for m in tmps
+				 collect `(,s ,m))
+		     ,@body)))
+	 ,@body))))
 
+(progn
   (let ((socket (tpd2.io:make-con-listen :port 8888)))
     (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
-  (let ((trace-output *trace-output*))
+
+  #+sbcl
+  (preserve-specials (*trace-output* *standard-output* *error-output* *debug-io* swank::*emacs-connection*)
     (sb-thread:make-thread 
-     (lambda() (let ((*trace-output* trace-output))
-	    (tpd2.io:event-loop)))
+     (lambda() 
+       (with-restored-specials
+	   (tpd2.io:event-loop)))
      :name "EVENT-LOOP")))

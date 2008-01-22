@@ -13,6 +13,9 @@
 (defvar *timeouts* (make-quick-queue))
 (defvar *timeout-started* nil)
 
+(my-defun timeout remaining ()
+  (max (- (my time) (get-universal-time)) 0))
+
 (my-defun timeout due (time)
   (>= time (my time)))
 

@@ -1,6 +1,7 @@
 (in-package #:tpd2.webapp)
 
-(defconstant +webapp-session-id-param+ (force-byte-vector "*webapp-session*"))
+(defvar *webapp-frame* nil)
+(defconstant +webapp-frame-id-param+ (force-byte-vector ".webapp-frame."))
 
 (defconstant +web-safe-chars+ 
   (force-byte-vector 
@@ -22,40 +23,49 @@
 				  :test 'byte-vector=-fold-ascii-case)
 		       ,value))))
 
-(defmacro with-webapp-session ((params) &body body)
+(defmacro with-webapp-frame ((params) &body body)
   (check-symbols params)
-  `(let ((*webapp-session*
-	  (awhen (cdr-assoc ,params +webapp-session-id-param+ :test 'byte-vector=-fold-ascii-case)
-	    (find-session it))))
+  `(let ((*webapp-frame*
+	  (awhen (cdr-assoc ,params +webapp-frame-id-param+ :test 'byte-vector=-fold-ascii-case)
+	    (find-frame it))))
      ,@body))
 
 
 (defmacro apply-page-call (function &rest args)
   (let* ((defaulting-lambda-list (car (last args)))
 	 (normal-args (butlast args)))
-    `(with-webapp-session (all-http-params)
+    `(with-webapp-frame (all-http-params)
        (funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 'all-http-params defaulting-lambda-list)))))
 
+(defmacro defpage-lambda (path function defaulting-lambda-list)
+  `(dispatcher-register-path *default-dispatcher* ,path
+			     (lambda(dispatcher con done path all-http-params)
+			       (declare (ignore dispatcher path))
+			       (respond-http con done :body (apply-page-call ,function ,defaulting-lambda-list)))))
+
 (defmacro defpage (path defaulting-lambda-list &body body)
-  (let ((normal-func-name (intern (strcat 'page- path))))
+  (let ((normal-func-name (intern (strcat 'page- 
+					  (typecase path
+					    ((or string byte-vector) path)
+					    (t ()))))))
     `(progn
        (defun ,normal-func-name (&key ,@defaulting-lambda-list)
 	 ,@body)
-       (dispatcher-register-path *default-dispatcher* ,path
-				 (lambda(dispatcher con done path all-http-params)
-				   (declare (ignore dispatcher path))
-				   (respond-http con done :body (apply-page-call ',normal-func-name ,defaulting-lambda-list))))
-	 ',normal-func-name)))
+       (defpage-lambda 
+	   ,path ',normal-func-name ,defaulting-lambda-list)
+       ',normal-func-name)))
 
-(defmacro page-link (page &rest args)
+(defmacro page-link (&optional (page '+action-page-name+) &rest args)
   `(sendbuf-to-byte-vector
     (with-sendbuf (sendbuf)
       ,page
-      "?"
-      +webapp-session-id-param+
+      "?.unique.="
+      (random-web-sparse-key 4)
+      "&"
+      +webapp-frame-id-param+
       "="
-      (awhen *webapp-session*
-	(session-id it))
+      (awhen *webapp-frame*
+	(frame-id it))
       ,@(loop for (param val) on args by #'cddr
 	      collect "&"
 	      collect (symbol-name param)
