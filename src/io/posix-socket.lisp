@@ -38,8 +38,6 @@
 	    (-1 nil)
 	    (t s))))
 
-
-
 (defmethod socket-accept ((fd integer))
   (cffi:with-foreign-object (sa 'sockaddr_in)
     (cffi:with-foreign-object (len :int)

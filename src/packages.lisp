@@ -150,7 +150,8 @@
 
    #:make-con-connect
    #:make-con-listen
-
+   #:con-dead?
+   
    #:+newline+
 
    #:event-loop

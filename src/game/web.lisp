@@ -176,7 +176,7 @@
   (<span :class "username" (frame-username (my frame))))
 
 (my-defun web-state 'object-to-ml ()
-  (<div :class "game-state" :id (my id)
+  (<div :class "game-state" 
 	(output-raw-ml (call-next-method))
 	(<div :class "game-header"
 	      (<h2 :class "game-title"
@@ -184,10 +184,10 @@
 
 	      (<p :class "close-game"		
 		  (cond ((its game-over (my game-state))
-			 (html-replace-link "Play again."
+			 (html-replace-link "Play again"
 			   (web-game-start (game-generator (my game-state)))))
 			(t
-			 (html-action-link "Resign."
+			 (html-action-link "Resign"
 			   (my resign))))))
 
 	(<div :class "messages-and-talk"

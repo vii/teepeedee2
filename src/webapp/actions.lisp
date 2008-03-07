@@ -63,7 +63,7 @@
 
 
 (my-defun frame 'object-to-ml ()
-  (<div :class "frame" :id (my id)
+  (<div :class "frame"
 	(<div :class "change-name" 
 	      (html-action-form "Your name " ((new-name (my username)))
 		(setf (my username) new-name)

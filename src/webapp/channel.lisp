@@ -56,7 +56,7 @@
 (defun channel-respond (con done &key .channels.)
   (let ((channel-states (channel-string-to-states .channels.)))
     (flet ((finished () 
-	     (unless (tpd2.io::con-socket con)
+	     (when (con-dead? con)
 	       (return-from finished t))
 	     (awhen (channel-respond-body channel-states)
 	       (respond-http con done :body it)

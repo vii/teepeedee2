@@ -11,7 +11,7 @@
   (deletef message (my list)))
 
 (my-defun list-channel 'object-to-ml ()
-  (<div :id (my id) 
+  (<div :class "list-channel"
 	(loop for x in (reverse (my list)) do
 	      (output-object-to-ml x))
 	(output-raw-ml (call-next-method))))

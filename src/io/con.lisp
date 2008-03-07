@@ -36,7 +36,7 @@
 (defmethod normal-connection-error ((e socket-error))
   t)
 (defmethod normal-connection-error ((e match-failed))
-   t)
+  t)
 (defmethod normal-connection-error ((e syscall-failed))
   t)
 
@@ -133,3 +133,6 @@
 (my-defun con when-ready-to-read (&optional callback)
   (my-declare-fast-inline)
   (my when-ready (logior +POLLIN+ +POLLRDHUP+) callback))
+
+(my-defun con dead? ()
+  (not (my socket)))
