@@ -73,3 +73,6 @@
 	   (debug-assert-skip ()
 	     :report "Accept that the assertion will fail this time and continue"
 	     (return-from ,block 'debug-assert-skip)))))))
+
+(defmacro debug-unreachable ()
+  `(debug-assert (not 'reached-here)))

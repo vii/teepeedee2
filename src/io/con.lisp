@@ -81,14 +81,16 @@
     ((sendbuf-done sendbuf)
      (funcall done))
     (t
-     (sendbuf-send sendbuf me #'my-call))))
+     (if (socket-supports-writev (my socket))
+	 (sendbuf-send-writev sendbuf me #'my-call)
+	 (sendbuf-send-write sendbuf me #'my-call)))))
 
 (my-defun con 'accept (done)
   (acond 
       ((socket-accept (my socket))
        (funcall done it))
       (t
-       (socket-when-ready-to-read (my socket) me #'my-call))))
+       (my when-ready-to-read #'my-call))))
 
 (my-defun con 'hangup ()
   (timeout-cancel (my timeout))
@@ -117,3 +119,17 @@
 		     :socket-family socket-family
 		     :socket-type socket-type)))
 
+(my-defun con when-ready (events &optional callback)
+  (my-declare-fast-inline)
+  (when callback
+    (my set-callback callback))
+  (socket-register (my socket) events me)
+  (values))
+
+(my-defun con when-ready-to-write (&optional callback)
+  (my-declare-fast-inline)
+  (my when-ready +POLLOUT+ callback))
+
+(my-defun con when-ready-to-read (&optional callback)
+  (my-declare-fast-inline)
+  (my when-ready (logior +POLLIN+ +POLLRDHUP+) callback))

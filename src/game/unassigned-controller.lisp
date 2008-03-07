@@ -68,4 +68,5 @@
 
 
 (my-defun unassigned-controller 'inform (game-state (message (eql :game-over)) &rest args)
+  (declare (ignore args))
   (my del))

@@ -38,14 +38,15 @@
 					       :components (
 							    (:file "peer-info")
 							    (:file "socket")
-							    (:file "recvbuf" :depends-on ("posix-socket"))
-							    (:file "sendbuf" :depends-on ("posix-socket"))
-							    (:file "posix-socket" :depends-on ("syscalls" "socket"))
+							    (:file "recvbuf" :depends-on ("socket"))
+							    (:file "sendbuf" :depends-on ("socket" "syscalls"))
+							    (:file "posix-socket" :depends-on ("syscalls" "socket" "con"))
 							    (:file "con" :depends-on ("peer-info" "sendbuf" "recvbuf"))
 							    (:file "mux" :depends-on ("con"))
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
-							    (:file "protocol" :depends-on ("socket"))))
+							    (:file "protocol" :depends-on ("socket"))
+							    (:file "repeater" :depends-on ("con" "protocol"))))
 
 				     (:module :http
 					      :depends-on (:lib :io)

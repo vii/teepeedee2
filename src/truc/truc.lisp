@@ -130,7 +130,7 @@
 
 (my-defun truc 'play ()
   (with-game
-    (loop until (loop for p in (my players) thereis 
+    (loop until (loop for p in (my players) until 
 		      (when (<= +truc-winning-stack+ (its stack p)) 
 			(my finished p)
 			t))

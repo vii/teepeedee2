@@ -5,6 +5,15 @@
   (read-idx 0 :type (integer 0 #x1000000))
   (write-idx 0 :type (integer 0 #x1000000)))
 
+(my-defun recvbuf half-full-or-more ()
+  (my-declare-fast-inline)
+  (or (>= (* 2 (- (my write-idx) (my read-idx))) (my len))
+      (my full)))
+
+(my-defun recvbuf empty ()
+  (my-declare-fast-inline)
+  (= (my read-idx) (my write-idx)))
+
 (my-defun recvbuf len ()
   (my-declare-fast-inline)
   (length (my store)))
@@ -35,23 +44,39 @@
 	 (decf (my write-idx) (my read-idx))
 	 (setf (my read-idx) 0))))))
 
-(my-defun recvbuf recv (con done)
-  (declare (optimize speed))
+(my-defun recvbuf recv (con &optional done)
+  (my-declare-fast-inline)
   (let ((s
 	 (socket-read (con-socket con)
 		      (make-displaced-vector (my store) :start (my write-idx)))))
     (cond 
       (s
 	(incf (my write-idx) s)
-	(funcall done))
+	(when done
+	  (funcall done))
+	s)
       (t
-       (socket-when-ready-to-read (con-socket con) con #'my-call)))))
+       (when done
+	 (con-when-ready-to-read con #'my-call))
+       nil))))
+
+(my-defun recvbuf sync ()
+  (my-declare-fast-inline)
+  (when (my empty)
+    (setf (my write-idx) 0)
+    (setf (my read-idx) 0))
+  (values))
+
+(my-defun recvbuf peek ()
+  (my-declare-fast-inline)
+  (make-displaced-vector (my store) :start (my read-idx) :end (my write-idx)))
 
 (my-defun recvbuf eat-to-idx (&optional (ending (recvbuf-write-idx recvbuf)))
   (my-declare-fast-inline)
   (prog1
       (make-displaced-vector (my store) :start (my read-idx) :end ending)
-    (setf (my read-idx) ending)))
+    (setf (my read-idx) ending)
+    (my sync)))
 
 (my-defun recvbuf eat (amount)
   (my-declare-fast-inline)
@@ -74,7 +99,8 @@
     (when ending
       (prog1 
           (my eat-to-idx ending)
-        (incf (my read-idx) (length delimiter))))))
+        (incf (my read-idx) (length delimiter))
+	(my sync)))))
 
 (my-defun recvbuf 'print-object (stream)
   (print-unreadable-object (me stream :type t :identity t)

@@ -208,3 +208,15 @@
   `(let ,(loop for v in vars collect `(,v ,v))
      ,@body))
 
+
+(defmacro with-preserve-specials (specials &body body)
+  (let ((tmps (mapcar (lambda(x)(gensym (symbol-name x))) specials)))
+    `(let ,(loop for s in specials
+		 for m in tmps
+		 collect `(,m ,s))
+       (macrolet ((with-specials-restored (&body body)
+		  `(let ,',(loop for s in specials
+				 for m in tmps
+				 collect `(,s ,m))
+		     ,@body)))
+	 ,@body))))

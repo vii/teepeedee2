@@ -28,7 +28,9 @@
   `(let ((*webapp-frame*
 	  (awhen (cdr-assoc ,params +webapp-frame-id-param+ :test 'byte-vector=-fold-ascii-case)
 	    (find-frame it))))
-     ,@body))
+     (frame-reset-timeout (webapp-frame))
+     (locally
+	 ,@body)))
 
 
 (defmacro apply-page-call (function &rest args)

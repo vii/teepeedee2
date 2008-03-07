@@ -100,10 +100,27 @@
 (def-simple-syscall close
     (fd :int))
 
+(defconstant +SIG_IGN+ (cffi:make-pointer 1))
+(defconstant +SIG_DFL+ (cffi:make-pointer 0))
+(defconstant +SIGPIPE+ 13)
+
+(cffi:defcfun ("signal" syscall-signal)
+      :pointer
+  (signum :int) 
+  (action :pointer)) 
+
 (def-simple-syscall read
     (fd :int)
   (buf :pointer)
   (size :unsigned-long))
+
+(def-simple-syscall recvfrom
+    (fd :int)
+  (buf :pointer)
+  (size :unsigned-long)
+  (flags :int)
+  (address :pointer)
+  (address-len :pointer))
 
 (def-simple-syscall write
     (fd :int)
@@ -114,6 +131,14 @@
     (fd :int)
   (iov :pointer)
   (iovcnt :int))
+
+(def-simple-syscall sendto
+    (fd :int)
+  (buf :pointer)
+  (size :unsigned-long)
+  (flags :int)
+  (address :pointer)
+  (address-len :pointer))
 
 (def-simple-syscall sendfile
     (out_fd :int)
@@ -131,10 +156,8 @@
   (cmd :int)
   (arg :long))
 
-(defun wrap-syscall-accept (sockfd sa)
-  (cffi:with-foreign-object (len :int)
-    (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
-    (syscall-accept sockfd sa len)))
+
+
 
 (defconstant +O_NONBLOCK+ #x800)
 (defconstant +F_GETFL+ 3)
@@ -385,6 +408,12 @@
 	   (syscall-listen fd 1024))
 	 args))
 
+(defun make-bind-socket (&rest args)
+  (apply 'new-socket-helper :action 
+	 (lambda(fd sa len)
+	   (syscall-bind fd sa len))
+	 args))
+
 (defun make-connect-socket (&rest args)
   (apply 'new-socket-helper 
 	 :action 'syscall-connect
@@ -469,4 +498,3 @@
 (cffi:defcstruct epoll-event
   (events :uint32)
   (data epoll-data))
-

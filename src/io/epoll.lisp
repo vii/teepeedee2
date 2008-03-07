@@ -88,10 +88,12 @@
     (my wait timeout)))
 
 (defun event-loop ()
+  (syscall-signal +SIGPIPE+ +SIG_IGN+)
   (loop for timeout = (next-timeout)
 	while (or timeout (events-pending-p)) do
 	(wait-for-next-event timeout)))
 
 (defun event-loop-reset ()
+  (mux-close-all *global-epoll*)
   (setf *global-epoll*
 	(make-epoll)))

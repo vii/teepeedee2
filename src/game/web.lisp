@@ -15,8 +15,8 @@
   (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
 
 (my-defun web-state 'inform :before (game-state message &rest args)
-  (declare (ignore args))
-  (setf (my game-state) game-state))
+	  (declare (ignore args))
+	  (setf (my game-state) game-state))
 
 (my-defun web-state add-announcement (a)
   (appendf (my announcements) (list a))
@@ -24,41 +24,41 @@
 
 (my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
   (let ((sender (getf args :sender)) (msg (getf args :text)))
-    (my add-announcement (<p :class "game-talk-message" (output-raw-ml (player-controller-name-to-ml sender)) ": " (<Q msg)))))
+    (my add-announcement (<p :class "game-talk-message" (player-controller-name-to-ml sender) ": " (<Q msg)))))
 
 (my-defun web-state 'inform (game-state (message (eql :new-player)) &rest args)
-   (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (first args))) " has joined the game.")))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has joined the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :resigned)) &rest args)
-   (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (first args))) " has resigned.")))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has resigned.")))
 
 (my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
-  (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :reject-cards)) &rest args)
-  (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player))))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
 			   (if (getf args :choice) " wants to change cards."
 			       " is satisfied with the cards."))))
 
 (my-defun web-state 'inform (game-state (message (eql :accept-new-stake)) &rest args)
-  (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player))))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
 			   (if (getf args :choice) " saw the raise."
 			       " folded."))))
 
 (my-defun web-state 'inform (game-state (message (eql :select-new-stake)) &rest args)
   (let ((choice (getf args :choice)))
     (unless (eql choice (its stake game-state))
-      (my add-announcement (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " raised to " choice " chips.")))))
+      (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " raised to " choice " chips.")))))
 
 (my-defun web-state 'inform (game-state (message (eql :winner)) &rest args)
   (my add-announcement 
-      (<p :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " won"
+      (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " won"
 	  (awhen (getf args :chips)
 	    (with-ml-output " " it " chips"))
 	  ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :game-over)) &rest args)
-  (my add-announcement (<h2 :class "game-message" (output-raw-ml (player-controller-name-to-ml (player-controller (getf args :player)))) " won the game.")))
+  (my add-announcement (<h2 :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " won the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
   (declare (ignore args))
@@ -112,68 +112,6 @@
 		     (my notify)
 		     (return-from web-state-try-to-move))))))
 
-(defun webapp-page-head-css ()
-  (css-html-style 
-    (<body :font-family "georgia, serif" :margin-left "5%" :margin-right "5%")
-    ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.03em" :font-weight "normal" :margin "0.1em 0.1em 0.1em 0.1em")
-    ("body:before" 
-     :display "block" 
-     :content "\"mopoko\""
-     :font-size "400%" 
-     :margin-right "0.5em"
-     :text-align "right")
-    (<input :color "inherit" :background-color "inherit" :border "none" :padding "0 0 0 0" :margin "0 0 0 0")
-    ("input[type=text]" :border-bottom "thin dashed black" :font-style "italic" :font-family "inherit" :font-size "inherit")
-    ("input[type=submit]" :color "blue" :text-decoration "underline" :display "inline" )
-    (".frame" 
-     :color "rgb(188,188,188)")
-    (".header:before"
-     :display "block" 
-     :content "\".com\""
-     :margin-top "-1em"
-     :font-size "200%" 
-     :color "rgb(188,188,188)"
-     :text-align "right")
-    (".game-message" :font-style "italic")
-    (".change-name" :font-size "75%" :text-align "right")
-    (".messages-and-talk"
-     :margin-top "2em" 
-     :margin-left "5em"
-     :text-align "right")
-    ('(strcat ".messages-and-talk > ." tpd2.webapp::+html-class-scroll-to-bottom+) :overflow "auto" :max-height "10em" )
-    (".game-header"  :float "left")
-    (".close-game:before" :content "\"+ \"")
-    (".players"        
-     :float "right"
-     :margin-top "2em"
-     )
-    (".game-header + .messages-and-talk + DIV"
-     :clear "both")
-    (".players > DIV"
-     :padding "0.4em 0.4em 0.4em 0.4em"
-     :float "left"
-     :border-top "2px solid rgb(88,88,88)"
-     )
-    (".separate" 
-     :height "4em"
-     :border-right "2px solid rgb(88,88,88)")
-      
-    (".talk input[type=\"text\"]" :width "60%")))
-
-(defun webapp-page-head (title)
-  (<head
-    (<title "mopoko.com " (output-raw-ml title))
-    (output-raw-ml 
-     (<noscript
-       (output-raw-ml 
-	(<meta :http-equiv "refresh" :content (byte-vector-cat "200;" (page-link))))))
-    (output-raw-ml 
-     (webapp-page-head-css)
-     (js-library))))
-
-
-(register-action-page)
-(register-channel-page)
 
 (defun keyword-to-friendly-string (keyword)
   (string-capitalize (string-downcase (force-string (match-replace-all keyword "-" " "))) :end 1))
@@ -276,7 +214,7 @@
 
 (my-defun player 'object-to-ml ()
   (<div :class "player"
-	(<h3 (output-raw-ml (player-controller-name-to-ml (my controller)) )
+	(<h3 (player-controller-name-to-ml (my controller))
 	     (when (my waiting-for-input)
 	       (<span :class "turn" "'s turn")))))
 
@@ -290,13 +228,89 @@
 	 (make-web-state :frame (webapp-frame))))
     (launch-game game-name (list bot game-state))
     (webapp ()
-     (webapp-display game-state))))
+      (webapp-display game-state))))
 
 (defun web-game-start (game-generator)
   (let ((c (make-web-state :frame (webapp-frame))))
     (game-generator-join-or-start game-generator c)
-    (webapp ""
+    (webapp ()
       (webapp-display c))))
+
+(defun webapp-page-head-css ()
+  (css-html-style 
+    ((".inherit" <input <a)
+     :text-decoration "inherit" :color "inherit" :background-color "inherit" :font-size "inherit" :font-weight "inherit"
+     :font-family "inherit" 
+     :border "none" :padding "0 0 0 0" :margin "0 0 0 0")
+    (<body :font-family "georgia, serif" :word-spacing "0.075em" :letter-spacing "0.025em" :margin-left "5%" :margin-right "5%")
+    ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.05em" :font-weight "normal" :margin "0 0 0 0" :padding "0 0 0 0")
+    ((<span <div <h1 <h2 <h3 <h4 <h5 <h6 <p <a <input) :direction "ltr" :unicode-bidi "bidi-override")
+    ("input[type=text]" 
+     :display "inline"
+     :border-bottom "thin dashed black" 
+     :font-style "italic" )
+    (".frame" 
+     :color "rgb(188,188,188)")
+    (".game-message" :font-style "italic")
+    (".change-name" :font-size "75%" :text-align "right")
+    (".messages-and-talk"
+     :margin-top "2em" 
+     :margin-left "5em"
+     :text-align "right")
+    (".robot" :font-style "italic")
+    ('(strcat ".messages-and-talk > ." tpd2.webapp::+html-class-scroll-to-bottom+) 
+      :overflow "auto"      
+      :padding-right "0.5em"
+      :height "10em" )
+    (".game-header"  :float "left")
+    (".close-game:before" :content "\"+ \"")
+    (".players"        
+     :float "right"
+     :margin-top "2em"
+     )
+    (".game-header + .messages-and-talk + DIV"
+     :clear "both")
+    (".players > DIV"
+     :padding "0.4em 0.4em 0.4em 0.4em"
+     :float "left"
+     :border-top "2px solid black"
+     )
+    ("h1.mopoko" :font-size "4em" :text-align "right" :color "rgb(188,188,188)" :margin-bottom "0.333em")
+    (<h2 :font-size "2.5em")
+    (".webapp-section > ul > li" :font-size "2em")
+    (".separate" 
+     :height "4em"
+     :border-right "2px solid black")
+    (".talk input[type=\"text\"]" :width "60%")
+    (("input[type=submit]" <a "[onclick]") 
+     :display "inline" 
+     :text-decoration "none")
+    ("[onclick],a,input[type=submit]" 
+     :background-color "rgb(228,228,228)"
+     :cursor "pointer")))
+
+(defun webapp-page-head (title)
+  (<head
+    (<title "mopoko.com " (output-raw-ml title))
+    (output-raw-ml 
+     (<noscript
+       (output-raw-ml 
+	(<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
+    (output-raw-ml 
+     (webapp-page-head-css)
+     (js-library))))
+
+(defun webapp-page-body-start (title)
+  (declare (ignore title))
+  (<div :class "header"	
+	(<h1 :class "mopoko" 
+	     (<A :href (page-link "/") 
+		 :class "inherit" 
+		 (<span :style (css-attrib :color "black") "mopoko") ".com" ))
+	(output-object-to-ml (webapp-frame))))
+
+(register-action-page)
+(register-channel-page)
 
 (defpage "/" ()
   (webapp ""
@@ -307,3 +321,20 @@
 		       :replace
 		       (lambda(game-name)
 			 (web-game-start (find-game-generator game-name))))))
+
+#.(when (find-package :swank)
+    (push :tpd2-has-swank *features*)
+    nil)
+
+(progn
+  (let ((socket (tpd2.io:make-con-listen :port 8888)))
+    (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
+
+  #+sbcl
+  (with-preserve-specials (*trace-output* *standard-output* *error-output* *debug-io* 
+				     #+tpd2-has-swank swank::*emacs-connection*)
+    (sb-thread:make-thread 
+     (lambda() 
+       (with-specials-restored
+	   (tpd2.io:event-loop)))
+     :name "MOPOKO-EVENT-LOOP")))

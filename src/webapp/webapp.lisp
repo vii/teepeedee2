@@ -4,6 +4,7 @@
   (<div :class "header"	
 	(output-object-to-ml (webapp-frame))
 	(<h1 (output-raw-ml title))))
+
 (defun webapp-page-footer ()
   (with-ml-output
     (output-raw-ml
@@ -42,7 +43,6 @@
   `(let ((,l))
      (setf ,l (lambda()
 		(setf (frame-current-page (webapp-frame)) ,l)
-		(frame-reset-timeout (webapp-frame))
 		(webapp-ml ,title ,@body)))
      ,l)))
 

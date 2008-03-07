@@ -9,6 +9,7 @@
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
   (:export 
+
    #:superquote
    #:superquote-function
    #:unquote
@@ -66,6 +67,8 @@
    #:defun-consistent
    #:make-displaced-vector
    #:let-current-values
+   #:with-preserve-specials
+   #:with-specials-restored
 
    #:read-only-load-time-value
    #:load-time-constantp
@@ -114,7 +117,10 @@
 
    #:debug-assert
    #:debug-assert-skip
+   #:debug-unreachable
 ))
+
+
 
 (defpackage #:teepeedee2.io
   (:nicknames #:tpd2.io)
@@ -148,7 +154,9 @@
    #:+newline+
 
    #:event-loop
-   #:event-loop-reset))
+   #:event-loop-reset
+
+   #:forward-port))
 
 (defpackage #:teepeedee2.http
   (:nicknames #:tpd2.http)
@@ -206,6 +214,7 @@
    #:webapp-display
    #:webapp-page-head-css
    #:webapp-page-head
+   #:webapp-page-body-start
    #:link-to-webapp
 
    #:defpage
@@ -274,13 +283,22 @@
    #:+suits+
    #:+cards-per-suit+
 
+   #:player-controller-name-to-ml
    #:web-state-queue-choice 
    #:current-web-controller
    #:player-controller))
 
+(defpackage #:teepeedee2.sutp
+  (:nicknames #:tpd2.sutp)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io))
+
 
 (defpackage #:teepeedee2.game.truc
   (:nicknames #:tpd2.game.truc)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
+(defpackage #:teepeedee2.game.cheat
+  (:nicknames #:tpd2.game.cheat)
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
 
 (defpackage #:teepeedee2.game.dating

@@ -1,12 +1,18 @@
 (in-package #:tpd2.ml)
 
+(defstruct (raw-ml-sendbuf (:include sendbuf)))
+
 (defun-consistent escape-data (value)
-  (match-replace-all value
-		#\< "&lt;"
-		#\> "&gt;"
-		#\& "&amp;"
-		#\' "&#39;" ; &apos; is *not* HTML but only XML
-		    ))
+  (typecase value
+    (raw-ml-sendbuf
+     value)
+    (t
+     (match-replace-all value
+			#\< "&lt;"
+			#\> "&gt;"
+			#\& "&amp;"
+			#\' "&#39;" ; &apos; is *not* HTML but only XML
+			))))
 
 (defmacro output-escaped-ml (&rest args)
   `(with-ml-output        
@@ -43,7 +49,7 @@
        ((with-ml-output (&body body)
 			`(with-sendbuf-continue (ml-sendbuf)
 			   ,@(mapcan 'with-ml-output-form-to-list body))))
-     (let ((ml-sendbuf (with-sendbuf ())))
+     (let ((ml-sendbuf (make-raw-ml-sendbuf)))
        (with-ml-output ,@body)
        ml-sendbuf)))
 
