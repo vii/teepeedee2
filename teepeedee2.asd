@@ -89,7 +89,7 @@
 							   (:file "controllers" :depends-on ("framework"))
 							   (:file "card")
 							   (:file "unassigned-controller" :depends-on ("controllers"))
-							   (:file "web" :depends-on ("controllers" "unassigned-controller"))))
+							   (:file "web" :depends-on ("card" "controllers" "unassigned-controller"))))
 				     (:module :truc
 					      :depends-on (:game)
 					      :components ( (:file "truc") (:file "web" :depends-on ("truc"))

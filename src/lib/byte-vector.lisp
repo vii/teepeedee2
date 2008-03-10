@@ -18,18 +18,17 @@
 (defmacro with-pointer-to-vector-data ((ptr lisp-vector) &body body)
   (check-symbols ptr)
   (once-only (lisp-vector)
-    (with-unique-names (tmp real-vector offset)
+    (with-unique-names (tmp real-vector offset cffi-ptr)
       `(let ((,tmp))
 	 (multiple-value-bind
 	       (,real-vector ,offset)
 	     (array-displacement ,lisp-vector)
-	   
 	   (when ,real-vector
 	     (setf ,lisp-vector ,real-vector))
-	   (cffi:with-pointer-to-vector-data (,ptr ,lisp-vector)
-	     (cffi:incf-pointer ,ptr ,offset)
-	     (setf ,tmp (locally ,@body)))
-	   ,tmp)))))
+	   (cffi:with-pointer-to-vector-data (,cffi-ptr ,lisp-vector)
+	     (let ((,ptr (cffi:inc-pointer ,cffi-ptr ,offset)))
+	       (setf ,tmp (multiple-value-list (locally ,@body)))))
+	   (values-list ,tmp))))))
 
 (defun concatenate-simple-byte-vectors (args)
   (declare (optimize speed (safety 0)))

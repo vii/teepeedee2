@@ -64,6 +64,7 @@
 
 (defmethod socket-supports-writev ( (fd integer))
   (declare (ignore fd))
+  #+tpd2-byte-vectors-do-not-move-arbitrarily
   t)
 
 (defmethod socket-recvfrom ( (fd integer) buf)
@@ -71,7 +72,7 @@
     (cffi:with-foreign-object (len :int)
       (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
       (with-pointer-to-vector-data (ptr buf)
-	(let ((s (socket-io-syscall (syscall-recvfrom fd buf (length buf) 0 sa len))))
+	(let ((s (socket-io-syscall (syscall-recvfrom fd ptr (length buf) 0 sa len))))
 	  (case-= s
 		  (-1 (values nil nil))
 		  (0 (error 'socket-closed))

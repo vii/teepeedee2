@@ -112,10 +112,11 @@
 (my-defun sendbuf to-byte-vector ()
   (declare (optimize speed))
   (let ((result (make-byte-vector (my len))) (i 0))
-    (loop for s in (my head) do
-	  (loop for c across (the simple-byte-vector s) do
-		(setf (aref result i) c)
-		(incf i)))
+    (unless (zerop (length result))
+      (loop for s in (my head) do
+	    (loop for c across (the simple-byte-vector s) do
+		  (setf (aref result i) c)
+		  (incf i))))
     result))
 
 (my-defun sendbuf 'print-object (stream)

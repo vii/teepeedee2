@@ -44,7 +44,7 @@
 		   (force-list nv)
 		 `(<input :type :text :name ,(force-byte-vector name) 
 			  ,@(when value `(:value ,value)))))
-       (<input :class "plain-submit" :type :submit :value #-clisp "↵" #+clisp "+"))))
+       (<input :class "plain-submit" :type :submit :value "↵"))))
 
 (defun find-action (id)
   (and id (find id (webapp-frame-var 'actions) :key 'action-id :test 'equalp)))

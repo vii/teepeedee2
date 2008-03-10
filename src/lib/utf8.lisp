@@ -35,7 +35,7 @@
       vec)))
 
 #.(progn
-    (when (eql #x101 (ignore-errors (char-code (code-char #x100))))
+    (when (eql #x100 (ignore-errors (char-code (code-char #x100))))
       (pushnew :tpd2-big-characters-in-strings *features*)
       nil))
 		       
@@ -63,10 +63,12 @@
 	(labels
 	    ((invalid ()
 	       (code-char #xfffd))
-	     (inc ()
-	       (incf i)
+	     (done? ()
 	       (when (>= i len)
 		 (return-from decode (subseq str 0 j))))
+	     (inc ()
+	       (incf i)
+	       (done?))
 	     (eat ()
 	       (let ((c (aref vec i)) (val 0))
 		 (declare (type fixnum val))
@@ -88,7 +90,9 @@
 			  (start #xe0) (next)(next) (limit #x800))
 			 (t
 			  (start #xf0) (next)(next)(next) (limit #x10000)))))))
-	  (loop do
+	  (done?)
+	  (loop 
+		do
 		(setf (schar str j) (eat))
 		(incf j)
 		(inc)))))))

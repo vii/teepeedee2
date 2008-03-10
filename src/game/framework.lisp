@@ -2,7 +2,7 @@
 
 (defgeneric move (controller player-state move-type choices &rest args))
 (defmethod move (controller player-state move-type choices &rest args)
-  (declare (ignore args))
+  (declare (ignore args controller player-state move-type))
   (random-choice choices))
 (defgeneric move-continuation (k controller player-state move-type choices &rest args))
 (defmethod move-continuation (k controller player-state move-type choices &rest args)
@@ -74,7 +74,7 @@
 
 (defgeneric inform (listener game-state message &rest args))
 (defmethod inform (listener game-state message &rest args)
-  (declare (ignore args)))
+  (declare (ignore args listener game-state message)))
 
 (my-defun game announce (message &rest args)
   (loop for l in (my listeners)

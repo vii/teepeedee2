@@ -64,6 +64,14 @@
 (declaim (inline byte-vector-cat))
 
 
+(let ((v (make-byte-vector 10)) q)
+  (with-pointer-to-vector-data (p v)
+    (setf q p))
+  (with-pointer-to-vector-data (p0 v)
+    (with-pointer-to-vector-data (p1 v)
+      (when (and (cffi:pointer-eq p0 p1) (cffi:pointer-eq p0 q))
+	(pushnew :tpd2-byte-vectors-do-not-move-arbitrarily *features*)))))
+
 
 
 (defun random-shuffle (sequence)
@@ -75,8 +83,12 @@
 	    (setf sequence (remove-if (lambda(x) (declare (ignore x)) t) sequence :start i :count 1))))))
 
 (defun random-elt (sequence)
+  (declare (optimize speed))
   (when sequence
     (elt sequence (random (length sequence)))))
+
+(declaim (inline random-elt))
+
 (defun read-safely (&rest args)
   (let ((*read-eval* nil))
     (apply 'read args)))

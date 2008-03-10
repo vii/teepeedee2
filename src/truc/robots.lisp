@@ -1,7 +1,7 @@
 (in-package #:tpd2.game.truc)
 
 (defmethod move ((controller robot) (player-state truc-player) (move-type (eql :select-card)) choices &rest args)
-  (declare(ignore args))
+  (declare(ignore args choices))
   (let ((played-card-values (its chosen-card-values (its game player-state)))
 	(my-best-card (first (its cards player-state)))
 	(my-worst-card (first (its cards player-state))))
@@ -118,7 +118,7 @@
 	sum (* (expt 8 i) (card-number-truc-ranking card))))
 
 (defmethod move ((controller robot-sensible) (player-state truc-player) (move-type (eql :select-card)) choices &rest args)
-  (declare (ignore args))
+  (declare (ignore args choices))
   (let ((cards (its cards player-state)))
     (cond ((and (not (its chosen-card-values (its game player-state))) (= (length cards) 3))
 	  (elt 
@@ -129,6 +129,7 @@
 	 (call-next-method)))))
 
 (defmethod move ((controller robot-sensible) (player-state truc-player) (move-type (eql :accept-new-stake)) choices &rest args)
+  (declare (ignore choices))
   (let ((new-stake (getf args :new-stake)))
     (> (* new-stake (- 1 (its win-probability player-state))) (its stake (its game player-state)))))
 
@@ -156,11 +157,11 @@
 
 
 (defmethod move ((controller robot-bully) (player-state truc-player) (move-type (eql :accept-new-stake)) choices &rest args)
-  (declare(ignore args))
+  (declare(ignore args choices))
   t)
 
 
 
 (defmethod move ((controller robot-bully) (player-state truc-player) (move-type (eql :reject-cards))  choices &rest args)
-  (declare(ignore args))
+  (declare(ignore args choices))
   nil)

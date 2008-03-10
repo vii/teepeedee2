@@ -15,7 +15,7 @@
   (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
 
 (my-defun web-state 'inform :before (game-state message &rest args)
-	  (declare (ignore args))
+	  (declare (ignore args message))
 	  (setf (my game-state) game-state))
 
 (my-defun web-state add-announcement (a)
@@ -23,24 +23,30 @@
   (my notify))
 
 (my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
+  (declare (ignore game-state))
   (let ((sender (getf args :sender)) (msg (getf args :text)))
     (my add-announcement (<p :class "game-talk-message" (player-controller-name-to-ml sender) ": " (<Q msg)))))
 
 (my-defun web-state 'inform (game-state (message (eql :new-player)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has joined the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :resigned)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has resigned.")))
 
 (my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :reject-cards)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
 			   (if (getf args :choice) " wants to change cards."
 			       " is satisfied with the cards."))))
 
 (my-defun web-state 'inform (game-state (message (eql :accept-new-stake)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
 			   (if (getf args :choice) " saw the raise."
 			       " folded."))))
@@ -51,6 +57,7 @@
       (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " raised to " choice " chips.")))))
 
 (my-defun web-state 'inform (game-state (message (eql :winner)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement 
       (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " won"
 	  (awhen (getf args :chips)
@@ -58,14 +65,17 @@
 	  ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :game-over)) &rest args)
+  (declare (ignore game-state))
   (my add-announcement (<h2 :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " won the game.")))
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
+  (declare (ignore game-state))
   (declare (ignore args))
   (my add-announcement (<p :class "game-message" "New game."))
   (setf (my queued-choices) nil))
 
 (my-defun web-state 'inform (game-state message &rest args)
+  (declare (ignore game-state))
   (my add-announcement 
       (<p :class "game-message"
 	  message
@@ -84,7 +94,7 @@
 (defmethod move-continuation (k (controller web-state) 
 			      player-state 
 			      (move-type (eql :ready-to-play)) choices &rest args)
-  (declare (ignore args))
+  (declare (ignore args player-state choices))
   (funcall k t))
 
 (my-defun web-state add-move-state (move-state)

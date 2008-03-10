@@ -32,7 +32,8 @@
   (funcall (my err) e)) 
 
 (defgeneric normal-connection-error (e))
-(defmethod normal-connection-error (e))
+(defmethod normal-connection-error (e)
+  (declare (ignore e)))
 (defmethod normal-connection-error ((e socket-error))
   t)
 (defmethod normal-connection-error ((e match-failed))

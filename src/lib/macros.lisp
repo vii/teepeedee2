@@ -92,10 +92,10 @@
   `(case-func ,keyform = ,@clauses))
 
 (defmacro def-if-unbound (def name args &body body)
-  `(eval-always
-     (unless (fboundp ',name)
-       (,def ,name ,args
-	 ,@body))))
+  (check-symbols name)
+  (unless (fboundp name)
+    `(,def ,name ,args
+       ,@body)))
 
 (defmacro ignorable-let (let-name bindings &body body)
   (let ((names (mapcar 'force-first bindings)))
