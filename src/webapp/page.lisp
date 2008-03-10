@@ -39,8 +39,9 @@
     `(with-webapp-frame (all-http-params)
        (funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 'all-http-params defaulting-lambda-list)))))
 
+
 (defmacro defpage-lambda (path function defaulting-lambda-list)
-  `(dispatcher-register-path *default-dispatcher* ,path
+  `(dispatcher-register-path (site-dispatcher *default-site*) ,path
 			     (lambda(dispatcher con done path all-http-params)
 			       (declare (ignore dispatcher path))
 			       (respond-http con done :body (apply-page-call ,function ,defaulting-lambda-list)))))

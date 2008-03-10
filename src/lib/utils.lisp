@@ -1,23 +1,14 @@
 (in-package #:tpd2.lib)
 
-(eval-always
-  (defun make-byte-vector (len)
-    (declare (optimize speed))
-    (declare (type (unsigned-byte *) len))
-    (make-array len :element-type '(unsigned-byte 8))))
+(def-if-unbound defun-consistent utf8-decode (vec)
+  (map 'string 'code-char vec))
 
-(declaim (inline make-byte-vector))
+(def-if-unbound defun-consistent utf8-encode (string)
+  (map 'byte-vector 'char-code string))
 
-(deftype byte-vector (&optional (len '*))
-  `(vector (unsigned-byte 8) ,len))
-(deftype simple-byte-vector (&optional (len '*))
-  `(simple-array (unsigned-byte 8) (,len)))
-
-(declaim (ftype (function ((unsigned-byte *)) simple-byte-vector) make-byte-vector)) 
-
-#+sbcl
 (defun-consistent byte-vector-to-string (vec)
-  (babel:octets-to-string vec :encoding :utf-8 :errorp nil))
+  (utf8-decode vec))
+
 
 (defun-consistent force-string (val)
   (declare (optimize speed))
@@ -34,6 +25,46 @@
       (string (replace (make-string (length str)) (the (and string (not simple-string)) str))))))
 
 (declaim (ftype (function (t) simple-string) force-string-consistent-internal))
+
+
+(defun-consistent force-byte-vector (val)
+  (declare (optimize speed (safety 0)))
+  (typecase val
+    (null #.(make-byte-vector 0))
+    (simple-string (utf8-encode val))
+    (string (utf8-encode val))
+    (character (utf8-encode (string val)))
+    (byte-vector val)
+    (sequence (map 'byte-vector 'identity val))
+    (t (utf8-encode (force-string val)))))
+
+(declaim (ftype (function (t) byte-vector) force-byte-vector-consistent-internal))
+
+(defun-consistent force-simple-byte-vector (val)
+  (declare (optimize speed (safety 0)))
+  (let ((val (force-byte-vector val)))
+    (etypecase val
+      (simple-byte-vector val)
+      (byte-vector 
+       (let ((ret (make-byte-vector (length val))))
+	 (replace ret (the (and byte-vector (not simple-byte-vector)) val))
+	 ret)))))
+
+(declaim (ftype (function (t) simple-byte-vector) force-simple-byte-vector-consistent-internal))
+
+(defun byte-vector-cat (&rest args)
+  (declare (optimize speed))
+  (let ((vecs (mapcar (lambda(x)(force-byte-vector x)) args)))
+    (let ((len (reduce '+ (mapcar 'length vecs))))
+      (let ((ret (make-byte-vector len)) (i 0))
+	(loop for v in vecs do
+	      (replace ret v :start1 i)
+	      (incf i (length v)))
+	ret))))
+(declaim (inline byte-vector-cat))
+
+
+
 
 (defun random-shuffle (sequence)
   (loop while (not (zerop (length sequence)))

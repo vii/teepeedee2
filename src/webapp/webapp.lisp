@@ -1,22 +1,14 @@
 (in-package #:tpd2.webapp)
 
-(defun webapp-page-body-start (title)
-  (<div :class "header"	
-	(output-object-to-ml (webapp-frame))
-	(<h1 (output-raw-ml title))))
-
-(defun webapp-page-footer ()
+(defun webapp-default-page-footer ()
   (with-ml-output
     (output-raw-ml
      (js-library-footer))))
 
-(defun webapp-page-head (title)
-  (<head
-    (<title (output-raw-ml title))
-    (output-raw-ml (webapp-page-head-css)
-		   (js-library))))
+(defun webapp-default-page-head-contents ()
+  (output-raw-ml (js-library)))
 
-(defun webapp-page-head-css ())
+(declaim (inline webapp-default-page-footer webapp-default-page-head-contents))
 
 (defmacro title-once (title)
   `(sendbuf-to-byte-vector (with-ml-output-start ,@(force-list title))))
@@ -29,14 +21,11 @@
 	 (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
 			" \"http://www.w3.org/TR/html4/loose.dtd\">")
 	 (<html
-	   (output-raw-ml
-	    (webapp-page-head ,title-ml))
+	   ,(funcall (site-page-head *default-site*) title-ml)
 	   (<body
-	     (output-raw-ml (webapp-page-body-start ,title-ml))
+	     ,(funcall (site-page-body-start *default-site*) title-ml)
 	     ,@body
-	     (output-raw-ml (webapp-page-footer))))))))
-
-
+	     ,(funcall (site-page-body-footer *default-site*) title-ml)))))))
 
 (defmacro webapp-lambda (title &body body)
   (with-unique-names (l)

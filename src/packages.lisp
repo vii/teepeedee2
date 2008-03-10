@@ -29,6 +29,7 @@
    #:make-byte-vector
    #:force-byte-vector
    #:utf8-encode
+   #:utf8-decode
    #:with-pointer-to-vector-data
    #:byte-vector
    #:simple-byte-vector
@@ -170,6 +171,7 @@
    #:build-http-response
    #:respond-http
    #:*default-dispatcher*
+   #:find-or-make-dispatcher
    #:http-parse-and-generate-response))
 
 (defpackage #:teepeedee2.ml
@@ -213,13 +215,12 @@
    #:webapp-section
    #:webapp-select-one
    #:webapp-display
-   #:webapp-page-head-css
-   #:webapp-page-head
-   #:webapp-page-body-start
    #:link-to-webapp
 
    #:defpage
 
+   #:webapp-default-page-head-contents
+   #:webapp-default-page-footer
 
    #:page-link
    #:webapp-frame
@@ -237,8 +238,6 @@
    #:html-action-link
    #:html-replace-link
    #:action-script-helper
-   #:register-channel-page
-   #:register-action-page
 
    #:channel
    #:channel-notify
@@ -252,6 +251,7 @@
    #:message-channel-broadcast
    #:channel-script-helper
    #:js-library
+   #:with-site
    ))
 
 
@@ -289,10 +289,25 @@
    #:current-web-controller
    #:player-controller))
 
+(defpackage #:teepeedee2.datastore
+  (:nicknames #:tpd2.datastore)
+  (:use #:tpd2.lib #:cl)
+
+  (:export
+   #:datastore-delete
+   #:datastore-retrieve-all
+   #:datastore-retrieve-indexed
+   #:datastore-retrieve-unique
+   #:defrecord
+   #:datastore-use-file))
+
 (defpackage #:teepeedee2.sutp
   (:nicknames #:tpd2.sutp)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io))
 
+(defpackage #:teepeedee2.blog
+  (:nicknames #:tpd2.blog)
+  (:use #:cl #:tpd2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.lib #:tpd2.datastore))
 
 (defpackage #:teepeedee2.game.truc
   (:nicknames #:tpd2.game.truc)

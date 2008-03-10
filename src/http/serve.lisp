@@ -37,15 +37,6 @@
 	  (hangup con)
 	  (io 'http-serve con)))))
 
-(defun test-http-request (url &optional request-body)
-  (match-bind ((:? (protocol (:until-and-eat "://")) (hostname (:until "/"))) path-and-args)
-      url
-    (let ((*break-on-signals* t))
-      (with-output-to-string (stream)
-	(multiple-value-bind (path params)
-	    (http-parse path-and-args :request-body request-body)
-	  (dispatch (tpd2.io::make-con :socket stream) (constantly nil) path :host hostname :params params))))))
-
 (defprotocol parse-and-dispatch (con path-and-args &key request-body host)
   (let (params tmp)
     (without-call/cc

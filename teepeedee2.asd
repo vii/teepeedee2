@@ -23,11 +23,12 @@
 							    (:file "macros" :depends-on ("once-only" "one-liners")) 
 							    (:file "once-only")
 							    (:file "one-liners")
-							    (:file "utils" :depends-on ("macros" "once-only"))
+							    (:file "utils" :depends-on ("utf8"))
+							    (:file "utf8" :depends-on ("macros" "byte-vector"))
 							    (:file "superquote" :depends-on ("utils"))
 							    (:file "strcat" :depends-on ("macros" "utils"))
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
-							    (:file "byte-vector" :depends-on ("macros" "utils"))
+							    (:file "byte-vector" :depends-on ("macros"))
 							    (:file "regex" :depends-on ("byte-vector"  "callcc"))
 							    (:file "callcc")
 							    (:file "quick-queue" :depends-on ("utils" "my"))
@@ -65,16 +66,20 @@
 							   (:file "css" :depends-on ("html"))
 							   (:file "js" :depends-on ("html"))
 							   (:file "html" :depends-on ("define-dtd"))))
+				     (:module :datastore
+					      :depends-on (:lib)
+					      :components ((:file "datastore")))
 				     (:module :webapp
 					      :depends-on (:http :ml)
-					      :components ((:file "page")
+					      :components ((:file "page" :depends-on ("site"))
 							   (:file "list-channel" :depends-on ("simple-channel"))
 							   (:file "simple-channel" :depends-on ("channel"))
 							   (:file "frame" :depends-on ("names" "list-channel" "simple-channel"))
 							   (:file "names")
 							   (:file "html-constants")
-							   (:file "js-library" :depends-on ("html-constants"))
-							   (:file "actions" :depends-on ("page" "html-constants"))
+							   (:file "site")
+							   (:file "js-library" :depends-on ("html-constants" "page"))
+							   (:file "actions" :depends-on ("page" "html-constants" "frame"))
 							   (:file "channel" :depends-on ("page" "html-constants"))
 							   (:file "webapp" :depends-on ("actions"))
 							   (:file "message-channel" :depends-on ("channel"))))
@@ -97,11 +102,10 @@
 				     (:file "io" :depends-on ("suite"))
 				     (:file "regex" :depends-on ("suite")))))
   :depends-on (
-	       #+sbcl :babel
-		      :trivial-garbage
-		      :cl-cont
-		      :cffi
-		      :iterate
-		      :fiveam
-		      :cl-utilities
-		      :parenscript))
+	       :trivial-garbage
+	       :cl-cont
+	       :cffi
+	       :iterate
+	       :fiveam
+	       :cl-utilities
+	       :parenscript))

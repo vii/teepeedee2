@@ -20,5 +20,5 @@
   (debug-assert (eql socket (con-socket con)))
   (values))
 
-(defmethod socket-recvfrom (socket buf)) ; returns (values length/nil address)
-(defmethod socket-sendto (socket address buf))
+(defgeneric socket-recvfrom (socket buf)) ; returns (values length/nil address)
+(defgeneric socket-sendto (socket address buf))

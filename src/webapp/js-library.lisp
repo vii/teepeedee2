@@ -60,27 +60,30 @@
 	    (progn
 	      (debug-log "async request unsuccessful" req)
 	      (ps:do-set-timeout (100)
-		(when (== req *active-request*)
+		(when (=== req *active-request*)
 		  (async-request url "Retrying")))))))
     
     (defun async-request (url initial-status)
       (ps:try
-       (let ((req  (make-xml-http-request)))
-	 (setf req.onreadystatechange 
-	       (lambda ()
-		 (case req.ready-state
-		   (4 
-		    (async-request-done req url)))))
-
+       (progn
 	 (let ((tmp *active-request*))
-	   (setf *active-request* req)
+	   (setf *active-request* nil)
 	   (when tmp
-	     (debug-log "aborting" tmp)
 	     (ignore-errors
 	       (tmp.abort))))
+	 
+	 
+	 (let ((req (make-xml-http-request)))
+	   (setf *active-request* req)
+	   
+	   (setf req.onreadystatechange 
+		 (lambda ()
+		   (case req.ready-state
+		     (4 
+		      (async-request-done req url)))))
 
-	 (req.open "GET" url t)
-	 (req.send ""))
+	   (req.open "GET" url t)
+	   (req.send "")))
        (:catch (e)
 	 (debug-log "async request was not started" url initial-status e)
 	 (return -1)))

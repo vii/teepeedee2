@@ -5,6 +5,7 @@
 (defmyclass (simple-channel (:include channel)))
 
 (my-defun simple-channel update (subscriber-state)
+  (declare (ignore subscriber-state))
   (with-ml-output
     (output-raw-ml
      (js-to-string

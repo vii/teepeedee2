@@ -49,9 +49,15 @@
 
 (defvar *dispatchers* nil)
 
+(defun do-find-dispatcher (host)
+  (cdr-assoc *dispatchers* host :test 'equalp))
+
 (defun find-dispatcher (host)
-  (or (cdr-assoc *dispatchers* host :test 'equalp) *default-dispatcher*))
+  (or (do-find-dispatcher host) *default-dispatcher*))
 
-
-
-
+(defun find-or-make-dispatcher (host)
+  (let ((host (force-byte-vector host)))
+    (or (do-find-dispatcher host)
+	(let ((it (make-dispatcher :canonical-name host)))
+	  (push (cons host it) *dispatchers*)
+	  it))))

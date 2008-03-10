@@ -84,6 +84,7 @@
 (defmethod move-continuation (k (controller web-state) 
 			      player-state 
 			      (move-type (eql :ready-to-play)) choices &rest args)
+  (declare (ignore args))
   (funcall k t))
 
 (my-defun web-state add-move-state (move-state)
@@ -223,20 +224,7 @@
 			      (<p :class "message" (<span :class "sender" (frame-username sender))
 				  " " message)))
 
-(defun webapp-play-bot (game-name bot)
-  (let ((game-state
-	 (make-web-state :frame (webapp-frame))))
-    (launch-game game-name (list bot game-state))
-    (webapp ()
-      (webapp-display game-state))))
-
-(defun web-game-start (game-generator)
-  (let ((c (make-web-state :frame (webapp-frame))))
-    (game-generator-join-or-start game-generator c)
-    (webapp ()
-      (webapp-display c))))
-
-(defun webapp-page-head-css ()
+(defun css ()
   (css-html-style 
     ((".inherit" <input <a)
      :text-decoration "inherit" :color "inherit" :background-color "inherit" :font-size "inherit" :font-weight "inherit"
@@ -289,38 +277,47 @@
      :background-color "rgb(228,228,228)"
      :cursor "pointer")))
 
-(defun webapp-page-head (title)
-  (<head
-    (<title "mopoko.com " (output-raw-ml title))
-    (output-raw-ml 
-     (<noscript
-       (output-raw-ml 
-	(<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
-    (output-raw-ml 
-     (webapp-page-head-css)
-     (js-library))))
 
-(defun webapp-page-body-start (title)
-  (declare (ignore title))
-  (<div :class "header"	
-	(<h1 :class "mopoko" 
-	     (<A :href (page-link "/") 
-		 :class "inherit" 
-		 (<span :style (css-attrib :color "black") "mopoko") ".com" ))
-	(output-object-to-ml (webapp-frame))))
+(with-site (:page-body-start (lambda(title)
+			       (declare (ignore title))
+			       `(<div :class "header"	
+				      (<h1 :class "mopoko" 
+					   (<A :href (page-link "/") 
+					       :class "inherit" 
+					       (<span :style (css-attrib :color "black") "mopoko") ".com" ))
+				      (output-object-to-ml (webapp-frame))))
+			     :page-head (lambda(title)
+					  `(<head
+					     (<title "mopoko.com " (output-raw-ml ,title))
+					     (output-raw-ml 
+					     (<noscript
+					       (output-raw-ml 
+						(<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
+					     (css)
+					     (webapp-default-page-head-contents))))
 
-(register-action-page)
-(register-channel-page)
+  (defun webapp-play-bot (game-name bot)
+    (let ((game-state
+	   (make-web-state :frame (webapp-frame))))
+      (launch-game game-name (list bot game-state))
+      (webapp ()
+	(webapp-display game-state))))
+  
+  (defun web-game-start (game-generator)
+    (let ((c (make-web-state :frame (webapp-frame))))
+      (game-generator-join-or-start game-generator c)
+      (webapp ()
+	(webapp-display c))))
 
-(defpage "/" ()
-  (webapp ""
-    (webapp-select-one ""
-		       (loop for game-name being the hash-keys of *games* collect game-name)
-		       :display (lambda(g) (output-raw-ml 
-				       "Play " g))
-		       :replace
-		       (lambda(game-name)
-			 (web-game-start (find-game-generator game-name))))))
+  (defpage "/" ()
+    (webapp ""
+      (webapp-select-one ""
+			 (loop for game-name being the hash-keys of *games* collect game-name)
+			 :display (lambda(g) (output-raw-ml 
+					 "Play " g))
+			 :replace
+			 (lambda(game-name)
+			   (web-game-start (find-game-generator game-name)))))))
 
 #.(when (find-package :swank)
     (push :tpd2-has-swank *features*)

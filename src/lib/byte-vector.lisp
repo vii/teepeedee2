@@ -1,50 +1,19 @@
 (in-package #:tpd2.lib)
 
-(def-if-unbound defun-consistent utf8-encode (str) ; XXX not implemented
-  (assert (every (lambda(x) (> 128 (char-int x))) str))
-  (map '(vector (unsigned-byte 8)) 'char-code str))
+(eval-always
+  (defun make-byte-vector (len)
+    (declare (optimize speed))
+    (declare (type (unsigned-byte *) len))
+    (make-array len :element-type '(unsigned-byte 8))))
 
-(defun-consistent utf8-encode (str) ; XXX not implemented
-  (declare (type string str))
-  (declare (optimize speed))
-  (block encode
-    (let ((vec (make-byte-vector (length str))))
-      (loop for i fixnum from 0 for s across str do
-	    (let ((c (char-code s)))
-	      #+sbcl (when (> c 127)
-		       (return-from encode (babel:string-to-octets str :encoding :utf-8)))
-	      (setf (aref vec i) (char-code s))))
-      vec)))
+(declaim (inline make-byte-vector))
 
+(deftype byte-vector (&optional (len '*))
+  `(vector (unsigned-byte 8) ,len))
+(deftype simple-byte-vector (&optional (len '*))
+  `(simple-array (unsigned-byte 8) (,len)))
 
-(def-if-unbound defun-consistent byte-vector-to-string (vec)
-  (map 'string 'code-char vec))
-
-(defun-consistent force-byte-vector (val)
-  (declare (optimize speed (safety 0)))
-  (typecase val
-    (null #.(make-byte-vector 0))
-    (simple-string (utf8-encode val))
-    (string (utf8-encode val))
-    (character (utf8-encode (string val)))
-    (byte-vector val)
-    (sequence (map 'byte-vector 'identity val))
-    (t (utf8-encode (force-string val)))))
-
-(declaim (ftype (function (t) byte-vector) force-byte-vector-consistent-internal))
-
-(defun-consistent force-simple-byte-vector (val)
-  (declare (optimize speed (safety 0)))
-  (let ((val (force-byte-vector val)))
-    (etypecase val
-      (simple-byte-vector val)
-      (byte-vector 
-       (let ((ret (make-byte-vector (length val))))
-	 (replace ret (the (and byte-vector (not simple-byte-vector)) val))
-	 ret)))))
-
-(declaim (ftype (function (t) simple-byte-vector) force-simple-byte-vector-consistent-internal))
-
+(declaim (ftype (function ((unsigned-byte *)) simple-byte-vector) make-byte-vector)) 
 
 (defmacro with-pointer-to-vector-data ((ptr lisp-vector) &body body)
   (check-symbols ptr)
@@ -61,17 +30,6 @@
 	     (cffi:incf-pointer ,ptr ,offset)
 	     (setf ,tmp (locally ,@body)))
 	   ,tmp)))))
-
-(defun byte-vector-cat (&rest args)
-  (declare (optimize speed))
-  (let ((vecs (mapcar (lambda(x)(force-byte-vector x)) args)))
-    (let ((len (reduce '+ (mapcar 'length vecs))))
-      (let ((ret (make-byte-vector len)) (i 0))
-	(loop for v in vecs do
-	      (replace ret v :start1 i)
-	      (incf i (length v)))
-	ret))))
-(declaim (inline byte-vector-cat))
 
 (defun concatenate-simple-byte-vectors (args)
   (declare (optimize speed (safety 0)))
@@ -146,6 +104,7 @@
 
 (defun byte-vector=-fold-ascii-case (a b)
   (declare (optimize speed (safety 0)))
+  (declare (type byte-vector a b))
   (and (= (length a) (length b))
        (loop for i from 0 below (length a)
 	     always (eql-fold-ascii-case (aref a i) (aref b i)))))
