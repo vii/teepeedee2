@@ -9,6 +9,7 @@
 
 (defun utf8-encode-really (string)
   (declare (optimize speed))
+  (declare (type simple-string string))
   (let ((dest-len
 	 (loop for c across string summing (utf8-char-length (char-code c)))) )
     (let ((vec (make-byte-vector dest-len)))
@@ -47,9 +48,9 @@
     (let ((vec (make-byte-vector (length str))))
       (loop for i fixnum from 0 for s across str do
 	    (let ((c (char-code s)))
-	      (when (> c 127)
+	      (when (> #x80 c)
 		(return-from encode (utf8-encode-really str)))
-	      (setf (aref vec i) (char-code s))))
+	      (setf (aref vec i) c)))
       vec)))
 
 #+tpd2-big-characters-in-strings      

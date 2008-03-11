@@ -28,6 +28,7 @@
    #:byte-vector-to-string
    #:make-byte-vector
    #:force-byte-vector
+   #:force-simple-byte-vector
    #:utf8-encode
    #:utf8-decode
    #:with-pointer-to-vector-data

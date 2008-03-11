@@ -100,6 +100,7 @@
 			:components (
 				     (:file "suite")
 				     (:file "io" :depends-on ("suite"))
+				     (:file "utf8" :depends-on ("suite"))
 				     (:file "regex" :depends-on ("suite")))))
   :depends-on (
 	       :trivial-garbage

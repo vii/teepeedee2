@@ -14,7 +14,7 @@
   (cond ((sendbuf-p x)
 	 (my merge x))
 	(x
-	 (let ((buf (force-byte-vector x)))
+	 (let ((buf (force-simple-byte-vector x)))
 	   (unless (zerop (length buf))
 	     (incf (my num-bufs))
 	     (incf (my len) (the sendbuf-small-integer (length buf)))
