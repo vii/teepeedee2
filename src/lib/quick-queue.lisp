@@ -24,7 +24,7 @@
   (length (my entries)))
 
 (my-defun quick-queue get (position)
-  (aref (my entries) (mod position (my len))))
+  (aref (my entries) (mod (ceiling position) (my len))))
 
 (my-defun quick-queue-entry add (base)
   (setf (my prev) base)

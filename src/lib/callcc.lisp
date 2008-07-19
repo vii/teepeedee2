@@ -8,29 +8,30 @@
   (declare (ignore env))
   `(funcall ,k-expr (locally ,@(cdr cons))))
 
-(cl-cont:defcpstransformer handler-case (cons k-expr env)
-  "Basic support for now."
-  (declare (ignore env))
-  `(funcall ,k-expr ,cons))
+(defmacro cl-cont-pass-through-one-construct (name)
+  `(cl-cont:defcpstransformer ,name (cons k-expr env)
+     "Pass this construct through without converting it to call/cc."
+     (declare (ignore env))
+     `(funcall ,k-expr ,cons)))
 
-(cl-cont:defcpstransformer handler-bind (cons k-expr env)
-  "Basic support for now."
-  (declare (ignore env))
-  `(funcall ,k-expr ,cons))
+(defmacro cl-cont-pass-through-constructs (&rest names)
+  `(progn
+     ,@(loop for n in names collect
+	     `(cl-cont-pass-through-one-construct ,n))))
+  
 
+(cl-cont-pass-through-constructs
+ handler-case
+ handler-bind
+ restart-case
+ restart-bind
 
-(cl-cont:defcpstransformer restart-bind (cons k-expr env)
-  "Basic support for now."
-  (declare (ignore env))
-  `(funcall ,k-expr ,cons))
-
-(cl-cont:defcpstransformer restart-case (cons k-expr env)
-  "Basic support for now."
-  (declare (ignore env))
-  `(funcall ,k-expr ,cons))
+ cl-irregsexp::with-match)
 
 #+extra-bugs-please 
 (defmacro cl-cont:call/cc (cc)
   "Implements delimited continuations."
   (declare (ignore cc))
   (error "Please ensure CALL/CC is called from within WITH-CALL/CC macro."))
+
+

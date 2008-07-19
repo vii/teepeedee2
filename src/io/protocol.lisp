@@ -68,8 +68,17 @@
        (con-run ,con-var)
        (values))))
 
+
+#| ; cl-cont might overflow stack
 (defprotocol accept-forever (con proto)
   (loop for n = (io 'accept con)
 	do (launch-io proto n)))
+; |#
 
-
+(defun accept-forever (con done proto)
+  (declare (ignore done))
+  (accept con 
+	  (lambda(n)
+	    (launch-io 'accept-forever con proto)
+	    (launch-io proto n)))
+  (values))

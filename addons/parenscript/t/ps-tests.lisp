@@ -47,7 +47,7 @@ x = 2 + sideEffect() + x + 5;")
 (test-ps-js method-call-string (.to-string "hi") "'hi'.toString()")
 (test-ps-js method-call-lit-object
             (.to-string (create :to-string (lambda ()
-					     (return "it works"))))
+                                             (return "it works"))))
             "( { toString : function () { return 'it works'; } } ).toString()")
 
 (test-ps-js method-call-variable
@@ -166,9 +166,9 @@ x = 2 + sideEffect() + x + 5;")
                    ("u0080" . ,(code-char 128)) ;;Character over 127. Actually valid, parenscript escapes them to be sure.
                    ("uABCD" . ,(code-char #xabcd)))));; Really above ascii.
     (loop for (js-escape . lisp-char) in escapes
-	  for generated = (compile-script `(let* ((x ,(format nil "hello~ahi" lisp-char)))))
-	  for wanted = (format nil "var x = 'hello\\~ahi';" js-escape)
-	  do (is (string= (normalize-js-code generated) wanted)))))
+          for generated = (compile-script `(let* ((x ,(format nil "hello~ahi" lisp-char)))))
+          for wanted = (format nil "var x = 'hello\\~ahi';" js-escape)
+          do (is (string= (normalize-js-code generated) wanted)))))
   
 (test-ps-js complicated-symbol-name1
   grid-rows[foo].bar
@@ -258,6 +258,10 @@ x = 2 + sideEffect() + x + 5;")
   (* 3 (+ 4 5) 6)
   "3 * (4 + 5) * 6")
 
+(test-ps-js operators-1
+  (in prop obj)
+  "prop in obj")
+
 (test-ps-js incf1
   (incf foo bar)
   "foo += bar")
@@ -304,13 +308,21 @@ x = 2 + sideEffect() + x + 5;")
 
 (test-ps-js blank-object-literal
   {}
-  "{}")
+  "{ }")
+
+(test-ps-js object-literal-1
+  ({})
+  "{ }")
+
+(test-ps-js object-literal-2
+  ({} a 1 b 2)
+  "{a: 1, b: 2 }")
 
 (test-ps-js defun-rest1
   (defun foo (&rest bar) (alert bar[1]))
   "function foo() {
     var bar = [];
-    for (var i2 = 0; i2 < arguments.length - 0; i2 = i2 + 1) {
+    for (var i2 = 0; i2 < arguments.length - 0; i2 += 1) {
         bar[i2] = arguments[i2 + 0];
     };
     alert(bar[1]);
@@ -320,7 +332,7 @@ x = 2 + sideEffect() + x + 5;")
   (defun foo (baz &rest bar) (return (+ baz (aref bar 1))))
   "function foo(baz) {
     var bar = [];
-    for (var i2 = 0; i2 < arguments.length - 1; i2 = i2 + 1) {
+    for (var i2 = 0; i2 < arguments.length - 1; i2 += 1) {
         bar[i2] = arguments[i2 + 1];
     };
     return baz + bar[1];
@@ -457,6 +469,7 @@ try {
     FOO * 2;
 } finally {
     FOO = tempstackvar1;
+    delete tempstackvar1;
 };")
 
 (test-ps-js special-var2
@@ -470,7 +483,9 @@ try {
     FOO * 2 * BAZ;
 } finally {
     FOO = tempstackvar1;
-};")
+    delete tempstackvar1;
+};
+")
 
 (test-ps-js literal1
   (setf x undefined)
@@ -479,3 +494,15 @@ try {
 (test-ps-js literal2
   (aref this x)
   "this[x]")
+
+(test-ps-js setf-dec1
+  (setf x (- 1 x 2))
+  "x = 1 - x - 2;")
+
+(test-ps-js setf-dec2
+  (setf x (- x 1 2))
+  "x = x - 1 - 2;")
+
+(test-ps-js special-char-equals
+  blah=
+  "blahequals")

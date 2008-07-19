@@ -13,48 +13,65 @@
   `(defconstant ,symbol ,number
     ,description))
 
-(syscall-error-number +EPERM+  1 "Operation not permitted")
-(syscall-error-number +ENOENT+  2 "No such file or directory")
-(syscall-error-number +ESRCH+  3 "No such process")
-(syscall-error-number +EINTR+  4 "Interrupted system call")
-(syscall-error-number +EIO+  5 "I/O error")
-(syscall-error-number +ENXIO+  6 "No such device or address")
-(syscall-error-number +E2BIG+  7 "Argument list too long")
-(syscall-error-number +ENOEXEC+  8 "Exec format error")
-(syscall-error-number +EBADF+  9 "Bad file number")
-(syscall-error-number +ECHILD+ 10 "No child processes")
-(syscall-error-number +EAGAIN+ 11 "Try again")
-(syscall-error-number +ENOMEM+ 12 "Out of memory")
-(syscall-error-number +EACCES+ 13 "Permission denied")
-(syscall-error-number +EFAULT+ 14 "Bad address")
-(syscall-error-number +ENOTBLK+ 15 "Block device required")
-(syscall-error-number +EBUSY+ 16 "Device or resource busy")
-(syscall-error-number +EEXIST+ 17 "File exists")
-(syscall-error-number +EXDEV+ 18 "Cross-device link")
-(syscall-error-number +ENODEV+ 19 "No such device")
-(syscall-error-number +ENOTDIR+ 20 "Not a directory")
-(syscall-error-number +EISDIR+ 21 "Is a directory")
-(syscall-error-number +EINVAL+ 22 "Invalid argument")
-(syscall-error-number +ENFILE+ 23 "File table overflow")
-(syscall-error-number +EMFILE+ 24 "Too many open files")
-(syscall-error-number +ENOTTY+ 25 "Not a typewriter")
-(syscall-error-number +ETXTBSY+ 26 "Text file busy")
-(syscall-error-number +EFBIG+ 27 "File too large")
-(syscall-error-number +ENOSPC+ 28 "No space left on device")
-(syscall-error-number +ESPIPE+ 29 "Illegal seek")
-(syscall-error-number +EROFS+ 30 "Read-only file system")
-(syscall-error-number +EMLINK+ 31 "Too many links")
-(syscall-error-number +EPIPE+ 32 "Broken pipe")
-(syscall-error-number +EDOM+ 33 "Math argument out of domain of func")
-(syscall-error-number +ERANGE+ 34 "Math result not representable")
+#+linux
+(progn
+  (syscall-error-number +EPERM+  1 "Operation not permitted")
+  (syscall-error-number +ENOENT+  2 "No such file or directory")
+  (syscall-error-number +ESRCH+  3 "No such process")
+  (syscall-error-number +EINTR+  4 "Interrupted system call")
+  (syscall-error-number +EIO+  5 "I/O error")
+  (syscall-error-number +ENXIO+  6 "No such device or address")
+  (syscall-error-number +E2BIG+  7 "Argument list too long")
+  (syscall-error-number +ENOEXEC+  8 "Exec format error")
+  (syscall-error-number +EBADF+  9 "Bad file number")
+  (syscall-error-number +ECHILD+ 10 "No child processes")
+  (syscall-error-number +EAGAIN+ 11 "Try again")
+  (syscall-error-number +ENOMEM+ 12 "Out of memory")
+  (syscall-error-number +EACCES+ 13 "Permission denied")
+  (syscall-error-number +EFAULT+ 14 "Bad address")
+  (syscall-error-number +ENOTBLK+ 15 "Block device required")
+  (syscall-error-number +EBUSY+ 16 "Device or resource busy")
+  (syscall-error-number +EEXIST+ 17 "File exists")
+  (syscall-error-number +EXDEV+ 18 "Cross-device link")
+  (syscall-error-number +ENODEV+ 19 "No such device")
+  (syscall-error-number +ENOTDIR+ 20 "Not a directory")
+  (syscall-error-number +EISDIR+ 21 "Is a directory")
+  (syscall-error-number +EINVAL+ 22 "Invalid argument")
+  (syscall-error-number +ENFILE+ 23 "File table overflow")
+  (syscall-error-number +EMFILE+ 24 "Too many open files")
+  (syscall-error-number +ENOTTY+ 25 "Not a typewriter")
+  (syscall-error-number +ETXTBSY+ 26 "Text file busy")
+  (syscall-error-number +EFBIG+ 27 "File too large")
+  (syscall-error-number +ENOSPC+ 28 "No space left on device")
+  (syscall-error-number +ESPIPE+ 29 "Illegal seek")
+  (syscall-error-number +EROFS+ 30 "Read-only file system")
+  (syscall-error-number +EMLINK+ 31 "Too many links")
+  (syscall-error-number +EPIPE+ 32 "Broken pipe")
+  (syscall-error-number +EDOM+ 33 "Math argument out of domain of func")
+  (syscall-error-number +ERANGE+ 34 "Math result not representable")
+  (syscall-error-number +EINPROGRESS+ 115 "Operation now in progress"))
 
+#+freebsd
+(progn
+  (syscall-error-number +EAGAIN+ 35 "Try again")
+  (syscall-error-number +EINTR+  4 "Interrupted system call")
+  (syscall-error-number +EINPROGRESS+ 36 "Operation now in progress"))
+
+#+linux
 (cffi:defcstruct (sockaddr_in :size 16)
   (family :uint16)
   (port :uint16)
   (addr :uint32))
 
+#+freebsd
+(cffi:defcstruct (sockaddr_in :size 16)
+  (len :uint8)
+  (family :uint8)
+  (port :uint16)
+  (addr :uint32))
+
 (eval-always
-  (cffi:defcvar (("errno" +syscall-error-number+) :read-only t) :int))
+  (cffi:defcvar ("errno" +syscall-error-number+) :int))
 
 (cffi:defcfun strerror :string
   (errno :int))
@@ -87,7 +104,7 @@
 	(declare (optimize speed (safety 0)))
 	(loop
 	    (let ((val (,direct-sym ,@arg-names)))
-	      (cond ((or (/= val -1) (= +syscall-error-number+ +EAGAIN+))
+	      (cond ((or (/= val -1) (= +syscall-error-number+ +EAGAIN+) (= +syscall-error-number+ +EINPROGRESS+))
 		     (return val))
 		    ((= +syscall-error-number+ +EINTR+)
 		     nil)
@@ -109,15 +126,17 @@
   (signum :int) 
   (action :pointer)) 
 
+(cffi:defctype size_t :unsigned-long)
+
 (def-simple-syscall read
     (fd :int)
   (buf :pointer)
-  (size :unsigned-long))
+  (size size_t))
 
 (def-simple-syscall recvfrom
     (fd :int)
   (buf :pointer)
-  (size :unsigned-long)
+  (size size_t)
   (flags :int)
   (address :pointer)
   (address-len :pointer))
@@ -125,7 +144,7 @@
 (def-simple-syscall write
     (fd :int)
   (buf :pointer)
-  (size :unsigned-long))
+  (size size_t))
 
 (def-simple-syscall writev
     (fd :int)
@@ -135,7 +154,7 @@
 (def-simple-syscall sendto
     (fd :int)
   (buf :pointer)
-  (size :unsigned-long)
+  (size size_t)
   (flags :int)
   (address :pointer)
   (address-len :pointer))
@@ -144,7 +163,7 @@
     (out_fd :int)
   (in_fd :int)
   (offset :pointer)
-  (count :unsigned-long))
+  (count size_t))
 
 (def-simple-syscall accept
     (sockfd :int)
@@ -343,6 +362,50 @@
   (dst :pointer)
   (cnt :int))
 
+#+linux
+(cffi:defcstruct addrinfo
+  (flags :int)
+  (family :int)
+  (socktype :int)
+  (protocol :int)
+  (addrlen size_t)
+  (addr :pointer)
+  (canonname :string)
+  (next :pointer))
+
+#+freebsd
+(cffi:defcstruct addrinfo
+  (flags :int)
+  (family :int)
+  (socktype :int)
+  (protocol :int)
+  (addrlen size_t)
+  (canonname :string)
+  (addr :pointer)
+  (next :pointer))
+
+
+(cffi:defcfun getaddrinfo 
+    :int
+  (node :string)
+  (service :string)
+  (hints :pointer)
+  (res :pointer))
+
+(cffi:defcfun freeaddrinfo
+    :void
+  (res :pointer))
+
+(defun lookup-hostname (hostname)
+  (cffi:with-foreign-object (res :pointer)
+    (let ((ret (getaddrinfo hostname (cffi:null-pointer) (cffi:null-pointer) res)))
+      (when (zerop ret)
+	(let ((ai (cffi:mem-ref res :pointer)))
+	  (unwind-protect
+	       (sockaddr-address-string-with-ntop 
+		(cffi:foreign-slot-value ai 'addrinfo 'addr))
+	    (freeaddrinfo ai)))))))
+
 (def-simple-syscall setsockopt
     (fd :int)
   (level :int)
@@ -357,9 +420,8 @@
 			on (cffi:foreign-type-size :int))))
   
 
-#+i-want-really-slow-functions-for-some-reason
-(defun sockaddr-address-string (sa)
-  (cffi:with-foreign-pointer-as-string (str 100 str-size)
+(defun sockaddr-address-string-with-ntop (sa)
+  (cffi:with-foreign-pointer-as-string (str 200 str-size)
     (unless (inet_ntop (cffi:foreign-slot-value sa 'sockaddr_in 'family)
 		       (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)
 		       str
@@ -389,6 +451,7 @@
     (signal-protect 
 	(let ((network-port (htons port)))
 	  (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
+	  (set-fd-nonblock fd)
 	  (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
 	    (setf family socket-family)
 	    (cffi:with-foreign-string (src address)
@@ -397,7 +460,6 @@
 		(error "Internet address is not valid: ~A" address)))
 	    (setf port network-port)
 	    (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in))) 
-	  (set-fd-nonblock fd)
 	  fd)
       (syscall-close fd))))
 
@@ -423,11 +485,11 @@
 
 (cffi:defcstruct iovec
     (base :pointer)
-  (len :uint32))
+  (len :unsigned-long))
 
 (cffi:defcstruct timeval
-  (sec :uint32)
-  (usec :uint32))
+  (sec :unsigned-long)
+  (usec :unsigned-long))
 
 (def-simple-syscall gettimeofday 
     (tv :pointer) 
@@ -495,6 +557,8 @@
   (u32 :uint32)
   (u64 :uint64))
 
-(cffi:defcstruct epoll-event
+(cffi:defcstruct (epoll-event :size 12)
   (events :uint32)
-  (data epoll-data))
+  (data epoll-data :offset 4))
+
+(assert (= (cffi:foreign-type-size 'tpd2.io::epoll-event) 12))

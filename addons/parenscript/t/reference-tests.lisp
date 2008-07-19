@@ -14,9 +14,9 @@
 (test-ps-js statements-and-expressions-2
   (if 1 2 3)
   "if (1) {
-  2;
+    2;
 } else {
-  3;
+    3;
 }")
 
 (test-ps-js symbol-conversion-1
@@ -88,8 +88,7 @@
 
 (test-ps-js object-literals-1
   (create :foo "bar" :blorg 1)
-  "{ foo : 'bar',
-  blorg : 1 }")
+  "{ foo : 'bar', blorg : 1 }")
 
 (test-ps-js object-literals-2
   (create :foo "hihi"
@@ -129,14 +128,18 @@
   "false")
 
 (test-ps-js literal-symbols-3
+  F
+  "false")
+
+(test-ps-js literal-symbols-4
   NIL
   "null")
 
-(test-ps-js literal-symbols-4
+(test-ps-js literal-symbols-5
   UNDEFINED
   "undefined")
 
-(test-ps-js literal-symbols-5
+(test-ps-js literal-symbols-6
   THIS
   "this")
 
@@ -192,31 +195,31 @@
   (eql 1 2)
   "1 == 2")
 
-(test-ps-js operator-expressions-5
+(test-ps-js operator-expressions-4
   (* 1 (+ 2 3 4) 4 (/ 6 7))
   "1 * (2 + 3 + 4) * 4 * (6 / 7)")
 
-(test-ps-js operator-expressions-6
+(test-ps-js operator-expressions-5
   (incf i)
   "++i")
 
-(test-ps-js operator-expressions-7
+(test-ps-js operator-expressions-6
   (decf i)
   "--i")
 
-(test-ps-js operator-expressions-8
+(test-ps-js operator-expressions-7
   (1- i)
   "i - 1")
 
-(test-ps-js operator-expressions-9
+(test-ps-js operator-expressions-8
   (1+ i)
   "i + 1")
 
-(test-ps-js operator-expressions-10
+(test-ps-js operator-expressions-9
   (not (< i 2))
   "i >= 2")
 
-(test-ps-js operator-expressions-11
+(test-ps-js operator-expressions-10
   (not (eql i 2))
   "i != 2")
 
@@ -233,13 +236,13 @@ blafoo(i);")
   (defun a-function (a b)
   (return (+ a b)))
   "function aFunction(a, b) {
-  return a + b;
+    return a + b;
 }")
 
 (test-ps-js function-definition-2
   (lambda (a b) (return (+ a b)))
   "function (a, b) {
-  return a + b;
+    return a + b;
 }")
 
 (test-ps-js assignment-1
@@ -254,42 +257,52 @@ c = 4;
 x = a + b + c;")
 
 (test-ps-js assignment-3
-  (setf a (1+ a))
-  "a++;")
-
-(test-ps-js assignment-4
   (setf a (+ a 2 3 4 a))
   "a += 2 + 3 + 4 + a;")
 
-(test-ps-js assignment-5
+(test-ps-js assignment-4
   (setf a (- 1 a))
   "a = 1 - a;")
 
+(test-ps-js assignment-5
+  (let* ((a 1) (b 2))
+  (psetf a b b a))
+  "var a = 1;
+var b = 2;
+var _js1 = b;
+var _js2 = a;
+a = _js1;
+b = _js2;")
+
 (test-ps-js assignment-6
+  (setq a 1)
+  "a = 1;")
+
+(test-ps-js assignment-8
   (defun (setf color) (new-color el)
   (setf (slot-value (slot-value el 'style) 'color) new-color))
   "function __setf_color(newColor, el) {
-  el.style.color = newColor;
+    el.style.color = newColor;
 };")
 
-(test-ps-js assignment-7
+(test-ps-js assignment-9
   (setf (color some-div) (+ 23 "em"))
   "var _js2 = someDiv;
 var _js1 = 23 + 'em';
 __setf_color(_js1, _js2);")
 
-(test-ps-js assignment-8
+(test-ps-js assignment-10
   (defsetf left (el) (offset)
   `(setf (slot-value (slot-value ,el 'style) 'left) ,offset))
   "null")
 
-(test-ps-js assignment-9
+(test-ps-js assignment-11
   (setf (left some-div) (+ 123 "px"))
   "var _js2 = someDiv;
 var _js1 = 123 + 'px';
 _js2.style.left = _js1;")
 
-(test-ps-js assignment-10
+(test-ps-js assignment-12
   (progn (defmacro left (el)
          `(slot-value ,el 'offset-left))
        (left some-div))
@@ -312,9 +325,9 @@ _js2.style.left = _js1;")
     (alert (+ "blorg is a string: " blorg))
     (alert "blorg is not a string"))
   "if (typeof blorg == String) {
-  alert('blorg is a string: ' + blorg);
+    alert('blorg is a string: ' + blorg);
 } else {
-  alert('blorg is not a string');
+    alert('blorg is not a string');
 }")
 
 (test-ps-js conditional-statements-1
@@ -322,10 +335,10 @@ _js2.style.left = _js1;")
     (progn (carry-on) (return i))
     (alert "blorg is not correct!"))
   "if (blorg.isCorrect()) {
-  carryOn();
-  return i;
+    carryOn();
+    return i;
 } else {
-  alert('blorg is not correct!');
+    alert('blorg is not correct!');
 }")
 
 (test-ps-js conditional-statements-2
@@ -337,15 +350,15 @@ _js2.style.left = _js1;")
   (carry-on)
   (return i))
   "if (blorg.isCorrect()) {
-  carryOn();
-  return i;
+    carryOn();
+    return i;
 }")
 
 (test-ps-js conditional-statements-4
   (unless (blorg.is-correct)
   (alert "blorg is not correct!"))
   "if (!blorg.isCorrect()) {
-  alert('blorg is not correct!');
+    alert('blorg is not correct!');
 }")
 
 (test-ps-js variable-declaration-1
@@ -353,84 +366,166 @@ _js2.style.left = _js1;")
   "var A = [ 1, 2, 3 ]")
 
 (test-ps-js variable-declaration-2
-  (if (= i 1)
-    (let* ((blorg "hallo"))
-      (alert blorg))
-    (let* ((blorg "blitzel"))
-      (alert blorg)))
-  "if (i == 1) {
-  var blorg = 'hallo';
-  alert(blorg);
-} else {
-  var blorg = 'blitzel';
-  alert(blorg);
-}")
+  (simple-let* ((a 0) (b 1))
+  (alert (+ a b)))
+  "var a = 0;
+var b = 1;
+alert(a + b);")
 
 (test-ps-js variable-declaration-3
-  (if (= i 1)
-    (lexical-let* ((blorg "hallo"))
-      (alert blorg))
-    (lexical-let* ((blorg "blitzel"))
-      (alert blorg)))
-  "if (i == 1) {
-    (function () {
-        var newlexicalcontext1 = new Object;
-        newlexicalcontext1['blorg'] = 'hallo';
-        with (newlexicalcontext1) {
-            alert(blorg);
-        };
-     })();
-} else {
-    (function () {
-        var newlexicalcontext3 = new Object;
-        newlexicalcontext3['blorg'] = 'blitzel';
-        with (newlexicalcontext3) {
-            alert(blorg);
-        };
-    })();
-}")
+  (simple-let* ((a "World") (b "Hello"))
+  (simple-let ((a b) (b a))
+    (alert (+ a b))))
+  "var a = 'World';
+var b = 'Hello';
+var _js_a1 = b;
+var _js_b2 = a;
+var a = _js_a1;
+var b = _js_b2;
+delete _js_a1;
+delete _js_b2;
+alert(a + b);")
+
+(test-ps-js variable-declaration-4
+  (simple-let* ((a 0) (b 1))
+  (lexical-let* ((a 9) (b 8))
+    (alert (+ a b)))
+  (alert (+ a b)))
+  "var a = 0;
+var b = 1;
+(function () {
+    var a = 9;
+    var b = 8;
+    alert(a + b);
+})();
+alert(a + b);")
+
+(test-ps-js variable-declaration-5
+  (simple-let* ((a "World") (b "Hello"))
+  (lexical-let ((a b) (b a))
+    (alert (+ a b)))
+  (alert (+ a b)))
+  "var a = 'World';
+var b = 'Hello';
+(function (a, b) {
+    alert(a + b);
+})(b, a);
+alert(a + b);")
 
 (test-ps-js iteration-constructs-1
-  (do ((i 0 (1+ i))
-     (l (aref blorg i) (aref blorg i)))
-    ((or (= i blorg.length)
-         (eql l "Fumitastic")))
-  (document.write (+ "L is " l)))
-  "for (var i = 0, l = blorg[i];
-     !(i == blorg.length || l == 'Fumitastic');
-     i = i + 1, l = blorg[i]) {
-  document.write('L is ' + l);
-}")
+  (do* ((a) b (c (array "a" "b" "c" "d" "e"))
+      (d 0 (1+ d))
+      (e (aref c d) (aref c d)))
+     ((or (= d c.length) (eql e "x")))
+  (setf a d b e)
+  (document.write (+ "a: " a " b: " b "<br/>")))
+  "for (var a = null, b = null, c = ['a', 'b', 'c', 'd', 'e'], d = 0, e = c[d]; !(d == c.length || e == 'x'); d += 1, e = c[d]) {
+    a = d;
+    b = e;
+    document.write('a: ' + a + ' b: ' + b + '<br/>');
+};")
 
 (test-ps-js iteration-constructs-2
-  (dotimes (i blorg.length)
-  (document.write (+ "L is " (aref blorg i))))
-  "for (var i = 0; i < blorg.length; i = i + 1) {
-  document.write('L is ' + blorg[i]);
-}")
+  (do ((i 0 (1+ i))
+     (s 0 (+ s i (1+ i))))
+    ((> i 10))
+  (document.write (+ "i: " i " s: " s "<br/>")))
+  "var _js_i1 = 0;
+var _js_s2 = 0;
+var i = _js_i1;
+var s = _js_s2;
+delete _js_i1;
+delete _js_s2;
+for (; i <= 10; ) {
+    document.write('i: ' + i + ' s: ' + s + '<br/>');
+    var _js3 = i + 1;
+    var _js4 = s + i + (i + 1);
+    i = _js3;
+    s = _js4;
+};")
 
 (test-ps-js iteration-constructs-3
-  (dolist (l blorg)
-  (document.write (+ "L is " l)))
-  "  var tmpArr1 = blorg;
-  for (var tmpI2 = 0; tmpI2 < tmpArr1.length;
-    tmpI2 = tmpI2 + 1) {
-    var l = tmpArr1[tmpI2];
-    document.write('L is ' + l);
-  };")
+  (do* ((i 0 (1+ i))
+      (s 0 (+ s i (1- i))))
+     ((> i 10))
+  (document.write (+ "i: " i " s: " s "<br/>")))
+  "for (var i = 0, s = 0; i <= 10; i += 1, s += i + (i - 1)) {
+    document.write('i: ' + i + ' s: ' + s + '<br/>');
+};")
 
 (test-ps-js iteration-constructs-4
-  (doeach (i object)
-   (document.write (+ i " is " (aref object i))))
-  "for (var i in object) {
-  document.write(i + ' is ' + object[i]);
-}")
+  (let* ((arr (array "a" "b" "c" "d" "e")))
+  (dotimes (i arr.length)
+    (document.write (+ "i: " i " arr[i]: " (aref arr i) "<br/>"))))
+  "var arr = ['a', 'b', 'c', 'd', 'e'];
+for (var i = 0; i < arr.length; i += 1) {
+    document.write('i: ' + i + ' arr[i]: ' + arr[i] + '<br/>');
+};")
 
 (test-ps-js iteration-constructs-5
+  (let* ((res 0))
+  (alert (+ "Summation to 10 is "
+            (dotimes (i 10 res)
+              (incf res (1+ i))))))
+  "var res = 0;
+alert('Summation to 10 is ' + (function () {
+    for (var i = 0; i < 10; i += 1) {
+        res += i + 1;
+    };
+    return res;
+})());")
+
+(test-ps-js iteration-constructs-6
+  (let* ((l (list 1 2 4 8 16 32)))
+  (dolist (c l)
+    (document.write (+ "c: " c "<br/>"))))
+  "var l = [1, 2, 4, 8, 16, 32];
+for (var c = null, _js_arrvar2 = l, _js_idx1 = 0; _js_idx1 < _js_arrvar2.length; _js_idx1 += 1) {
+    c = _js_arrvar2[_js_idx1];
+    document.write('c: ' + c + '<br/>');
+};")
+
+(test-ps-js iteration-constructs-7
+  (let* ((l (list 1 2 4 8 16 32))
+       (s 0))
+  (alert (+ "Sum of " l " is: "
+            (dolist (c l s)
+              (incf s c)))))
+  "var l = [1, 2, 4, 8, 16, 32];
+var s = 0;
+alert('Sum of ' + l + ' is: ' + (function () {
+    for (var c = null, _js_arrvar2 = l, _js_idx1 = 0; _js_idx1 < _js_arrvar2.length; _js_idx1 += 1) {
+        c = _js_arrvar2[_js_idx1];
+        s += c;
+    };
+    return s;
+})());")
+
+(test-ps-js iteration-constructs-8
+  (let* ((obj (create :a 1 :b 2 :c 3)))
+  (doeach (i obj)
+    (document.write (+ i ": " (aref obj i) "<br/>"))))
+  "var obj = { a : 1, b : 2, c : 3 };
+for (var i in obj) {
+    document.write(i + ': ' + obj[i] + '<br/>');
+};")
+
+(test-ps-js iteration-constructs-9
+  (let* ((obj (create :a 1 :b 2 :c 3)))
+  (doeach ((k v) obj)
+    (document.write (+ k ": " v "<br/>"))))
+  "var obj = { a : 1, b : 2, c : 3 };
+var v;
+for (var k in obj) {
+    v = obj[k];
+    document.write(k + ': ' + v + '<br/>');
+};")
+
+(test-ps-js iteration-constructs-10
   (while (film.is-not-finished)
   (this.eat (new *popcorn)))
   "while (film.isNotFinished()) {
-  this.eat(new Popcorn);
+    this.eat(new Popcorn);
 }")
 
 (test-ps-js the-case-statement-1
@@ -439,15 +534,16 @@ _js2.style.left = _js1;")
   (2 (alert "two"))
   (t (alert "default clause")))
   "switch (blorg[i]) {
-  case 1:   
-  case 'one':
-            alert('one');
-            break;
-  case 2:
-            alert('two');
-            break;
-  default:   alert('default clause');
-}")
+    case 1:
+    case 'one':
+        alert('one');
+        break;
+    case 2:
+        alert('two');
+        break;
+    default: 
+        alert('default clause');
+    }")
 
 (test-ps-js the-case-statement-2
   (switch (aref blorg i)
@@ -455,17 +551,16 @@ _js2.style.left = _js1;")
   (2 (alert "I also get here"))
   (default (alert "I always get here")))
   "switch (blorg[i]) {
-  case 1:   alert('If I get here');
-  case 2:   alert('I also get here');
-  default:   alert('I always get here');
+    case 1: alert('If I get here');
+    case 2: alert('I also get here');
+    default: alert('I always get here');
 }")
 
 (test-ps-js the-with-statement-1
   (with (create :foo "foo" :i "i")
   (alert (+ "i is now intermediary scoped: " i)))
-  "with ({ foo : 'foo',
-        i : 'i' }) {
-  alert('i is now intermediary scoped: ' + i);
+  "with ({ foo : 'foo', i : 'i' }) {
+    alert('i is now intermediary scoped: ' + i);
 }")
 
 (test-ps-js the-try-statement-1
@@ -475,11 +570,11 @@ _js2.style.left = _js1;")
  (:finally
    (alert "Leaving the try form")))
   "try {
-  throw 'i';
+    throw 'i';
 } catch (error) {
-  alert('an error happened: ' + error);
+    alert('an error happened: ' + error);
 } finally {
-  alert('Leaving the try form');
+    alert('Leaving the try form');
 }")
 
 (test-ps-js the-html-generator-1
@@ -502,10 +597,10 @@ _js2.style.left = _js1;")
    (setf element.inner-h-t-m-l
          (ps-html ((:textarea (or disabled (not authorized)) :disabled "disabled")
                 "Edit me"))))
-  "   var disabled = null;
-   var authorized = true;
-   element.innerHTML =
-   '<textarea'
-   + (disabled || !authorized ? ' disabled=\"' + 'disabled' + '\"' : '')
-   + '>Edit me</textarea>';")
+  "var disabled = null;
+var authorized = true;
+element.innerHTML =
+'<textarea'
++ (disabled || !authorized ? ' disabled=\"' + 'disabled' + '\"' : '')
++ '>Edit me</textarea>';")
 

@@ -6,7 +6,7 @@
 (defmethod parenscript-print (ps-form &optional *ps-output-stream*)
   (setf *indent-level* 0)
   (flet ((print-ps (form)
-           (if (and (listp form) (eql 'js-block (car form))) ;; ignore top-level block
+           (if (and (listp form) (eql 'js-block (car form))) ; ignore top-level block
                (loop for (statement . remaining) on (third form) do
                      (ps-print statement) (psw ";") (when remaining (psw #\Newline)))
                (ps-print form))))
@@ -15,7 +15,7 @@
         (with-output-to-string (*ps-output-stream*)
           (print-ps ps-form)))))
 
-(defun psw (obj) ;; parenscript-write
+(defun psw (obj) ; parenscript-write
   (princ obj *ps-output-stream*))    
 
 (defgeneric ps-print% (special-form-name special-form-args))
@@ -33,7 +33,7 @@ arguments, defines a printer for that form using the given body."
 
 (defgeneric ps-print (compiled-form))
 
-(defmethod ps-print ((form null)) ;; don't print top-level nils (ex: result of defining macros, etc.)
+(defmethod ps-print ((form null)) ; don't print top-level nils (ex: result of defining macros, etc.)
   )
 
 (defmethod ps-print ((compiled-form cons))
@@ -128,7 +128,7 @@ vice-versa.")
                  op)
              *op-precedence-hash*)))
 
-(defprinter script-quote (val)
+(defprinter ps-quote (val)
   (if (null val)
       (psw "null")
       (error "Cannot translate quoted value ~S to javascript" val)))
@@ -160,15 +160,6 @@ vice-versa.")
   (psw (js-translate-symbol var)))
 
 ;;; arithmetic operators
-(defun script-convert-op-name (op)
-  (case op
-    (and '\&\&)
-    (or '\|\|)
-    (not '!)
-    (eql '\=\=)
-    (=   '\=\=)
-    (t op)))
-
 (defun parenthesize-print (ps-form)
   (psw #\() (ps-print ps-form) (psw #\)))
 
@@ -178,7 +169,7 @@ vice-versa.")
         (if (>= (expression-precedence arg) precedence)
             (parenthesize-print arg)
             (ps-print arg))
-        (when remaining (format *ps-output-stream* " ~A " op))))
+        (when remaining (format *ps-output-stream* " ~(~A~) " op))))
 
 (defprinter unary-operator (op arg &key prefix)
   (when prefix (psw op))
@@ -240,7 +231,7 @@ vice-versa.")
 (defprinter js-object (slot-defs)
   (psw "{ ")
   (loop for ((slot-name slot-value) . remaining) on slot-defs do
-        (if (and (listp slot-name) (eql 'script-quote (car slot-name)) (symbolp (second slot-name)))
+        (if (and (listp slot-name) (eql 'ps-quote (car slot-name)) (symbolp (second slot-name)))
             (psw (js-translate-symbol (second slot-name)))
             (ps-print slot-name))
         (psw " : ")
@@ -252,7 +243,7 @@ vice-versa.")
   (if (and (listp obj) (member (car obj) '(js-expression-if)))
       (parenthesize-print obj)
       (ps-print obj))
-  (if (and (listp slot) (eql 'script-quote (car slot)))
+  (if (and (listp slot) (eql 'ps-quote (car slot)))
       (progn (psw #\.)
              (if (symbolp (second slot))
                  (psw (js-translate-symbol (second slot)))
@@ -297,23 +288,36 @@ vice-versa.")
     (psw " = ")
     (ps-print (car var-value))))
 
+(defprinter js-break (&optional label)
+  (psw "break")
+  (when label
+    (psw " ")
+    (psw (js-translate-symbol label))))
+
+(defprinter js-continue (&optional label)
+  (psw "continue")
+  (when label
+    (psw " ")
+    (psw (js-translate-symbol label))))
+
 ;;; iteration
-(defprinter js-for (vars steps test body-block)
+(defprinter js-for (label vars tests steps body-block)
+  (when label (psw (js-translate-symbol label)) (psw ": ") (newline-and-indent))
   (psw "for (")
   (loop for ((var-name . var-init) . remaining) on vars
         for decl = "var " then "" do
         (psw decl) (psw (js-translate-symbol var-name)) (psw " = ") (ps-print var-init) (when remaining (psw ", ")))
   (psw "; ")
-  (ps-print test)
+  (loop for (test . remaining) on tests do
+       (ps-print test) (when remaining (psw ", ")))
   (psw "; ")
-  (loop for ((var-name . nil) . remaining) on vars
-        for step in steps do
-        (psw (js-translate-symbol var-name)) (psw " = ") (ps-print step) (when remaining (psw ", ")))
+  (loop for (step . remaining) on steps do
+       (ps-print step) (when remaining (psw ", ")))
   (psw ") ")
   (ps-print body-block))
 
-(defprinter js-for-each (var object body-block)
-  (psw "for (var ") (psw (js-translate-symbol var)) (psw " in ") (ps-print object) (psw ") ")
+(defprinter js-for-in (var object body-block)
+  (psw "for (") (ps-print var) (psw " in ") (ps-print object) (psw ") ")
   (ps-print body-block))
 
 (defprinter js-while (test body-block)
@@ -335,7 +339,7 @@ vice-versa.")
     (psw "switch (") (ps-print test) (psw ") {")
     (loop for (val . statements) in clauses
           do (progn (newline-and-indent)
-                    (if (eql val 'default)
+                    (if (eq val 'default)
                         (progn (psw "default: ")
                                (print-body-statements statements))
                         (progn (psw "case ")

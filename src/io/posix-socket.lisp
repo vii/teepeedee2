@@ -1,7 +1,6 @@
 (in-package #:tpd2.io)
 
 (defmacro socket-io-syscall (call)
-
   #+never `(handler-bind 
 	       ((syscall-failed #'(lambda(e)
 				    (when (not (member (syscall-failed-errno e) 
@@ -13,12 +12,12 @@
 
 (defmethod socket-read ((fd integer) buf)
   (declare (optimize speed))
+  (debug-assert (not (zerop (length buf))))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
 	   (socket-io-syscall (syscall-read fd ptr (length buf))))))
     (case-= s
 	    (-1 nil)
-	    (0 (error 'socket-closed))
 	    (t s))))
 
 (defmethod socket-write ((fd integer) buf)

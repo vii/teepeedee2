@@ -3,11 +3,10 @@
 
 (in-package :parenscript)
 
-(defun lisp-symbol-to-ps-identifier (symbol context)
-  (case context
-    (:special-form (intern (symbol-name symbol) :parenscript-special-forms))
-    (:macro symbol)
-    (otherwise (symbol-name symbol))))
+(defun ensure-ps-symbol (symbol)
+  (if (eq (symbol-package symbol) #.(find-package :parenscript))
+      symbol
+      (intern (symbol-name symbol) #.(find-package :parenscript))))
 
 ;;; Symbol obfuscation
 (defvar *obfuscation-table* (make-hash-table))

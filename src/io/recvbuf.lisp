@@ -1,7 +1,7 @@
 (in-package #:tpd2.io)
 
 (defstruct recvbuf
-  (store (make-byte-vector 2048) :type simple-byte-vector)
+  (store (make-byte-vector 1024) :type simple-byte-vector)
   (read-idx 0 :type (integer 0 #x1000000))
   (write-idx 0 :type (integer 0 #x1000000)))
 
@@ -42,23 +42,35 @@
        (let ((new-store (make-byte-vector (max (my len) size))))
 	 (replace new-store (my store) :start2 (my read-idx) :end2 (my write-idx))
 	 (decf (my write-idx) (my read-idx))
-	 (setf (my read-idx) 0))))))
+	 (setf (my read-idx) 0)
+	 (setf (my store) new-store)))))
+  (debug-assert (>= (- (my len) (my read-idx)) size))
+  (values))
 
-(my-defun recvbuf recv (con &optional done)
+(my-defun recvbuf read-some (con &optional retry)
   (my-declare-fast-inline)
+  (debug-assert (not (my full)))
   (let ((s
 	 (socket-read (con-socket con)
 		      (make-displaced-vector (my store) :start (my write-idx)))))
     (cond 
-      (s
-	(incf (my write-idx) s)
-	(when done
-	  (funcall done))
-	s)
+      ((not s)
+       (when retry
+	 (con-when-ready-to-read con retry))
+       nil)
       (t
-       (when done
-	 (con-when-ready-to-read con #'my-call))
-       nil))))
+	(incf (my write-idx) s)
+	s))))
+
+(my-defun recvbuf recv (con &optional done)
+  (my-declare-fast-inline)
+  (let ((s (my read-some con (when done #'my-call))))
+    (cond ((not s))
+	  ((zerop s)
+	   (error 'socket-closed))
+	  (t
+	   (when done
+	     (funcall done))))))
 
 (my-defun recvbuf sync ()
   (my-declare-fast-inline)

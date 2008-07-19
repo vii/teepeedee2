@@ -21,15 +21,14 @@
 
 (my-defun con init ()
   (unless (my err)
-    (setf (my err)
-	  (lambda(err)
-	    (declare (ignore err))
-	    (my 'hangup))))
+    (my clear-failure-callbacks))
   (unless (my timeout)
     (setf (my timeout) (make-timeout :func (lambda()(my fail 'timeout))))))
 
-(my-defun con fail (&optional (e 'hangup))
-  (funcall (my err) e)) 
+(my-defun con fail (&optional (e (make-condition 'socket-explicitly-hungup)))
+  (let ((c (my err)))
+    (my clear-failure-callbacks)
+    (funcall c e))) 
 
 (defgeneric normal-connection-error (e))
 (defmethod normal-connection-error (e)
@@ -46,12 +45,12 @@
       (handler-bind ((error 
 		      (lambda(e)
 			(when (normal-connection-error e)
-			  (invoke-restart 'hangup)))))
+			  (invoke-restart 'hangup e)))))
 	(funcall (my ready-callback)))
-    (hangup ()
-      (my fail))))
+    (hangup (&optional (err (make-condition 'socket-explicitly-hungup)))
+      (my fail err))))
 
-(my-defun con 'reset-timeout (delay)
+(my-defun con 'reset-timeout (&optional delay)
   (timeout-set (my timeout) delay)
   (values))
 
@@ -59,6 +58,22 @@
 
 (my-defun con set-callback (func)
   (setf (my ready-callback) func))
+
+(my-defun con add-failure-callback (func)
+  (let ((old (my err)))
+    (setf (my err) 
+	  (if old
+	      (lambda(e)
+		(funcall old e)
+		(funcall func e))
+	      func))
+    (values)))
+
+(my-defun con clear-failure-callbacks ()
+  (setf (my err) 
+	(lambda(err)
+	  (declare (ignore err))
+	  (my 'hangup))))
 
 (my-defun con 'recv (done amount)
   (cond
@@ -68,6 +83,26 @@
      (recvbuf-prepare-read (my recv) amount)
      (recvbuf-recv (my recv) me #'my-call))))
 
+(my-defun con 'recv-some-or-nil (done)
+  (let ((available (recvbuf-available-to-eat (my recv))))
+    (cond 
+      ((zerop available)
+       (let ((s (recvbuf-read-some (my recv) me #'my-call)))
+	(case s
+	  ((nil))
+	  (0
+	   (funcall done nil)
+	   (return-from my-call))
+	  (t
+	   (debug-assert (not (zerop (recvbuf-available-to-eat (my recv)))))
+	   (my-call)))))
+      (t
+       (funcall done (recvbuf-eat (my recv) available)))))
+  (values))
+
+(my-defun con peek ()
+  (recvbuf-peek (my recv)))
+
 (my-defun con 'recvline (done)
   (declare (optimize speed))
   (acond
@@ -76,6 +111,16 @@
    (t 
     (recvbuf-prepare-read (my recv))
     (recvbuf-recv (my recv) me #'my-call))))
+
+(my-defun con 'recv-until-close (done)
+  (let ((total))
+    (labels ((r (buf)
+	       (cond ((not buf)
+		      (funcall done (apply-byte-vector-cat (nreverse total))))
+		     (t
+		      (push (copy-byte-vector buf) total)
+		      (recv-some-or-nil me #'r)))))
+      (recv-some-or-nil me #'r))))
 
 (my-defun con 'send (done sendbuf)
   (cond
@@ -114,6 +159,16 @@
 	       (address "0.0.0.0") 
 	       (socket-family +AF_INET+) 
 	       (socket-type +SOCK_STREAM+))
+  (make-con :socket (make-listen-socket 
+		     :port port 
+		     :address address 
+		     :socket-family socket-family
+		     :socket-type socket-type)))
+
+(defun make-con-bind (&key (port 0)
+	       (address "0.0.0.0") 
+	       (socket-family +AF_INET+) 
+	       (socket-type +SOCK_DGRAM+))
   (make-con :socket (make-listen-socket 
 		     :port port 
 		     :address address 

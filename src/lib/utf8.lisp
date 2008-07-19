@@ -48,7 +48,7 @@
     (let ((vec (make-byte-vector (length str))))
       (loop for i fixnum from 0 for s across str do
 	    (let ((c (char-code s)))
-	      (when (> #x80 c)
+	      (when (<= #x80 c)
 		(return-from encode (utf8-encode-really str)))
 	      (setf (aref vec i) c)))
       vec)))

@@ -1,6 +1,6 @@
 (cl:defpackage #:teepeedee2.system
   (:use #:cl))
-(in-package #:teepeedee2.system)
+(cl:in-package #:teepeedee2.system)
 
 (defpackage #:teepeedee2.lib
   (:nicknames #:tpd2.lib)
@@ -8,7 +8,15 @@
   (:import-from #:cl-utilities #:with-unique-names)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
+  (:import-from #:cl-irregsexp 
+		#:match-replace-all #:match-replace-one 
+		#:match-bind #:if-match-bind
+		#:match-failed )
   (:export 
+
+   #:match-replace-all #:match-replace-one 
+   #:match-bind #:if-match-bind
+   #:match-failed
 
    #:superquote
    #:superquote-function
@@ -23,7 +31,7 @@
    #:once-only
 
 
-
+   #:copy-byte-vector
    #:make-byte-vector
    #:byte-vector-to-string
    #:make-byte-vector
@@ -35,6 +43,7 @@
    #:byte-vector
    #:simple-byte-vector
    #:byte-vector-cat
+   #:apply-byte-vector-cat
    #:byte-to-ascii-upper
    #:byte-vector-parse-integer
    #:byte-vector=-fold-ascii-case
@@ -95,12 +104,6 @@
 
    #:cdr-assoc
 
-   #:match-bind
-   #:match-failed
-   #:match-replace-all
-   #:match-replace-one
-   #:fail-match
-   #:if-match
    #:case-match-fold-ascii-case
 
    #:convert-continuation-to-normal-function
@@ -116,10 +119,13 @@
    #:timeout-cancel
    #:timeout-remaining
    #:next-timeout
+   #:forget-timeouts
 
    #:debug-assert
    #:debug-assert-skip
    #:debug-unreachable
+
+   #:backtrace-description
 ))
 
 
@@ -135,6 +141,8 @@
    #:accept-forever
    #:without-call/cc
 
+   #:socket-closed
+
    #:with-sendbuf
    #:sendbuf-add
    #:with-sendbuf-continue
@@ -145,16 +153,29 @@
 
    #:recv
    #:recvline
+   #:recv-until-close
    #:send
    #:accept
    #:reset-timeout
    #:hangup
 
+
+   #:lookup-hostname
+
+   #:make-con
    #:make-con-connect
    #:make-con-listen
+   #:make-con-bind
    #:con-dead?
+   #:con-fail
+   #:con-add-failure-callback
+   #:con-clear-failure-callbacks
+   #:con-when-ready-to-read
+   #:con-peek
    
    #:+newline+
+   #:+SOCK_DGRAM+
+   #:+SOCK_STREAM+
 
    #:event-loop
    #:event-loop-reset
@@ -165,10 +186,12 @@
   (:nicknames #:tpd2.http)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export 
+   #:launch-http-request
    #:http-serve-timeout
    #:test-http-request
    #:percent-hexpair-encode
    #:dispatcher-register-path
+   #:dispatcher-canonical-name
    #:build-http-response
    #:respond-http
    #:*default-dispatcher*
@@ -225,6 +248,7 @@
 
    #:page-link
    #:webapp-frame
+   #:*default-site*
    #:*webapp-frame*
    #:webapp-frame-var
 
@@ -304,7 +328,9 @@
 
 (defpackage #:teepeedee2.sutp
   (:nicknames #:tpd2.sutp)
-  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io))
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
+  (:export
+   #:make-socket))
 
 (defpackage #:teepeedee2.blog
   (:nicknames #:tpd2.blog)

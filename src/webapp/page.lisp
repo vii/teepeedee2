@@ -41,10 +41,12 @@
 
 
 (defmacro defpage-lambda (path function defaulting-lambda-list)
-  `(dispatcher-register-path (site-dispatcher *default-site*) ,path
-			     (lambda(dispatcher con done path all-http-params)
-			       (declare (ignore dispatcher path))
-			       (respond-http con done :body (apply-page-call ,function ,defaulting-lambda-list)))))
+  (with-unique-names (mvl)
+    `(dispatcher-register-path (site-dispatcher *default-site*) ,path
+			       (lambda(dispatcher con done path all-http-params)
+				 (declare (ignore dispatcher path))
+				 (let ((,mvl (multiple-value-list (apply-page-call ,function ,defaulting-lambda-list))))
+				   (respond-http con done :body (first ,mvl) :headers (second ,mvl)))))))
 
 (defmacro defpage (path defaulting-lambda-list &body body)
   (let ((normal-func-name (intern (strcat 'page- 

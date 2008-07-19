@@ -39,6 +39,10 @@
 
 #+tpd2-big-characters-in-strings
 (test invalid-sequences
+  (let ((good-seqs '( (1 #x7f) (2 #x400) (3 #x1000) (4 #x89889))))
+    (loop for (len code) in good-seqs do
+	  (is (string= (utf8-decode (make-bad-utf8-sequence code len)) (string (code-char code))))))
+
   (let ((bad-seqs 
 	 '( (2 0) (2 #x40) (2 #x7f)
 	   (3 #x400) (3 #x7ff)

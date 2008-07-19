@@ -30,10 +30,18 @@
       class))
 
 (defun make-displaced-vector (vector &key (start 0) (end (length vector)))
-  (make-array (- end start)
-              :element-type (array-element-type vector)
-              :displaced-to vector
-              :displaced-index-offset start))
+  (multiple-value-bind
+	(orig offset)
+      (array-displacement vector)
+    (when orig
+      (setf vector orig)
+      (incf end offset)
+      (incf start offset))
+    (make-array (- end start)
+		:element-type (array-element-type vector)
+		:displaced-to vector
+		:displaced-index-offset start)))
+
 (declaim (inline make-displaced-vector))
 
 (defun cdr-assoc (alist key &key (test 'eq))

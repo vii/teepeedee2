@@ -108,3 +108,12 @@
        (loop for i from 0 below (length a)
 	     always (eql-fold-ascii-case (aref a i) (aref b i)))))
 (declaim (inline byte-vector=-fold-ascii-case))
+
+(defmacro case-match-fold-ascii-case (keyform &rest clauses)
+  (generate-case-key keyform :test 'byte-vector=-fold-ascii-case :transform 'force-byte-vector :clauses clauses))
+
+
+(defun copy-byte-vector (a)
+  (let ((b (make-byte-vector (length a))))
+    (replace b a)
+    b))

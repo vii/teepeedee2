@@ -64,6 +64,10 @@
 
 (defun byte-vector-cat (&rest args)
   (declare (optimize speed))
+  (apply-byte-vector-cat args))
+
+(defun apply-byte-vector-cat (args)
+  (declare (optimize speed))
   (let ((vecs (mapcar (lambda(x)(force-byte-vector x)) args)))
     (let ((len (reduce '+ (mapcar 'length vecs))))
       (let ((ret (make-byte-vector len)) (i 0))
@@ -71,7 +75,9 @@
 	      (replace ret v :start1 i)
 	      (incf i (length v)))
 	ret))))
-(declaim (inline byte-vector-cat))
+(declaim (inline byte-vector-cat byte-vector-cat-args))
+
+
 
 
 (let ((v (make-byte-vector 10)) q)
@@ -104,3 +110,6 @@
     (apply 'read args)))
 (defun read-safely-from-string (string)
   (with-input-from-string (*standard-input* (force-string string)) (read-safely)))
+
+(defun backtrace-description (err)
+  (hunchentoot:get-backtrace err))

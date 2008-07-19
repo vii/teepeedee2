@@ -7,12 +7,13 @@
     (raw-ml-sendbuf
      value)
     (t
-     (match-replace-all value
-			#\< "&lt;"
-			#\> "&gt;"
-			#\& "&amp;"
-			#\' "&#39;" ; &apos; is *not* HTML but only XML
-			))))
+     (macrolet ((f (x) `(force-byte-vector ,x)))
+       (match-replace-all (f value)
+			  (#\< (f "&lt;"))
+			  (#\> (f "&gt;"))
+			  (#\& (f "&amp;"))
+			(#\' (f "&#39;")) ; &apos; is *not* HTML but only XML
+			)))))
 
 (defmacro output-escaped-ml (&rest args)
   `(with-ml-output        

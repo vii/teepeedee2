@@ -1,9 +1,13 @@
 (cl:defpackage #:teepeedee2.system
   (:use #:cl))
-(in-package #:teepeedee2.system)
+(cl:in-package #:teepeedee2.system)
 
-(loop for addon in (directory "addons/*/") do
+(loop for addon in #+openmcl (directory "addons/*" :directories t)
+      #-openmcl (directory "addons/*/") 
+      do
       (pushnew addon asdf:*central-registry* :test #'equal))
+
+(pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
 
 (proclaim '(optimize debug))
 
@@ -29,7 +33,6 @@
 							    (:file "strcat" :depends-on ("macros" "utils"))
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
 							    (:file "byte-vector" :depends-on ("macros"))
-							    (:file "regex" :depends-on ("byte-vector"  "callcc"))
 							    (:file "callcc")
 							    (:file "quick-queue" :depends-on ("utils" "my"))
 							    (:file "timeout" :depends-on ("quick-queue"))))
@@ -101,7 +104,8 @@
 				     (:file "suite")
 				     (:file "io" :depends-on ("suite"))
 				     (:file "utf8" :depends-on ("suite"))
-				     (:file "regex" :depends-on ("suite")))))
+				     (:file "http" :depends-on ("suite"))
+				     )))
   :depends-on (
 	       :trivial-garbage
 	       :cl-cont
@@ -109,4 +113,6 @@
 	       :iterate
 	       :fiveam
 	       :cl-utilities
+	       :cl-irregsexp
+	       :hunchentoot
 	       :parenscript))

@@ -15,6 +15,7 @@
 	 (my merge x))
 	(x
 	 (let ((buf (force-simple-byte-vector x)))
+	   (declare (type simple-byte-vector buf))
 	   (unless (zerop (length buf))
 	     (incf (my num-bufs))
 	     (incf (my len) (the sendbuf-small-integer (length buf)))
@@ -60,14 +61,27 @@
      ,var))
 
 (my-defun sendbuf done ()
+  (my-declare-fast-inline)
   (not (my head)))
 
+(my-defun sendbuf check-done (con finished my-call)
+  (my-declare-fast-inline)
+  (cond 
+    ((my done)
+     (setf (my tail) nil)
+     (funcall finished))
+    (t
+     (con-when-ready-to-write con my-call))))
+
+
 (my-defun sendbuf send-write (con done)
-  (declare (optimize speed))
+  (my-declare-fast-inline)
   (loop for buf = (car (my head))
 	while 		   
 	(let ((s (socket-write (con-socket con) buf)))
+	  (declare (type (or null sendbuf-small-integer) s))
 	  (when s
+	    (decf (my len) s)
 	    (cond ((> (length buf) s)
 		   (setf (car (my head)) (make-displaced-vector buf :start s))
 		   nil)
@@ -75,14 +89,11 @@
 		   (setf (my head) (cdr (my head)))
 		   (decf (my num-bufs))
 		   (my head))))))
-  (if (my head)
-    (con-when-ready-to-write con #'my-call)
-    (funcall done)))
-
+  (my check-done con done #'my-call))
 
 (my-defun sendbuf send-writev (con done)
-  (declare (optimize speed))
-  (when (my head)
+  (my-declare-fast-inline)
+  (unless (my done)
     (let ((count (min +max-iovecs+ (my num-bufs))))
       (cffi:with-foreign-object (vecs 'iovec count)
 	(loop for i below count
@@ -93,20 +104,22 @@
 		  (setf base ptr)
 		  (setf len (length buf)))))
 	(let ((s (socket-writev (con-socket con) vecs count)))
+	  (declare (type (or null sendbuf-small-integer) s))
 	  (when s
+	    (decf (my len) s)
 	    (loop until (zerop s)
 		  do
+		  (debug-assert (my head))
 		  (let ((buf (car (my head))))
 		    (cond ((>= s (length buf))
 			   (decf s (length buf))
+			   (decf (my num-bufs))
 			   (setf (my head) 
 				 (cdr (my head))))
 			  (t
 			   (setf (car (my head)) (make-displaced-vector buf :start s))
 			   (setf s 0))))))))))
-  (if (my head)
-      (con-when-ready-to-write con #'my-call)
-      (funcall done)))
+  (my check-done con done #'my-call))
 
 
 (my-defun sendbuf to-byte-vector ()

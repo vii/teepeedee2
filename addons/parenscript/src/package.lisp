@@ -2,26 +2,25 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *parenscript-lang-exports*
-    '(
-      ;; literals
+    '(;; literals
       #:t
       #:f
       #:true
-      #.(symbol-name 'nil) ;; for case-sensitive Lisps like some versions of Allegro
+      #.(symbol-name 'nil) ; for case-sensitive Lisps like some versions of Allegro
       #:this
       #:false
       #:undefined
-      
+
       ;; keywords
       #:break
       #:continue
-      
+
       ;; array literals
       #:array
       #:list
       #:aref
       #:make-array
-      
+
       ;; operators
       #:! #:not #:~
       #:* #:/ #:%
@@ -39,72 +38,84 @@
       #:\|\| #:or
       #:>>= #:<<=
       #:*= #:/= #:%= #:+= #:\&= #:^= #:\|= #:~=
-      #:1+ #:1-
       #:incf #:decf
-      
+
       ;; body forms
       #:progn
-      
+
       ;; object literals
       #:create
       #:with-slots
-      
+
       ;; macros
       #:macrolet
       #:symbol-macrolet
-      
+
       ;; if
       #:if
       #:when
       #:unless
-      
+
       ;; single argument statements
       #:return
       #:throw
-      
+
       ;; single argument expressions
       #:delete
       #:void
       #:typeof
       #:instanceof
       #:new
-      
+
       ;; assignment and binding
       #:setf
       #:defsetf
-      #:let*
+      #:psetf
+      #:setq
+      #:psetq
+      #:simple-let*
+      #:simple-let
       #:lexical-let*
-      
+      #:lexical-let
+      #:let*
+      #:let
+
       ;; variables
       #:var
       #:defvar
-      
+
       ;; iteration
+      #:labeled-for
       #:for
-      #:doeach
+      #:for-in
       #:while
-      
+      #:do
+      #:do*
+      #:dotimes
+      #:dolist
+      #:doeach
+
       ;; with
       #:with
-      
+
       ;; case
       #:switch
       #:case
       #:default
-      
+
       ;; try throw catch
       #:try
-      
+
       ;; regex literals
       #:regex
-      
+
       ;; conditional compilation (IE)
       #:cc-if
-       
+
       ;; function definition
       #:defun
       #:lambda
-       
+
       ;; lambda lists
       #:&key
       #:&rest
@@ -122,19 +133,12 @@
       #:macrolet
       #:symbol-macrolet
       #:define-symbol-macro
-      #:define-script-symbol-macro
+      #:define-ps-symbol-macro
       #:defmacro
-       
+
       ;; lisp eval
       #:lisp
-       
-      ;; iteration
-      #:do
-      #:dotimes
-      #:dolist
-      #:doeach
-      #:while
-       
+
       ;; v v v STUFF WE SHOULD PROBABLY MOVE TO OTHER LIBS v v v
 
       ;; html generator for javascript
@@ -142,23 +146,34 @@
 
       ;; utils
       #:do-set-timeout
-      #:min
       #:max
+      #:min
+      #:floor
       #:ceiling
-      #:abs
+      #:round
       #:sin
       #:cos
       #:tan
-      #:acos
       #:asin
+      #:acos
       #:atan
-      #:exp
-      #:floor
-      #:expt
-      #:round
-      #:random
-      #:oddp
+      #:pi
+      #:sinh
+      #:cosh
+      #:tanh
+      #:asinh
+      #:acosh
+      #:atanh
+      #:1+
+      #:1-
+      #:abs
       #:evenp
+      #:oddp
+      #:exp
+      #:expt
+      #:log
+      #:sqrt
+      #:random
       #:ignore-errors
       #:concatenate
       #:length
@@ -175,59 +190,57 @@
       #:append
       #:set-difference
       ))
-  "All symbols considerred part of the Parenscript language.")
+  (defparameter *parenscript-interface-exports*
+    '(;; compiler
+      #:compile-script
+      #:ps
+      #:ps-doc
+      #:ps*
+      #:ps-inline
+      #:ps-inline*
+
+      ;; for parenscript macro definition within lisp
+      #:defpsmacro
+      #:defmacro/ps
+      #:defmacro+ps
+      #:import-macros-from-lisp
+
+      ;; gensym
+      #:ps-gensym
+      #:with-ps-gensyms
+      #:ps-once-only
+      #:*ps-gensym-counter*
+
+      ;; naming and namespaces
+      #:ps-package-prefix
+      #:obfuscate-package
+      #:unobfuscate-package
+
+      ;; printer
+      #:*js-string-delimiter*
+      #:*js-inline-string-delimiter*
+      #:*ps-print-pretty*
+      #:*indent-num-spaces*
+      ))
+  (defparameter *parenscript-interface-deprecated-exports*
+    '(;; deprecated interface
+      #:define-script-symbol-macro
+      #:gen-js-name
+      #:with-unique-js-names
+      #:defjsmacro
+      #:js-compile
+      #:js-inline
+      #:js-inline*
+      #:js
+      #:js*
+      ))
+  )
 
 (defpackage :parenscript
   (:use :common-lisp)
   (:nicknames :js :ps)
   #.(cons :export *parenscript-lang-exports*)
+  #.(cons :export *parenscript-interface-exports*)
+  #.(cons :export *parenscript-interface-deprecated-exports*)
+  )
 
-  ;;; symbols that form the interface to the Parenscript compiler
-  (:export
-   ;; compiler
-   #:compile-script
-   #:ps
-   #:ps*
-   #:ps-inline
-   #:ps-inline*
-   
-   ;; for parenscript macro definition within lisp
-   #:defpsmacro
-   #:defmacro/ps
-   #:defmacro+ps
-   #:import-macros-from-lisp
-   
-   ;; gensym
-   #:ps-gensym
-   #:with-ps-gensyms
-   #:*ps-gensym-counter*
-
-   ;; naming and namespaces
-   #:ps-package-prefix
-   #:obfuscate-package
-   #:unobfuscate-package
-
-   ;; printer
-   #:*js-string-delimiter*
-   #:*js-inline-string-delimiter*
-   #:*ps-print-pretty*
-   #:*indent-num-spaces*
-
-   ;; deprecated interface
-   #:gen-js-name
-   #:gen-js-name-string
-   #:with-unique-js-names
-   #:defjsmacro
-   #:js-compile
-   #:js-inline
-   #:js-inline*
-   #:js-file
-   #:js-script
-   #:js-to-statement-strings
-   #:js
-   #:js*
-   #:let
-   ))
-
-(defpackage :parenscript-special-forms
-  (:use))

@@ -4,9 +4,10 @@
 (in-suite io)
 
 (defprotocol echo-line (con)
-  (io 'send con (with-sendbuf ()
-		  (io 'recvline con)
-		  +newline+))
+  (io 'send con 
+      (with-sendbuf ()
+	(io 'recvline con)
+	+newline+))
   (hangup con))
 
 (defprotocol accept-echo-line (con)
@@ -15,7 +16,14 @@
     (hangup con)))
 
 (test echo-line
-  (let ((port 18890) (address "127.0.0.1") (count 0)
+  (let ((port 18890) (address "127.0.0.1"))
+    (test-echo-line
+     (lambda()(make-con-listen :address address :port port))
+     (lambda()(make-con-connect :address address :port port)))))
+
+
+(defun test-echo-line (listener connector)
+  (let ((count 0)
 	(lines (list 
 		""
 		(with-output-to-string (stream)
@@ -68,8 +76,8 @@
 
     (event-loop-reset)
     (dolist (line lines)
-      (launch-io 'accept-echo-line (make-con-listen :address address :port port))
-      (launch-io 'check-echo-line (make-con-connect :address address :port port) line)
+      (launch-io 'accept-echo-line (funcall listener))
+      (launch-io 'check-echo-line (funcall connector) line)
       (event-loop))
 
     (is (= (length lines) count))))

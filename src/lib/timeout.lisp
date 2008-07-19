@@ -13,6 +13,14 @@
 (defvar *timeouts* (make-quick-queue))
 (defvar *timeout-started* nil)
 
+(my-defun timeout 'print-object (stream)
+  (print-unreadable-object (me stream :identity t)
+    (format stream "~As ~A" (when (my time) (my remaining)) (my func))))
+
+(defun forget-timeouts ()
+  (setf *timeout-started* nil)
+  (setf *timeouts* (make-quick-queue)))
+
 (my-defun timeout remaining ()
   (max (- (my time) (get-universal-time)) 0))
 
@@ -24,8 +32,9 @@
 
 (defun time-for-delay (delay)
   (declare (optimize speed))
-  (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
-  (+ (get-universal-time) delay))
+  (when delay
+    (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
+    (+ (get-universal-time) delay)))
 
 (declaim (inline time-for-delay))
 
@@ -34,7 +43,8 @@
 
 (my-defun timeout merge ()
   (my cancel)
-  (quick-queue-entry-add me (my position)))
+  (when (my time)
+    (quick-queue-entry-add me (my position))))
 
 (my-defun timeout reset (delay)
   (setf (my time) (time-for-delay delay))

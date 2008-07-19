@@ -1,5 +1,10 @@
 ;;;# ParenScript Language Reference
 
+;;; Create a useful package for the code here...
+(in-package #:cl-user)
+(defpackage #:ps-ref (:use #:ps))
+(in-package #:ps-ref)
+
 ;;; This chapters describes the core constructs of ParenScript, as
 ;;; well as its compilation model. This chapter is aimed to be a
 ;;; comprehensive reference for ParenScript developers. Programmers
@@ -24,11 +29,11 @@
 (+ i (if 1 2 3)) => i + (1 ? 2 : 3)
 
 (if 1 2 3)
-   => if (1) {
-        2;
-      } else {
-        3;
-      }
+=> if (1) {
+       2;
+   } else {
+       3;
+   }
 
 ;;;# Symbol conversion
 ;;;t \index{symbol}
@@ -82,14 +87,15 @@ foobar.slot
 ! ~ ++ -- * / % + - << >> >>> < > <= >= == != ==== !== & ^ | && || *=
 /= %= += -= <<= >>= >>>= &= ^= |= 1- 1+ ABSTRACT AND AREF ARRAY
 BOOLEAN BREAK BYTE CASE CATCH CC-IF CHAR CLASS COMMA CONST CONTINUE
-CREATE DEBUGGER DECF DEFAULT DEFUN DEFVAR DELETE DO DOEACH DOLIST
-DOTIMES DOUBLE ELSE ENUM EQL EXPORT EXTENDS FALSE FINAL FINALLY FLOAT
-FLOOR FOR FUNCTION GOTO IF IMPLEMENTS IMPORT IN INCF INSTANCEOF INT
-INTERFACE JS LAMBDA LET* LEXICAL-LET* LISP LIST LONG MAKE-ARRAY NATIVE
-NEW NIL NOT OR PACKAGE PRIVATE PROGN PROTECTED PUBLIC RANDOM REGEX
-RETURN SETF SHORT SLOT-VALUE STATIC SUPER SWITCH SYMBOL-MACROLET
-SYNCHRONIZED T THIS THROW THROWS TRANSIENT TRY TYPEOF UNDEFINED UNLESS
-VAR VOID VOLATILE WHEN WHILE WITH WITH-SLOTS
+CREATE DEBUGGER DECF DEFAULT DEFUN DEFVAR DELETE DO DO* DOEACH DOLIST
+DOTIMES DOUBLE ELSE ENUM EQL EXPORT EXTENDS F FALSE FINAL FINALLY
+FLOAT FLOOR FOR FOR-IN FUNCTION GOTO IF IMPLEMENTS IMPORT IN INCF
+INSTANCEOF INT INTERFACE JS LABELED-FOR LAMBDA LET LET* LEXICAL-LET
+LEXICAL-LET* LISP LIST LONG MAKE-ARRAY NATIVE NEW NIL NOT OR PACKAGE
+PRIVATE PROGN PROTECTED PUBLIC RANDOM REGEX RETURN SETF SHORT
+SLOT-VALUE STATIC SUPER SWITCH SYMBOL-MACROLET SYNCHRONIZED T THIS
+THROW THROWS TRANSIENT TRY TYPEOF UNDEFINED UNLESS VAR VOID VOLATILE
+WHEN WHILE WITH WITH-SLOTS
 
 ;;;# Literal values
 ;;;t \index{literal value}
@@ -151,7 +157,7 @@ VAR VOID VOLATILE WHEN WHILE WITH WITH-SLOTS
 
 (array (array 2 3)
        (array "foobar" "bratzel bub"))
-   => [ [ 2, 3 ], [ 'foobar', 'bratzel bub' ] ]
+=> [ [ 2, 3 ], [ 'foobar', 'bratzel bub' ] ]
 
 ;;; Arrays can also be created with a call to the `Array' function
 ;;; using the `MAKE-ARRAY'. The two forms have the exact same semantic
@@ -164,7 +170,7 @@ VAR VOID VOLATILE WHEN WHILE WITH WITH-SLOTS
 (make-array
  (make-array 2 3)
  (make-array "foobar" "bratzel bub"))
-  => new Array(new Array(2, 3), new Array('foobar', 'bratzel bub'))
+=> new Array(new Array(2, 3), new Array('foobar', 'bratzel bub'))
 
 ;;; Indexing arrays in ParenScript is done using the form `AREF'. Note
 ;;; that JavaScript knows of no such thing as an array. Subscripting
@@ -197,15 +203,14 @@ VAR VOID VOLATILE WHEN WHILE WITH WITH-SLOTS
 ;;; more "lispy", the property names can be keywords.
 
 (create :foo "bar" :blorg 1)
-   => { foo : 'bar',
-        blorg : 1 }
+=> { foo : 'bar', blorg : 1 }
 
 (create :foo "hihi"
         :blorg (array 1 2 3)
         :another-object (create :schtrunz 1))
-   => { foo : 'hihi',
-        blorg : [ 1, 2, 3 ],
-        anotherObject : { schtrunz : 1 } }
+=> { foo : 'hihi',
+     blorg : [ 1, 2, 3 ],
+     anotherObject : { schtrunz : 1 } }
 
 ;;; Object properties can be accessed using the `SLOT-VALUE' form,
 ;;; which takes an object and a slot-name.
@@ -222,7 +227,7 @@ an-object.foo => anObject.foo
 
 (with-slots (a b c) this
   (+ a b c))
-    => this.a + this.b + this.c;
+=> this.a + this.b + this.c;
 
 ;;;## Regular Expression literals
 ;;;t \index{REGEX}
@@ -250,6 +255,7 @@ an-object.foo => anObject.foo
 
 ;;;## Literal symbols
 ;;;t \index{T}
+;;;t \index{F}
 ;;;t \index{FALSE}
 ;;;t \index{NIL}
 ;;;t \index{UNDEFINED}
@@ -258,14 +264,16 @@ an-object.foo => anObject.foo
 ;;;t \index{null}
 ;;;t \index{true}
 
-; T, FALSE, NIL, UNDEFINED, THIS
+; T, F, FALSE, NIL, UNDEFINED, THIS
 
-;;; The Lisp symbols `T' and `FALSE' are converted to their JavaScript
-;;; boolean equivalents `true' and `false'.
+;;; The Lisp symbols `T' and `FALSE' (or `F') are converted to their
+;;; JavaScript boolean equivalents `true' and `false'.
 
 T     => true
 
 FALSE => false
+
+F => false
 
 ;;; The Lisp symbol `NIL' is converted to the JavaScript keyword
 ;;; `null'.
@@ -325,7 +333,7 @@ a-variable  => aVariable
 (blorg 1 2) => blorg(1, 2)
 
 (foobar (blorg 1 2) (blabla 3 4) (array 2 3 4))
-   => foobar(blorg(1, 2), blabla(3, 4), [ 2, 3, 4 ])
+=> foobar(blorg(1, 2), blabla(3, 4), [ 2, 3, 4 ])
 
 ((aref foo i) 1 2) => foo[i](1, 2)
 
@@ -341,7 +349,7 @@ a-variable  => aVariable
 (this.blorg 1 2) => this.blorg(1, 2)
 
 (.blorg (aref foobar 1) NIL T)
-   => foobar[1].blorg(null, true)
+=> foobar[1].blorg(null, true)
 
 ;;;# Operator Expressions
 ;;;t \index{operator}
@@ -378,10 +386,10 @@ a-variable  => aVariable
 ;;; according to the JavaScript operator precedence that can be found
 ;;; in table form at:
 
-    http://www.codehouse.com/javascript/precedence/
+;;;    http://www.codehouse.com/javascript/precedence/
 
 (* 1 (+ 2 3 4) 4 (/ 6 7))
-  => 1 * (2 + 3 + 4) * 4 * (6 / 7)
+=> 1 * (2 + 3 + 4) * 4 * (6 / 7)
 
 ;;; The pre increment and decrement operators are also
 ;;; available. `INCF' and `DECF' are the pre-incrementing and
@@ -427,13 +435,13 @@ a-variable  => aVariable
 ;;; For example, in a statement context:
 
 (progn (blorg i) (blafoo i))
-   => blorg(i);
-      blafoo(i);
+=> blorg(i);
+   blafoo(i);
 
 ;;; In an expression context:
 
 (+ i (progn (blorg i) (blafoo i)))
-   => i + (blorg(i), blafoo(i))
+=> i + (blorg(i), blafoo(i))
 
 ;;; A `PROGN' form doesn't lead to additional indentation or
 ;;; additional braces around it's body.
@@ -460,50 +468,83 @@ a-variable  => aVariable
 
 (defun a-function (a b)
   (return (+ a b)))
-  => function aFunction(a, b) {
+=> function aFunction(a, b) {
        return a + b;
-     }
+   }
 
 ;;; Anonymous functions can be created using the `LAMBDA' form, which
 ;;; is the same as `DEFUN', but without function name. In fact,
 ;;; `LAMBDA' creates a `DEFUN' with an empty function name.
 
 (lambda (a b) (return (+ a b)))
-  => function (a, b) {
+=> function (a, b) {
        return a + b;
-     }
+   }
 
 ;;;# Assignment
 ;;;t \index{assignment}
 ;;;t \index{SETF}
+;;;t \index{PSETF}
+;;;t \index{SETQ}
+;;;t \index{PSETQ}
 ;;;t \index{DEFSETF}
 ;;;t \index{assignment operator}
 
 ; (SETF {lhs rhs}*)
+; (PSETF {lhs rhs}*)
 ;
 ; lhs ::= a ParenScript left hand side expression
 ; rhs ::= a ParenScript expression
 
-;;; Assignment is done using the `SETF' form, which is transformed
-;;; into a series of assignments using the JavaScript `=' operator.
+; (SETQ {lhs rhs}*)
+; (PSETQ {lhs rhs}*)
+;
+; lhs ::= a ParenScript symbol
+; rhs ::= a ParenScript expression
+
+;;; Assignment is done using the `SETF', `PSETF', `SETQ', and `PSETQ'
+;;; forms, which are transformed into a series of assignments using
+;;; the JavaScript `=' operator.
 
 (setf a 1) => a = 1;
 
 (setf a 2 b 3 c 4 x (+ a b c))
-   => a = 2;
-      b = 3;
-      c = 4;
-      x = a + b + c;
+=> a = 2;
+   b = 3;
+   c = 4;
+   x = a + b + c;
 
 ;;; The `SETF' form can transform assignments of a variable with an
 ;;; operator expression using this variable into a more "efficient"
 ;;; assignment operator form. For example:
 
-(setf a (1+ a))          => a++;
-
 (setf a (+ a 2 3 4 a))   => a += 2 + 3 + 4 + a;
 
 (setf a (- 1 a))         => a = 1 - a;
+
+;;; The `PSETF' and `PSETQ' forms perform parallel assignment of
+;;; places or variables using a number of temporary variables created
+;;; by `PS-GENSYM'.  For example:
+
+(let* ((a 1) (b 2))
+  (psetf a b b a))
+=> var a = 1;
+   var b = 2;
+   var _js1 = b;
+   var _js2 = a;
+   a = _js1;
+   b = _js2;
+
+;;; The `SETQ' and `PSETQ' forms operate identically to `SETF' and
+;;; `PSETF', but throw a compile-time error if the left-hand side form
+;;; is not a symbol.   For example:
+
+(setq a 1)   => a = 1;
+
+;; but...
+
+(setq (aref a 0) 1)
+;; => ERROR: The value (AREF A 0) is not of type SYMBOL.
 
 ;;; New types of setf places can be defined in one of two ways: using
 ;;; `DEFSETF' or using `DEFUN' with a setf function name; both are
@@ -515,15 +556,14 @@ a-variable  => aVariable
 
 (defun (setf color) (new-color el)
   (setf (slot-value (slot-value el 'style) 'color) new-color))
-  => function __setf_color(newColor, el) {
+=> function __setf_color(newColor, el) {
        el.style.color = newColor;
-     };
+   };
 
 (setf (color some-div) (+ 23 "em"))
-  => var _js2 = someDiv;
-     var _js1 = 23 + 'em';
-     __setf_color(_js1, _js2);
-
+=> var _js2 = someDiv;
+   var _js1 = 23 + 'em';
+   __setf_color(_js1, _js2);
 
 ;;; Note that temporary variables are generated to preserve evaluation
 ;;; order of the arguments as they would be in Lisp.
@@ -532,17 +572,18 @@ a-variable  => aVariable
 ;;; provide a uniform protocol for positioning elements in HTML pages:
 
 (defsetf left (el) (offset)
-  `(setf (slot-value (slot-value ,el 'style) 'left) ,offset)) => null
+  `(setf (slot-value (slot-value ,el 'style) 'left) ,offset))
+=> null
 
 (setf (left some-div) (+ 123 "px"))
-  => var _js2 = someDiv;
-     var _js1 = 123 + 'px';
-     _js2.style.left = _js1;
+=> var _js2 = someDiv;
+   var _js1 = 123 + 'px';
+   _js2.style.left = _js1;
 
 (progn (defmacro left (el)
          `(slot-value ,el 'offset-left))
        (left some-div))
-  => someDiv.offsetLeft;
+=> someDiv.offsetLeft;
 
 ;;;# Single argument statements
 ;;;t \index{single-argument statement}
@@ -594,11 +635,11 @@ a-variable  => aVariable
 (if (= (typeof blorg) *string)
     (alert (+ "blorg is a string: " blorg))
     (alert "blorg is not a string"))
-  => if (typeof blorg == String) {
+=> if (typeof blorg == String) {
        alert('blorg is a string: ' + blorg);
-     } else {
+   } else {
        alert('blorg is not a string');
-     }
+   }
 
 ;;;# Conditional Statements
 ;;;t \index{conditional statements}
@@ -626,15 +667,15 @@ a-variable  => aVariable
 (if (blorg.is-correct)
     (progn (carry-on) (return i))
     (alert "blorg is not correct!"))
-   => if (blorg.isCorrect()) {
-        carryOn();
-        return i;
-      } else {
-        alert('blorg is not correct!');
-      }
+=> if (blorg.isCorrect()) {
+       carryOn();
+       return i;
+   } else {
+       alert('blorg is not correct!');
+   }
 
 (+ i (if (blorg.add-one) 1 2))
-   => i + (blorg.addOne() ? 1 : 2)
+=> i + (blorg.addOne() ? 1 : 2)
 
 ;;; The `WHEN' and `UNLESS' forms can be used as shortcuts for the
 ;;; `IF' form.
@@ -642,16 +683,16 @@ a-variable  => aVariable
 (when (blorg.is-correct)
   (carry-on)
   (return i))
-    => if (blorg.isCorrect()) {
-         carryOn();
-         return i;
-       }
+=> if (blorg.isCorrect()) {
+       carryOn();
+       return i;
+   }
 
 (unless (blorg.is-correct)
   (alert "blorg is not correct!"))
-    => if (!blorg.isCorrect()) {
-         alert('blorg is not correct!');
-       }
+=> if (!blorg.isCorrect()) {
+       alert('blorg is not correct!');
+   }
 
 ;;;# Variable declaration
 ;;;t \index{variable}
@@ -660,13 +701,17 @@ a-variable  => aVariable
 ;;;t \index{scoping}
 ;;;t \index{DEFVAR}
 ;;;t \index{VAR}
+;;;t \index{LET}
 ;;;t \index{LET*}
+;;;t \index{LEXICAL-LET}
 ;;;t \index{LEXICAL-LET*}
 
 ; (DEFVAR var {value}?)
 ; (VAR var {value}?)
-; (LET* ({var | (var value)}) body)
-; (LEXICAL-LET* ({var | (var value)}) body)
+; (LET ({var | (var value)}*) body)
+; (LET* ({var | (var value)}*) body)
+; (LEXICAL-LET ({var | (var value)}*) body)
+; (LEXICAL-LET* ({var | (var value)}*) body)
 ;
 ; var   ::= a Lisp symbol
 ; value ::= a ParenScript expression
@@ -680,53 +725,71 @@ a-variable  => aVariable
 (defvar *a* (array 1 2 3)) => var A = [ 1, 2, 3 ]
 
 ;;; One feature present in Parenscript that is not part of Common Lisp
-;;; are lexically-scoped global variables, which are declared using
+;;; is lexically-scoped function variables, which are declared using
 ;;; the `VAR' special form.
 
-;;; Parenscript provides two special forms for manipulating local
-;;; variables: `LET*' and `LEXICAL-LET*'. Both bind their variable
-;;; lists sequentially, as indicated by the '*' at the end of their
-;;; names, however `LET*' does so using a simple JavaScript
-;;; assignment, while `LEXICAL-LET*' actually introduces a new lexical
-;;; environment for the variable bindings by creating and populating a
-;;; new object and using it as the lexical context for the JavaScript
-;;; 'with' form.
+;;; Parenscript provides two versions of the `LET' and `LET*' special
+;;; forms for manipulating local variables: `SIMPLE-LET' /
+;;; `SIMPLE-LET*' and `LEXICAL-LET' / `LEXICAL-LET*'.  By default,
+;;; `LET' and `LET*' are aliased to `SIMPLE-LET' and `SIMPLE-LET*',
+;;; respectively.
 
-(if (= i 1)
-    (let* ((blorg "hallo"))
-      (alert blorg))
-    (let* ((blorg "blitzel"))
-      (alert blorg)))
-   => if (i == 1) {
-        var blorg = 'hallo';
-        alert(blorg);
-      } else {
-        var blorg = 'blitzel';
-        alert(blorg);
-      }
+;;; `SIMPLE-LET' and `SIMPLE-LET*' bind their variable lists using
+;;; simple JavaScript assignment.  This means that you cannot rely on
+;;; the bindings going out of scope at the end of the form.
 
-(if (= i 1)
-    (lexical-let* ((blorg "hallo"))
-      (alert blorg))
-    (lexical-let* ((blorg "blitzel"))
-      (alert blorg)))
-   => if (i == 1) {
-          (function () {
-              var newlexicalcontext1 = new Object;
-              newlexicalcontext1['blorg'] = 'hallo';
-              with (newlexicalcontext1) {
-                  alert(blorg);
-              };
-           })();
-      } else {
-          (function () {
-              var newlexicalcontext3 = new Object;
-              newlexicalcontext3['blorg'] = 'blitzel';
-              with (newlexicalcontext3) {
-                  alert(blorg);
-              };
-          })();
-      }
+;;; `LEXICAL-LET' and `LEXICAL-LET*' actually introduce new lexical
+;;; environments for the variable bindings by creating anonymous
+;;; functions.
+
+;;; As you would expect, `SIMPLE-LET' and `LEXICAL-LET' do parallel
+;;; binding of their variable lists, while `SIMPLE-LET*' and
+;;; `LEXICAL-LET*' bind their variable lists sequentially.
+
+;;; examples:
+
+(simple-let* ((a 0) (b 1))
+  (alert (+ a b)))
+=> var a = 0;
+   var b = 1;
+   alert(a + b);
+
+(simple-let* ((a "World") (b "Hello"))
+  (simple-let ((a b) (b a))
+    (alert (+ a b))))
+=> var a = 'World';
+   var b = 'Hello';
+   var _js_a1 = b;
+   var _js_b2 = a;
+   var a = _js_a1;
+   var b = _js_b2;
+   delete _js_a1;
+   delete _js_b2;
+   alert(a + b);
+
+(simple-let* ((a 0) (b 1))
+  (lexical-let* ((a 9) (b 8))
+    (alert (+ a b)))
+  (alert (+ a b)))
+=> var a = 0;
+   var b = 1;
+   (function () {
+       var a = 9;
+       var b = 8;
+       alert(a + b);
+   })();
+   alert(a + b);
+
+(simple-let* ((a "World") (b "Hello"))
+  (lexical-let ((a b) (b a))
+    (alert (+ a b)))
+  (alert (+ a b)))
+=> var a = 'World';
+   var b = 'Hello';
+   (function (a, b) {
+       alert(a + b);
+   })(b, a);
+   alert(a + b);
 
 ;;; Moreover, beware that scoping rules in Lisp and JavaScript are
 ;;; quite different. For example, don't rely on closures capturing
@@ -745,77 +808,154 @@ a-variable  => aVariable
 ;;;t \index{DOEACH}
 ;;;t \index{WHILE}
 
-; (DO ({var | (var {init}? {step}?)}*) (end-test) body)
-; (DOTIMES (var numeric-form) body)
-; (DOLIST (var list-form) body)
-; (DOEACH (var object) body)
+; (DO ({var | (var {init}? {step}?)}*) (end-test {result}?) body)
+; (DO* ({var | (var {init}? {step}?)}*) (end-test {result}?) body)
+; (DOTIMES (var numeric-form {result}?) body)
+; (DOLIST (var list-form {result}?) body)
+; (DOEACH ({var | (key value)} object-form {result}?) body)
 ; (WHILE end-test body)
 ;
 ; var          ::= a Lisp symbol
 ; numeric-form ::= a ParenScript expression resulting in a number
 ; list-form    ::= a ParenScript expression resulting in an array
-; object       ::= a ParenScript expression resulting in an object
+; object-form  ::= a ParenScript expression resulting in an object
 ; init         ::= a ParenScript expression
 ; step         ::= a ParenScript expression
 ; end-test     ::= a ParenScript expression
+; result       ::= a ParenScript expression
 ; body         ::= a list of ParenScript statements
 
-;;; The `DO' form, which is similar to its Lisp form, is transformed
-;;; into a JavaScript `for' statement. Note that the ParenScript `DO'
-;;; form does not have a return value, that is because `for' is a
-;;; statement and not an expression in JavaScript.
+;;; All interation special forms are transformed into JavaScript `for'
+;;; statements and, if needed, lambda expressions.
+
+;;; `DO', `DO*', and `DOTIMES' carry the same semantics as their
+;;; Common Lisp equivalents.
+
+;;; `DO*' (note the variety of possible init-forms:
+
+(do* ((a) b (c (array "a" "b" "c" "d" "e"))
+      (d 0 (1+ d))
+      (e (aref c d) (aref c d)))
+     ((or (= d c.length) (eql e "x")))
+  (setf a d b e)
+  (document.write (+ "a: " a " b: " b "<br/>")))
+=> for (var a = null, b = null, c = ['a', 'b', 'c', 'd', 'e'], d = 0, e = c[d]; !(d == c.length || e == 'x'); d += 1, e = c[d]) {
+       a = d;
+       b = e;
+       document.write('a: ' + a + ' b: ' + b + '<br/>');
+   };
+
+;;; `DO' (note the parallel assignment):
 
 (do ((i 0 (1+ i))
-     (l (aref blorg i) (aref blorg i)))
-    ((or (= i blorg.length)
-         (eql l "Fumitastic")))
-  (document.write (+ "L is " l)))
-   => for (var i = 0, l = blorg[i];
-           !(i == blorg.length || l == 'Fumitastic');
-           i = i + 1, l = blorg[i]) {
-        document.write('L is ' + l);
-      }
+     (s 0 (+ s i (1+ i))))
+    ((> i 10))
+  (document.write (+ "i: " i " s: " s "<br/>")))
+=> var _js_i1 = 0;
+   var _js_s2 = 0;
+   var i = _js_i1;
+   var s = _js_s2;
+   delete _js_i1;
+   delete _js_s2;
+   for (; i <= 10; ) {
+       document.write('i: ' + i + ' s: ' + s + '<br/>');
+       var _js3 = i + 1;
+       var _js4 = s + i + (i + 1);
+       i = _js3;
+       s = _js4;
+   };
 
-;;; The `DOTIMES' form, which lets a variable iterate from 0 upto an
-;;; end value, is a shortcut for `DO'.
+;;; compare to `DO*':
 
-(dotimes (i blorg.length)
-  (document.write (+ "L is " (aref blorg i))))
-   => for (var i = 0; i < blorg.length; i = i + 1) {
-        document.write('L is ' + blorg[i]);
-      }
+(do* ((i 0 (1+ i))
+      (s 0 (+ s i (1- i))))
+     ((> i 10))
+  (document.write (+ "i: " i " s: " s "<br/>")))
+=> for (var i = 0, s = 0; i <= 10; i += 1, s += i + (i - 1)) {
+       document.write('i: ' + i + ' s: ' + s + '<br/>');
+   };
 
-;;; The `DOLIST' form is a shortcut for iterating over an array. Note
-;;; that this form creates temporary variables using a function called
-;;; `PS-GENSYM', which is similar to its Lisp counterpart `GENSYM'.
+;;; `DOTIMES':
 
-(dolist (l blorg)
-  (document.write (+ "L is " l)))
-   =>   var tmpArr1 = blorg;
-        for (var tmpI2 = 0; tmpI2 < tmpArr1.length;
-          tmpI2 = tmpI2 + 1) {
-          var l = tmpArr1[tmpI2];
-          document.write('L is ' + l);
-        };
+(let* ((arr (array "a" "b" "c" "d" "e")))
+  (dotimes (i arr.length)
+    (document.write (+ "i: " i " arr[i]: " (aref arr i) "<br/>"))))
+=> var arr = ['a', 'b', 'c', 'd', 'e'];
+   for (var i = 0; i < arr.length; i += 1) {
+       document.write('i: ' + i + ' arr[i]: ' + arr[i] + '<br/>');
+   };
 
-;;; The `DOEACH' form is converted to a `for (var .. in ..)' form in
-;;; JavaScript. It is used to iterate over the enumerable properties
-;;; of an object.
+;;; `DOTIMES' with return value:
 
-(doeach (i object)
-   (document.write (+ i " is " (aref object i))))
-   => for (var i in object) {
-        document.write(i + ' is ' + object[i]);
-      }
+(let* ((res 0))
+  (alert (+ "Summation to 10 is "
+            (dotimes (i 10 res)
+              (incf res (1+ i))))))
+=> var res = 0;
+   alert('Summation to 10 is ' + (function () {
+       for (var i = 0; i < 10; i += 1) {
+           res += i + 1;
+       };
+       return res;
+   })());
+
+;;; `DOLIST' is like CL:DOLIST, but that it operates on numbered JS
+;;; arrays/vectors.
+
+(let* ((l (list 1 2 4 8 16 32)))
+  (dolist (c l)
+    (document.write (+ "c: " c "<br/>"))))
+=> var l = [1, 2, 4, 8, 16, 32];
+   for (var c = null, _js_arrvar2 = l, _js_idx1 = 0; _js_idx1 < _js_arrvar2.length; _js_idx1 += 1) {
+       c = _js_arrvar2[_js_idx1];
+       document.write('c: ' + c + '<br/>');
+   };
+
+(let* ((l (list 1 2 4 8 16 32))
+       (s 0))
+  (alert (+ "Sum of " l " is: "
+            (dolist (c l s)
+              (incf s c)))))
+=> var l = [1, 2, 4, 8, 16, 32];
+   var s = 0;
+   alert('Sum of ' + l + ' is: ' + (function () {
+       for (var c = null, _js_arrvar2 = l, _js_idx1 = 0; _js_idx1 < _js_arrvar2.length; _js_idx1 += 1) {
+           c = _js_arrvar2[_js_idx1];
+           s += c;
+       };
+       return s;
+   })());
+
+;;; `DOEACH' iterates across the enumerable properties of JS objects,
+;;; binding either simply the key of each slot, or alternatively, both
+;;; the key and the value.
+
+(let* ((obj (create :a 1 :b 2 :c 3)))
+  (doeach (i obj)
+    (document.write (+ i ": " (aref obj i) "<br/>"))))
+=> var obj = { a : 1, b : 2, c : 3 };
+   for (var i in obj) {
+       document.write(i + ': ' + obj[i] + '<br/>');
+   };
+
+(let* ((obj (create :a 1 :b 2 :c 3)))
+  (doeach ((k v) obj)
+    (document.write (+ k ": " v "<br/>"))))
+=> var obj = { a : 1, b : 2, c : 3 };
+   var v;
+   for (var k in obj) {
+       v = obj[k];
+       document.write(k + ': ' + v + '<br/>');
+   };
 
 ;;; The `WHILE' form is transformed to the JavaScript form `while',
 ;;; and loops until a termination test evaluates to false.
 
 (while (film.is-not-finished)
   (this.eat (new *popcorn)))
-   => while (film.isNotFinished()) {
-        this.eat(new Popcorn);
-      }
+=> while (film.isNotFinished()) {
+       this.eat(new Popcorn);
+   }
 
 ;;;# The `CASE' statement
 ;;;t \index{CASE}
@@ -838,15 +978,16 @@ a-variable  => aVariable
   ((1 "one") (alert "one"))
   (2 (alert "two"))
   (t (alert "default clause")))
-    => switch (blorg[i]) {
-         case 1:   
-         case 'one':
-                   alert('one');
-                   break;
-         case 2:
-                   alert('two');
-                   break;
-         default:   alert('default clause');
+=> switch (blorg[i]) {
+       case 1:
+       case 'one':
+           alert('one');
+           break;
+       case 2:
+           alert('two');
+           break;
+       default: 
+           alert('default clause');
        }
 
 ; (SWITCH case-value clause*)
@@ -860,12 +1001,11 @@ a-variable  => aVariable
   (1 (alert "If I get here"))
   (2 (alert "I also get here"))
   (default (alert "I always get here")))
-    => switch (blorg[i]) {
-         case 1:   alert('If I get here');
-         case 2:   alert('I also get here');
-         default:   alert('I always get here');
-       }
-
+=> switch (blorg[i]) {
+       case 1: alert('If I get here');
+       case 2: alert('I also get here');
+       default: alert('I always get here');
+   }
 
 ;;;# The `WITH' statement
 ;;;t \index{WITH}
@@ -885,10 +1025,9 @@ a-variable  => aVariable
 
 (with (create :foo "foo" :i "i")
   (alert (+ "i is now intermediary scoped: " i)))
-   => with ({ foo : 'foo',
-              i : 'i' }) {
-        alert('i is now intermediary scoped: ' + i);
-      }
+=> with ({ foo : 'foo', i : 'i' }) {
+       alert('i is now intermediary scoped: ' + i);
+   }
 
 ;;;# The `TRY' statement
 ;;;t \index{TRY}
@@ -913,13 +1052,13 @@ a-variable  => aVariable
    (alert (+ "an error happened: " error)))
  (:finally
    (alert "Leaving the try form")))
-   => try {
-        throw 'i';
-      } catch (error) {
-        alert('an error happened: ' + error);
-      } finally {
-        alert('Leaving the try form');
-      }
+=> try {
+       throw 'i';
+   } catch (error) {
+       alert('an error happened: ' + error);
+   } finally {
+       alert('Leaving the try form');
+   }
 
 ;;;# The HTML Generator
 ;;;t \index{PS-HTML}
@@ -934,10 +1073,10 @@ a-variable  => aVariable
 ;;; compiler. The resulting expression is a JavaScript expression.
 
 (ps-html ((:a :href "foobar") "blorg"))
-  => '<a href=\"foobar\">blorg</a>'
+=> '<a href=\"foobar\">blorg</a>'
 
 (ps-html ((:a :href (generate-a-link)) "blorg"))
-  => '<a href=\"' + generateALink() + '\">blorg</a>'
+=> '<a href=\"' + generateALink() + '\">blorg</a>'
 
 ;;; We can recursively call the ParenScript compiler in an HTML
 ;;; expression.
@@ -945,7 +1084,7 @@ a-variable  => aVariable
 (document.write
   (ps-html ((:a :href "#"
                 :onclick (lisp (ps-inline (transport)))) "link")))
-  => document.write('<a href=\"#\" onclick=\"' + 'javascript:transport()' + '\">link</a>')
+=> document.write('<a href=\"#\" onclick=\"' + 'javascript:transport()' + '\">link</a>')
 
 ;;; Forms may be used in attribute lists to conditionally generate
 ;;; the next attribute. In this example the textarea is sometimes disabled.
@@ -955,12 +1094,12 @@ a-variable  => aVariable
    (setf element.inner-h-t-m-l
          (ps-html ((:textarea (or disabled (not authorized)) :disabled "disabled")
                 "Edit me"))))
-  =>    var disabled = null;
-        var authorized = true;
-        element.innerHTML =
-        '<textarea'
-        + (disabled || !authorized ? ' disabled=\"' + 'disabled' + '\"' : '')
-        + '>Edit me</textarea>';
+=> var disabled = null;
+   var authorized = true;
+   element.innerHTML =
+   '<textarea'
+   + (disabled || !authorized ? ' disabled=\"' + 'disabled' + '\"' : '')
+   + '>Edit me</textarea>';
 
 ;;;# Macrology
 ;;;t \index{macro}
@@ -1000,16 +1139,16 @@ a-variable  => aVariable
 ;;; of the `DOLIST' form (note how `PS-GENSYM', the ParenScript of
 ;;; `GENSYM', is used to generate new ParenScript variable names):
 
-(defpsmacro dolist (i-array &rest body)
-  (let ((var (first i-array))
-        (array (second i-array))
-        (arrvar (ps-gensym "arr"))
-        (idx (ps-gensym "i")))
-    `(let* ((,arrvar ,array))
-      (do ((,idx 0 (incf ,idx)))
-          ((>= ,idx (slot-value ,arrvar 'length)))
-        (let* ((,var (aref ,arrvar ,idx)))
-          ,@body)))))
+(defpsmacro dolist ((var array &optional (result nil result?)) &body body)
+  (let ((idx (ps-gensym "_js_idx"))
+        (arrvar (ps-gensym "_js_arrvar")))
+    `(do* (,var
+           (,arrvar ,array)
+           (,idx 0 (1+ ,idx)))
+          ((>= ,idx (slot-value ,arrvar 'length))
+           ,@(when result? (list result)))
+       (setq ,var (aref ,arrvar ,idx))
+       ,@body)))
 
 ;;; Macros can be defined in ParenScript code itself (as opposed to
 ;;; from Lisp) by using the ParenScript `MACROLET' and `DEFMACRO'

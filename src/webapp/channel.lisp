@@ -33,8 +33,8 @@
 
 (defun channel-string-to-states (channels)
   (let ((channel-states))
-    (match-bind (:* (channel (:until-and-eat "|")) (state (:until-and-eat (:or ";" :$))) 
-		    '(awhen (find-channel channel) (push (cons it (byte-vector-parse-integer state)) channel-states)))
+    (match-bind ( (* channel "|" state (or ";" (last)) 
+		     '(awhen (find-channel channel) (push (cons it (byte-vector-parse-integer state)) channel-states))))
 	channels)
     channel-states))
 
@@ -64,10 +64,10 @@
       (unless (finished)
 	(let (func)
 	  (flet ((unsubscribe ()
-		   (loop for (channel . state) in channel-states do (channel-unsubscribe channel func))))
+		   (loop for (channel ) in channel-states do (channel-unsubscribe channel func))))
 	    (setf func
 		  (lambda() (when (finished) (unsubscribe))))
-	    (loop for (channel . state) in channel-states do (channel-subscribe channel func))))))))
+	    (loop for (channel ) in channel-states do (channel-subscribe channel func))))))))
 
 (defun register-channel-page ()
   (dispatcher-register-path *default-dispatcher*  +channel-page-name+ #'channel-respond-page))

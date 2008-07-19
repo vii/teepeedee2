@@ -32,12 +32,12 @@
 
 (defmacro test-ps-js (testname parenscript javascript)
   (let (
-	;; (parenscript
-	;;   `(progn
-	;; (defpackage parenscript-test
-	;; (:lisp-package :parenscript-test))
-	;; ,parenscript)))
-	)
+        ;; (parenscript
+        ;;   `(progn
+        ;; (defpackage parenscript-test
+        ;; (:lisp-package :parenscript-test))
+        ;; ,parenscript)))
+        )
     `(test ,testname ()
       (setf ps:*ps-gensym-counter* 0)
     
@@ -49,6 +49,7 @@
                      (normalize-js-code js-code)))))))
 
 (defmacro defpstest (testname (&key (optimize t)) parenscript javascript)
+  (declare (ignore optimize))
   `(test ,testname
     (setf ps:*ps-gensym-counter* 0)
     (let* ((generated-code (compile-script ',parenscript))

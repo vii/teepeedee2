@@ -3,12 +3,15 @@
 (defun http-serve-timeout ()
   60)
 
+(defun http-serve-wait-timeout ()
+  120)
+
 (defprotocol http-serve (con)
-  (reset-timeout con (http-serve-timeout))
-  (match-bind (method :whitespace url :whitespace?
-		      (:? "HTTP/" (version-major :integer 1) "." (version-minor :integer 0) :whitespace?) 
-		      :$)
+  (reset-timeout con (http-serve-wait-timeout))
+  (match-bind (method (+ (space)) url (or (last) (+ (space)))
+		      (:? "HTTP/" (version-major (integer) 1) "." (version-minor (integer) 0)))
       (io 'recvline con)
+    (reset-timeout con (http-serve-timeout))
     (let ((request-content-length 0)
 	  host
 	  (connection-close (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))))
@@ -16,16 +19,15 @@
 	       (when (length value)
 		 (case-match-fold-ascii-case name
 		  ("content-length" 
-		   (match-bind ((len :integer)) value
+		   (match-bind ((len (integer))) value
 		     (setf request-content-length len)))
 		  ("host"
 		   (setf host value))
 		  ("connection"
-		   (match-bind (:*
-				   '(case-match-fold-ascii-case (:word)
-				     ("close" (setf connection-close t))
-				     ("keep-alive" (setf connection-close nil))) 
-				   :whitespace?)
+		   (match-bind ( (+ word (or (+ (space)) (last))
+				    '(case-match-fold-ascii-case word
+				      ("close" (setf connection-close t))
+				      ("keep-alive" (setf connection-close nil))) ))
 		       value))))))
 	(io 'process-headers con #'process-header))
       
@@ -42,10 +44,11 @@
     (without-call/cc
       (flet ((parse-params (str)
 	       (when str
-		 (match-bind (:* (name (:until-and-eat "=")) (value (:until-and-eat (:or :$ "&")))
-				 '(push (cons (url-encoding-decode name) (url-encoding-decode value)) params))
-		     str))))
-	(match-bind ((path (:until-and-eat (:or :$ ("?" (q (:rest)))))))
+		 (match-bind ( (*  name "=" value (or (last) "&")
+				   '(push (cons (url-encoding-decode name) (url-encoding-decode value)) params)))
+		     str))
+	       (values)))
+	(match-bind (path (or (last) (progn "?" q)))
 	    path-and-args
 	  (parse-params q)
 	  (parse-params request-body)

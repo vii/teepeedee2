@@ -125,7 +125,7 @@
 
 
 (defun keyword-to-friendly-string (keyword)
-  (string-capitalize (string-downcase (force-string (match-replace-all keyword "-" " "))) :end 1))
+  (string-capitalize (string-downcase (match-replace-all (force-string keyword) ("-" " "))) :end 1))
 
 (my-defun move-state 'object-to-ml ()
   (<div :class "move-state"
@@ -333,7 +333,7 @@
     (push :tpd2-has-swank *features*)
     nil)
 
-(progn
+#+start-tpd2 (progn
   (let ((socket (tpd2.io:make-con-listen :port 8888)))
     (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
 
@@ -345,3 +345,6 @@
        (with-specials-restored
 	   (tpd2.io:event-loop)))
      :name "MOPOKO-EVENT-LOOP")))
+
+(defpage "/test" ()
+  (<p "hello"))

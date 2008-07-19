@@ -7,7 +7,7 @@
   postponed-registrations)
 
 (my-defun epoll max-events ()
-  64)
+  1024)
 
 (my-defun epoll init ()
   (assert (not (my fd)))
@@ -53,7 +53,8 @@
 	  (cffi:with-foreign-slots ((fd) data epoll-data)
 	    (awhen (my 'mux-find-fd fd)
 	      (con-run it)
-	      (unless (zerop (logand (logior +POLLERR+ +POLLHUP+ +POLLRDHUP+) events))
+	      (unless (and (zerop (logand (logior +POLLERR+ +POLLHUP+) events))
+			  (or (zerop (logand +POLLRDHUP+ events)) (not (zerop (logand +POLLIN+ events)))))
 		(con-fail it)))))))
     (setf (my postpone-registration) nil)
     (adolist (my postponed-registrations)
@@ -88,12 +89,12 @@
     (my wait timeout)))
 
 (defun event-loop ()
-  (syscall-signal +SIGPIPE+ +SIG_IGN+)
   (loop for timeout = (next-timeout)
 	while (or timeout (events-pending-p)) do
 	(wait-for-next-event timeout)))
 
 (defun event-loop-reset ()
   (mux-close-all *global-epoll*)
+  (forget-timeouts)
   (setf *global-epoll*
 	(make-epoll)))

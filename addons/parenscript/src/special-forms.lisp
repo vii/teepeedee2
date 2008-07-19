@@ -3,10 +3,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; literals
 (defmacro defpsliteral (name string)
-  `(progn (pushnew ',name *ps-literals*)
-    (define-ps-special-form ,name (expecting)
-      (declare (ignore expecting))
-      (list 'js-literal ,string))))
+  `(progn
+     (add-ps-literal ',name)
+     (define-ps-special-form ,name (expecting)
+       (declare (ignore expecting))
+       (list 'js-literal ,string))))
 
 (defpsliteral this      "this")
 (defpsliteral t         "true")
@@ -16,8 +17,14 @@
 (defpsliteral nil       "null")
 (defpsliteral undefined "undefined")
 
-(defpsliteral break     "break")
-(defpsliteral continue  "continue")
+(macrolet ((def-for-literal (name printer)
+             `(progn
+                (add-ps-literal ',name)
+                (define-ps-special-form ,name (expecting &optional label)
+                  (declare (ignore expecting))
+                  (list ',printer label)))))
+  (def-for-literal break js-break)
+  (def-for-literal continue js-continue))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; unary operators
@@ -44,6 +51,7 @@
                   (compile-parenscript-form form :expecting :expression))
                 coords)))
 
+(add-ps-literal '{})
 (define-ps-special-form {} (expecting &rest arrows)
   (declare (ignore expecting))
   (cons 'object-literal (loop for (key value) on arrows by #'cddr
@@ -83,7 +91,7 @@
   (let ((form (compile-parenscript-form x :expecting :expression))
         (not-op nil))
     (if (and (eql (first form) 'operator)
-	     (= (length (third form)) 2)
+             (= (length (third form)) 2)
              (setf not-op (case (second form)
                             (== '!=)
                             (< '>=)
@@ -100,12 +108,6 @@
 (define-ps-special-form ~ (expecting x)
   (declare (ignore expecting))
   (list 'unary-operator "~" (compile-parenscript-form x :expecting :expression) :prefix t))
-
-(defpsmacro 1- (form)
-  `(- ,form 1))
-
-(defpsmacro 1+ (form)
-  `(+ ,form 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; control structures
@@ -170,15 +172,16 @@
 (define-ps-special-form switch (expecting test-expr &rest clauses)
   (declare (ignore expecting))
   (let ((clauses (mapcar (lambda (clause)
-			     (let ((val (car clause))
-				   (body (cdr clause)))
-			       (cons (if (eql val 'default)
-					 'default
-					 (compile-parenscript-form val :expecting :expression))
+                             (let ((val (car clause))
+                                   (body (cdr clause)))
+                               (cons (if (and (symbolp val)
+                                              (eq (ensure-ps-symbol val) 'default))
+                                         'default
+                                         (compile-parenscript-form val :expecting :expression))
                                      (mapcar (lambda (statement) (compile-parenscript-form statement :expecting :statement))
                                              body))))
-			 clauses))
-	(expr (compile-parenscript-form test-expr :expecting :expression)))
+                         clauses))
+        (expr (compile-parenscript-form test-expr :expecting :expression)))
     (list 'js-switch expr clauses)))
 
 (defpsmacro case (value &rest clauses)
@@ -263,7 +266,7 @@ Syntax of key spec:
 
 (defpsmacro defaultf (place value)
   `(setf ,place (or (and (=== undefined ,place) ,value)
-		 ,place)))
+                 ,place)))
 
 (defun parse-extended-function (lambda-list body &optional name)
   "Returns two values: the effective arguments and body for a function with
@@ -308,8 +311,7 @@ the given lambda-list and body."
                             (declare (ignore x y))
                             (when specified? (cons var val))))
                       keys))))
-           (body-paren-forms (parse-function-body body)) ;remove documentation
-           ;;
+           (body-paren-forms (parse-function-body body)) ; remove documentation
            (initform-forms
             (mapcar #'(lambda (default-pair)
                         `(defaultf ,(car default-pair) ,(cdr default-pair)))
@@ -345,7 +347,7 @@ lambda-list::=
   [&aux {var | (var [init-form])}*])"
   (if (symbolp name)
       `(defun-function ,name ,lambda-list ,@body)
-      (progn (assert (and (= (length name) 2) (eql 'setf (car name))) ()
+      (progn (assert (and (= (length name) 2) (eq 'setf (ensure-ps-symbol (car name)))) ()
                      "(defun ~s ~s ...) needs to have a symbol or (setf symbol) for a name." name lambda-list)
              `(defun-setf ,name ,lambda-list ,@body))))
 
@@ -379,7 +381,7 @@ lambda-list::=
       ,@effective-body)))
 
 (defpsmacro defsetf-long (access-fn lambda-list (store-var) form)
-  (setf (get-macro-spec access-fn *script-setf-expanders*)
+  (setf (get-macro-spec access-fn *ps-setf-expanders*)
         (compile nil
                  (let ((var-bindings (ordered-set-difference lambda-list lambda-list-keywords)))
                    `(lambda (access-fn-args store-form)
@@ -397,7 +399,7 @@ lambda-list::=
 
 (defpsmacro defsetf-short (access-fn update-fn &optional docstring)
   (declare (ignore docstring))
-  (setf (get-macro-spec access-fn *script-setf-expanders*)
+  (setf (get-macro-spec access-fn *ps-setf-expanders*)
         (lambda (access-fn-args store-form)
           `(,update-fn ,@access-fn-args ,store-form)))
   nil)
@@ -409,7 +411,7 @@ lambda-list::=
 ;;; macros
 (defmacro with-temp-macro-environment ((var) &body body)
   `(let* ((,var (make-macro-env-dictionary))
-          (*script-macro-env* (cons ,var *script-macro-env*)))
+          (*ps-macro-env* (cons ,var *ps-macro-env*)))
     ,@body))
 
 (define-ps-special-form macrolet (expecting macros &body body)
@@ -418,8 +420,8 @@ lambda-list::=
     (dolist (macro macros)
       (destructuring-bind (name arglist &body body)
           macro
-	(setf (get-macro-spec name macro-env-dict)
-	      (cons nil (make-ps-macro-function arglist body)))))
+        (setf (get-macro-spec name macro-env-dict)
+              (cons nil (make-ps-macro-function arglist body)))))
     (compile-parenscript-form `(progn ,@body))))
 
 (define-ps-special-form symbol-macrolet (expecting symbol-macros &body body)
@@ -428,18 +430,18 @@ lambda-list::=
     (dolist (macro symbol-macros)
       (destructuring-bind (name expansion)
           macro
-	(setf (get-macro-spec name macro-env-dict)
-	      (cons t (make-ps-macro-function () (list `',expansion))))))
+        (setf (get-macro-spec name macro-env-dict)
+              (cons t (make-ps-macro-function () (list `',expansion))))))
     (compile-parenscript-form `(progn ,@body))))
 
 (define-ps-special-form defmacro (expecting name args &body body)
   (declare (ignore expecting))
-  (define-script-macro% name args body :symbol-macro-p nil)
+  (define-ps-macro% name args body :symbol-macro-p nil)
   nil)
 
 (define-ps-special-form define-symbol-macro (expecting name expansion)
   (declare (ignore expecting))
-  (define-script-macro% name () (list `',expansion) :symbol-macro-p t)
+  (define-ps-macro% name () (list `',expansion) :symbol-macro-p t)
   nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -452,7 +454,7 @@ lambda-list::=
                                        (numberp name-expr)
                                        (and (listp name-expr)
                                             (or (eql 'js-variable (car name-expr))
-                                                (eql 'script-quote (car name-expr)))))
+                                                (eql 'ps-quote (car name-expr)))))
                                    ()
                                    "Slot ~s is not one of js-variable, keyword, string or number." name-expr)
                            (list name-expr (compile-parenscript-form val :expecting :expression))))))
@@ -475,10 +477,10 @@ lambda-list::=
 
 (defpsmacro with-slots (slots object &rest body)
   (flet ((slot-var (slot) (if (listp slot) (first slot) slot))
-	 (slot-symbol (slot) (if (listp slot) (second slot) slot)))
+         (slot-symbol (slot) (if (listp slot) (second slot) slot)))
     `(symbol-macrolet ,(mapcar #'(lambda (slot)
-				   `(,(slot-var slot) (slot-value ,object ',(slot-symbol slot))))
-			       slots)
+                                   `(,(slot-var slot) (slot-value ,object ',(slot-symbol slot))))
+                               slots)
       ,@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -502,22 +504,14 @@ lambda-list::=
 (defun smart-setf (lhs rhs)
   (if (and (listp rhs)
            (eql 'operator (car rhs))
-	   (member lhs (third rhs) :test #'equalp))
-      (let ((args-without (remove lhs (third rhs) :count 1 :test #'equalp))
-	    (args-without-first (remove lhs (third rhs) :count 1 :end 1 :test #'equalp)))
-	(cond ((and (equal (car args-without) 1) (eql (second rhs) '+))
-	       (list 'unary-operator "++" lhs :prefix nil))
-	      ((and (equal (second args-without-first) 1) (eql (second rhs) '-))
-	       (list 'unary-operator "--" lhs :prefix nil))
-	      ((and (assignment-op (second rhs))
-		    (member (second rhs) '(+ *))
+           (member lhs (third rhs) :test #'equalp))
+      (let ((args-without-first (remove lhs (third rhs) :count 1 :end 1 :test #'equalp)))
+        (cond ((and (assignment-op (second rhs))
+                    (member (second rhs) '(+ *))
                     (equalp lhs (first (third rhs))))
-	       (list 'operator (assignment-op (second rhs))
+               (list 'operator (assignment-op (second rhs))
                      (list lhs (list 'operator (second rhs) args-without-first))))
-	      ((and (assignment-op (second rhs)) (equalp (first (third rhs)) lhs))
-	       (list 'operator (assignment-op (second rhs))
-                     (list lhs (list 'operator (second rhs) (cdr (third rhs))))))
-	      (t (list 'js-assign lhs rhs))))
+              (t (list 'js-assign lhs rhs))))
       (list 'js-assign lhs rhs)))
 
 (define-ps-special-form setf1% (expecting lhs rhs)
@@ -526,15 +520,36 @@ lambda-list::=
 
 (defpsmacro setf (&rest args)
   (flet ((process-setf-clause (place value-form)
-           (if (and (listp place) (get-macro-spec (car place) *script-setf-expanders*))
-               (funcall (get-macro-spec (car place) *script-setf-expanders*) (cdr place) value-form)
+           (if (and (listp place) (get-macro-spec (car place) *ps-setf-expanders*))
+               (funcall (get-macro-spec (car place) *ps-setf-expanders*) (cdr place) value-form)
                (let ((exp-place (ps-macroexpand place)))
-                 (if (and (listp exp-place) (get-macro-spec (car exp-place) *script-setf-expanders*))
-                     (funcall (get-macro-spec (car exp-place) *script-setf-expanders*) (cdr exp-place) value-form)
+                 (if (and (listp exp-place) (get-macro-spec (car exp-place) *ps-setf-expanders*))
+                     (funcall (get-macro-spec (car exp-place) *ps-setf-expanders*) (cdr exp-place) value-form)
                      `(setf1% ,exp-place ,value-form))))))
     (assert (evenp (length args)) ()
             "~s does not have an even number of arguments." (cons 'setf args))
     `(progn ,@(loop for (place value) on args by #'cddr collect (process-setf-clause place value)))))
+
+(defpsmacro psetf (&rest args)
+  (let ((vars (loop for x in args by #'cddr collect x))
+        (vals (loop for x in (cdr args) by #'cddr collect x)))
+    (let ((gensyms (mapcar (lambda (x) (declare (ignore x)) (ps-gensym)) vars)))
+      `(simple-let* ,(mapcar #'list gensyms vals)
+         (setf ,@(mapcan #'list vars gensyms))))))
+
+(defun check-setq-args (args)
+  (let ((vars (loop for x in args by #'cddr collect x)))
+    (let ((non-var (find-if (complement #'symbolp) vars)))
+      (when non-var
+        (error 'type-error :datum non-var :expected-type 'symbol)))))
+
+(defpsmacro setq (&rest args)
+  (check-setq-args args)
+  `(setf ,@args))
+
+(defpsmacro psetq (&rest args)
+  (check-setq-args args)
+  `(psetf ,@args))
 
 (define-ps-special-form var (expecting name &rest value)
   (declare (ignore expecting))
@@ -549,28 +564,43 @@ lambda-list::=
   (assert (or (null value) (= (length value) 1)) () "Wrong number of arguments to defvar: ~s" `(defvar ,name ,@value))
   `(var ,name ,@value))
 
-(defpsmacro lexical-let* (bindings &body body)
-  "A let form that does actual lexical binding of variables. This is
-currently expensive in JavaScript since we have to cons up and call a
-lambda."
-  (with-ps-gensyms (new-lexical-context)
-    `((lambda ()
-        (let* ((,new-lexical-context (new *object)))
-          ,@(loop for binding in bindings
-                  collect `(setf (slot-value ,new-lexical-context ,(symbol-to-js (if (atom binding) binding (first binding))))
-                            ,(when (listp binding) (second binding))))
-          (with ,new-lexical-context ,@body))))))
+(defun make-let-vars (bindings)
+  (mapcar (lambda (x) (if (listp x) (car x) x)) bindings))
 
-(defpsmacro let* (bindings &rest body)
+(defun make-let-vals (bindings)
+  (mapcar (lambda (x) (if (or (atom x) (endp (cdr x))) nil (second x))) bindings))
+
+(defpsmacro lexical-let* (bindings &body body)
+  `((lambda ()
+      (let* ,bindings
+        ,@body))))
+
+(defpsmacro lexical-let (bindings &body body)
+  `((lambda ,(make-let-vars bindings)
+      ,@body)
+    ,@(make-let-vals bindings)))
+
+(defpsmacro simple-let* (bindings &body body)
   (if bindings
       (let ((var (if (listp (car bindings)) (caar bindings) (car bindings))))
         `(,(if (member var *ps-special-variables*) 'let1-dynamic 'let1) ,(car bindings)
-          (let* ,(cdr bindings) ,@body)))
+           (simple-let* ,(cdr bindings) ,@body)))
       `(progn ,@body)))
 
-(defpsmacro let (&rest stuff)
-  "Right now, let doesn't do parallel assignment."
-  `(let* ,@stuff))
+(defpsmacro simple-let (bindings &body body)
+  (let ((vars (mapcar (lambda (x) (if (atom x) x (first x))) bindings))
+        (vals (mapcar (lambda (x) (if (or (atom x) (endp (cdr x))) nil (second x))) bindings)))
+    (let ((gensyms (mapcar (lambda (x) (ps-gensym (format nil "_js_~a" x))) vars)))
+      `(simple-let* ,(mapcar #'list gensyms vals)
+         (simple-let* ,(mapcar #'list vars gensyms)
+           ,@(mapcar (lambda (x) `(delete ,x)) gensyms)
+           ,@body)))))
+
+(defpsmacro let* (bindings &body body)
+  `(simple-let* ,bindings ,@body))
+
+(defpsmacro let (bindings &body body)
+  `(simple-let ,bindings ,@body))
 
 (define-ps-special-form let1 (expecting binding &rest body)
   (ecase expecting
@@ -588,65 +618,144 @@ lambda."
       (try (progn (setf ,temp-stack-var ,var)
                   (setf ,var ,value)
                   ,@body)
-       (:finally (setf ,var ,temp-stack-var))))))
+       (:finally
+        (setf ,var ,temp-stack-var)
+        (delete ,temp-stack-var))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; iteration
-(defun make-for-vars (decls)
-  (loop for decl in decls
-	for var = (if (atom decl) decl (first decl))
-	for init-value = (if (atom decl) nil (second decl))
-	collect (cons (compile-parenscript-form var :expecting :symbol) (compile-parenscript-form init-value))))
+(defun make-for-vars/inits (init-forms)
+  (mapcar (lambda (x)
+            (cons (compile-parenscript-form (if (atom x) x (first x)) :expecting :symbol)
+                  (compile-parenscript-form (if (atom x) nil (second x)))))
+          init-forms))
 
-(defun make-for-steps (decls)
-  (loop for decl in decls
-	when (= (length decl) 3)
-	collect (compile-parenscript-form (third decl) :expecting :expression)))
-
-(define-ps-special-form do (expecting decls termination-test &rest body)
+(define-ps-special-form labeled-for (expecting label init-forms cond-forms step-forms &rest body)
   (declare (ignore expecting))
-  (let ((vars (make-for-vars decls))
-	(steps (make-for-steps decls))
-	(test (compile-parenscript-form `(not ,(first termination-test)) :expecting :expression))
-	(body (compile-parenscript-form `(progn ,@body))))
-    (list 'js-for vars steps test body)))
+  (let ((vars (make-for-vars/inits init-forms))
+        (steps (mapcar (lambda (x) (compile-parenscript-form x :expecting :expression)) step-forms))
+        (tests (mapcar (lambda (x) (compile-parenscript-form x :expecting :expression)) cond-forms))
+        (body (compile-parenscript-form `(progn ,@body))))
+    (list 'js-for label vars tests steps body)))
 
-(define-ps-special-form doeach (expecting decl &rest body)
+(defpsmacro for (init-forms cond-forms step-forms &body body)
+  `(labeled-for nil ,init-forms ,cond-forms ,step-forms ,@body))
+
+(defun do-make-let-bindings (decls)
+  (mapcar (lambda (x)
+            (if (atom x) x
+                (if (endp (cdr x)) (list (car x))
+                    (subseq x 0 2))))
+          decls))
+
+(defun do-make-init-vars (decls)
+  (mapcar (lambda (x) (if (atom x) x (first x))) decls))
+
+(defun do-make-init-vals (decls)
+  (mapcar (lambda (x) (if (or (atom x) (endp (cdr x))) nil (second x))) decls))
+
+(defun do-make-for-vars/init (decls)
+  (mapcar (lambda (x)
+            (if (atom x) x
+                (if (endp (cdr x)) x
+                    (subseq x 0 2))))
+          decls))
+
+(defun do-make-for-steps (decls)
+  (mapcar (lambda (x)
+            `(setf ,(first x) ,(third x)))
+          (remove-if (lambda (x) (or (atom x) (< (length x) 3))) decls)))
+
+(defun do-make-iter-psteps (decls)
+  `(psetq
+    ,@(mapcan (lambda (x) (list (first x) (third x)))
+              (remove-if (lambda (x) (or (atom x) (< (length x) 3))) decls))))
+
+(defpsmacro do* (decls (termination &optional (result nil result?)) &body body)
+  (if result?
+      `((lambda ()
+          (for ,(do-make-for-vars/init decls) ((not ,termination)) ,(do-make-for-steps decls)
+               ,@body)
+          (return ,result)))
+      `(progn
+         (for ,(do-make-for-vars/init decls) ((not ,termination)) ,(do-make-for-steps decls)
+              ,@body))))
+
+(defpsmacro do (decls (termination &optional (result nil result?)) &body body)
+  (if result?
+      `((lambda ,(do-make-init-vars decls)
+          (for () ((not ,termination)) ()
+               ,@body
+               ,(do-make-iter-psteps decls))
+          (return ,result))
+        ,@(do-make-init-vals decls))
+      `(let ,(do-make-let-bindings decls)
+         (for () ((not ,termination)) ()
+              ,@body
+              ,(do-make-iter-psteps decls)))))
+
+(define-ps-special-form for-in (expecting decl &rest body)
   (declare (ignore expecting))
-  (list 'js-for-each
-        (first decl)
+  (list 'js-for-in
+        (compile-parenscript-form (first decl) :expecting :expression)
         (compile-parenscript-form (second decl) :expecting :expression)
-	(compile-parenscript-form `(progn ,@body))))
+        (compile-parenscript-form `(progn ,@body))))
+
+(defpsmacro doeach ((var array &optional (result (values) result?)) &body body)
+  "Iterates over `array'.  If `var' is a symbol, binds `var' to each
+element key.  If `var' is a list, it must be a list of two
+symbols, (key value), which will be bound to each successive key/value
+pair in `array'."
+  (if result?
+      (if (consp var)
+          (destructuring-bind (key val) var
+            `((lambda ()
+                (let* (,val)
+                  (for-in ((var ,key) ,array)
+                    (setf ,val (aref ,array ,key))
+                    ,@body)
+                  (return ,result)))))
+          `((lambda ()
+              (for-in ((var ,var) ,array)
+                ,@body)
+              (return ,result))))
+      (if (consp var)
+          (destructuring-bind (key val) var
+            `(progn
+               (let* (,val)
+                 (for-in ((var ,key) ,array)
+                   (setf ,val (aref ,array ,key))
+                   ,@body))))
+          `(progn
+             (for-in ((var ,var) ,array) ,@body)))))
 
 (define-ps-special-form while (expecting test &rest body)
   (declare (ignore expecting))
   (list 'js-while (compile-parenscript-form test :expecting :expression)
                   (compile-parenscript-form `(progn ,@body))))
 
-(defpsmacro dotimes (iter &rest body)
-  (let ((var (first iter))
-        (times (second iter)))
-  `(do ((,var 0 (1+ ,var)))
-       ((>= ,var ,times))
-     ,@body)))
+(defpsmacro dotimes ((var count &optional (result nil result?)) &rest body)
+  `(do* ((,var 0 (1+ ,var)))
+        ((>= ,var ,count) ,@(when result? (list result)))
+     ,@body))
 
-(defpsmacro dolist (i-array &rest body)
-  (let ((var (first i-array))
-	(array (second i-array))
-	(arrvar (ps-gensym "tmp-arr"))
-	(idx (ps-gensym "tmp-i")))
-    `(let* ((,arrvar ,array))
-      (do ((,idx 0 (1+ ,idx)))
-	  ((>= ,idx (slot-value ,arrvar 'length)))
-	(let* ((,var (aref ,arrvar ,idx)))
-	  ,@body)))))
+(defpsmacro dolist ((var array &optional (result nil result?)) &body body)
+  (let ((idx (ps-gensym "_js_idx"))
+        (arrvar (ps-gensym "_js_arrvar")))
+    `(do* (,var
+           (,arrvar ,array)
+           (,idx 0 (1+ ,idx)))
+          ((>= ,idx (slot-value ,arrvar 'length))
+           ,@(when result? (list result)))
+       (setq ,var (aref ,arrvar ,idx))
+       ,@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; misc
 (define-ps-special-form with (expecting expression &rest body)
   (declare (ignore expecting))
   (list 'js-with (compile-parenscript-form expression :expecting :expression)
-		 (compile-parenscript-form `(progn ,@body))))
+                 (compile-parenscript-form `(progn ,@body))))
 
 (define-ps-special-form try (expecting form &rest clauses)
   (declare (ignore expecting))

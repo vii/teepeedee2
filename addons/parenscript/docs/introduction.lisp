@@ -44,19 +44,19 @@ function foobar(a, b) {
 
 ;;; It also supports additional iteration constructs, relieving the
 ;;; programmer of the burden of iterating over arrays.
-;;; `for' loops can be written using the customary `DO' syntax.
+;;; `for' loops can be written using the customary `DO*' syntax.
 
 (ps
-  (do ((i 0 (incf i))
-       (j (aref arr i) (aref arr i)))
-      ((>= i 10))
+  (do* ((i 0 (incf i))
+        (j (aref arr i) (aref arr i)))
+       ((>= i 10))
     (alert (+ "i is " i " and j is " j))))
 
-; compiles to
+;; compiles to
 "
 for (var i = 0, j = arr[i]; i < 10; i = ++i, j = arr[i]) {
   alert('i is ' + i + ' and j is ' + j);
-}
+};
 "
 ;;; ParenScript uses the Lisp reader, allowing for reader macros. It
 ;;; also comes with its own macro environment, allowing host Lisp
@@ -74,7 +74,7 @@ for (var i = 0, j = arr[i]; i < 10; i = ++i, j = arr[i]) {
   (create :foo "foo"
           :bla "bla"))
 
-; compiles to
+;; compiles to
 "
 { foo : 'foo',
   bla : 'bla' }
@@ -92,7 +92,7 @@ for (var i = 0, j = arr[i]; i < 10; i = ++i, j = arr[i]) {
                "The link is: "
                ((:a :href href) link-text))))))
 
-; compiles to
+;; compiles to
 "
 function addDiv(name, href, linkText) {
   document.write('<div id=\"' + name + '\">The link is: <a href=\"'
@@ -117,7 +117,7 @@ function addDiv(name, href, linkText) {
           (div.bl0rg :font-family "serif")
           (("a:active" "a:hoover") :color "black" :size "200%"))))))
 
-; which produces
+;; which produces
 
 <html><head><style type="text/css">
 <!--

@@ -26,15 +26,19 @@
 (my-defun dispatcher respond (con done path params)
   (let ((f (gethash path (my paths))))
     (handler-case 
-	(if f
-	    (funcall f me con done path params)
-	    (respond-http con done :code  404 :banner  "Not found"
-		:body (funcall (my error-responder) me path params)))
-      (error ()
+	(cond  
+	  (f
+	   (funcall f me con done path params))
+	  (t
+	   (format *error-output* "LOST ~A~&--- ~A~&" (strcat (my canonical-name) "/" path))
+	   (respond-http con done :code  404 :banner  "Not found"
+			 :body (funcall (my error-responder) me path params))))
+      (error (e)
+	(format *error-output* "ERROR ~A~&--- ~A~&" (strcat (my canonical-name) "/" path) (backtrace-description e))
 	(respond-http con done
-	 :body (with-sendbuf () "<h1>I made a mistake. Sorry</h1>")
-	 :code 500
-	 :banner "Internal error")))))
+		      :body (with-sendbuf () "<h1>I programmed this thoughtlessly. Sorry for the inconvenience.</h1>")
+		      :code 500
+		      :banner "Internal error")))))
 
 (my-defun dispatcher register-path (path func)
   (setf (gethash (force-byte-vector path) (my paths)) func))
@@ -42,8 +46,7 @@
 (my-defun dispatcher 'default-http-error-page (path params)
   (declare (ignore params path))
   (with-sendbuf () 
-    "<h1>Where? What? Ask for something else.</h1>"))
-
+    "<h1>I made a mistake. Sorry for the inconvenience.</h1>"))
 
 (defvar *default-dispatcher* (make-dispatcher))
 
