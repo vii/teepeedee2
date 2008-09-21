@@ -32,3 +32,8 @@
 (defmethod socket-sendto (socket address buf)
   (declare (ignore address))
   (socket-write socket buf))
+
+(defgeneric socket-peer (socket))
+
+(defmethod socket-peer ((socket null))
+  (declare (ignore socket)))

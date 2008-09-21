@@ -74,13 +74,19 @@
   `(locally ,@body))
 
 (defmacro debug-assert (&rest args)
+  `(progn
+     ,(first args)
+     (values))
+
+  #+tpd2-debug-assert
   (with-unique-names (block)
     `(without-call/cc
        (block ,block
 	 (restart-case (assert ,@args)
 	   (debug-assert-skip ()
 	     :report "Accept that the assertion will fail this time and continue"
-	     (return-from ,block 'debug-assert-skip)))))))
+	     (return-from ,block 'debug-assert-skip)))
+	 (values)))))
 
 (defmacro debug-unreachable ()
   `(debug-assert (not 'reached-here)))

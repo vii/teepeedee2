@@ -1,5 +1,11 @@
 (in-package #:tpd2.io)
 
+(eval-always
+  #+linux (pushnew :tpd2-linux *features*)
+  #+CLC-OS-DEBIAN (pushnew :tpd2-linux *features*)
+  #+freebsd (pushnew :tpd2-freebsd *features*))
+  
+
 ;;; A simple syscall is one which returns -1 on error and sticks the
 ;;; error in *errno* (of course, this is just the glibc interface to
 ;;; the syscall).
@@ -13,7 +19,7 @@
   `(defconstant ,symbol ,number
     ,description))
 
-#+linux
+#+tpd2-linux
 (progn
   (syscall-error-number +EPERM+  1 "Operation not permitted")
   (syscall-error-number +ENOENT+  2 "No such file or directory")
@@ -51,19 +57,19 @@
   (syscall-error-number +ERANGE+ 34 "Math result not representable")
   (syscall-error-number +EINPROGRESS+ 115 "Operation now in progress"))
 
-#+freebsd
+#+tpd2-freebsd
 (progn
   (syscall-error-number +EAGAIN+ 35 "Try again")
   (syscall-error-number +EINTR+  4 "Interrupted system call")
   (syscall-error-number +EINPROGRESS+ 36 "Operation now in progress"))
 
-#+linux
+#+tpd2-linux
 (cffi:defcstruct (sockaddr_in :size 16)
   (family :uint16)
   (port :uint16)
   (addr :uint32))
 
-#+freebsd
+#+tpd2-freebsd
 (cffi:defcstruct (sockaddr_in :size 16)
   (len :uint8)
   (family :uint8)
@@ -362,7 +368,7 @@
   (dst :pointer)
   (cnt :int))
 
-#+linux
+#+tpd2-linux
 (cffi:defcstruct addrinfo
   (flags :int)
   (family :int)
@@ -373,7 +379,7 @@
   (canonname :string)
   (next :pointer))
 
-#+freebsd
+#+tpd2-freebsd
 (cffi:defcstruct addrinfo
   (flags :int)
   (family :int)
@@ -428,7 +434,7 @@
 		       str-size)
       (error "Cannot convert address: ~A" (strerror +syscall-error-number+)))))
 
-#+mopoko-old-sockaddr-address-string
+#+tpd2-old-sockaddr-address-string
 (defun sockaddr-address-string (sa)
   (declare (optimize speed))
   (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
@@ -562,3 +568,9 @@
   (data epoll-data :offset 4))
 
 (assert (= (cffi:foreign-type-size 'tpd2.io::epoll-event) 12))
+
+(cffi:defcfun getpeername
+    :int
+  (fd :int)
+  (sockaddr :pointer)
+  (socklen :pointer))

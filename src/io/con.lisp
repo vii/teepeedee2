@@ -23,7 +23,7 @@
   (unless (my err)
     (my clear-failure-callbacks))
   (unless (my timeout)
-    (setf (my timeout) (make-timeout :func (lambda()(my fail 'timeout))))))
+    (setf (my timeout) (make-timeout :func (lambda() (my fail 'timeout))))))
 
 (my-defun con fail (&optional (e (make-condition 'socket-explicitly-hungup)))
   (let ((c (my err)))
@@ -192,3 +192,6 @@
 
 (my-defun con dead? ()
   (not (my socket)))
+
+(my-defun con connected? ()
+  (not (not (socket-peer (my socket)))))

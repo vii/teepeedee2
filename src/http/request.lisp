@@ -67,10 +67,9 @@
 
 
 (defun http-connection-cache-timeout ()
-  55)
+  25)
 
 (defun add-to-connection-cache (con key)
-  (reset-timeout con (http-connection-cache-timeout))
   (con-clear-failure-callbacks con)
   (unless (con-dead? con)
     (con-when-ready-to-read con (lambda() (con-fail con))) 
@@ -79,8 +78,10 @@
 				(declare (ignore args))
 				(debug-assert (member con (gethash key *connection-cache*)))
 				(deletef con (gethash key *connection-cache*))))
+    (reset-timeout con (http-connection-cache-timeout))
     (push con (gethash key *connection-cache*))))
 
+#+tpd2-http-no-connection-cache
 (defun add-to-connection-cache (con key)
   (declare (ignore key))
   (con-clear-failure-callbacks con)
@@ -92,7 +93,11 @@
 	   (con-clear-failure-callbacks con)
 	   (reset-timeout con)
 	   (debug-assert (not (con-dead? con)))
-	   con)
+	   (cond ((con-connected? con)
+		  con)
+		 (t
+		  (hangup con)
+		  (get-http-request-con address port))))
 	  (t
 	   (make-con-connect :address address :port port)))))
 

@@ -79,14 +79,15 @@
 
 
 
-
-(let ((v (make-byte-vector 10)) q)
-  (with-pointer-to-vector-data (p v)
-    (setf q p))
-  (with-pointer-to-vector-data (p0 v)
-    (with-pointer-to-vector-data (p1 v)
-      (when (and (cffi:pointer-eq p0 p1) (cffi:pointer-eq p0 q))
-	(pushnew :tpd2-byte-vectors-do-not-move-arbitrarily *features*)))))
+#-ccl
+(ignore-errors
+  (let ((v (make-byte-vector 10)) q)
+    (with-pointer-to-vector-data (p v)
+      (setf q p))
+    (with-pointer-to-vector-data (p0 v)
+      (with-pointer-to-vector-data (p1 v)
+	(when (and (cffi:pointer-eq p0 p1) (cffi:pointer-eq p0 q))
+	  (pushnew :tpd2-byte-vectors-do-not-move-arbitrarily *features*))))))
 
 
 
@@ -112,4 +113,5 @@
   (with-input-from-string (*standard-input* (force-string string)) (read-safely)))
 
 (defun backtrace-description (err)
-  (hunchentoot:get-backtrace err))
+  (format nil "ERROR ~A:~&~A" (with-output-to-string (*standard-output*) (describe err)) 
+	  (hunchentoot:get-backtrace err)))

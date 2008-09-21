@@ -97,7 +97,7 @@
     (let ((count (min +max-iovecs+ (my num-bufs))))
       (cffi:with-foreign-object (vecs 'iovec count)
 	(loop for i below count
-	      for buf in (my head)
+		  for buf in (my head)
 	      do 
 	      (with-pointer-to-vector-data (ptr buf)
 		(cffi:with-foreign-slots ((base len) (cffi:mem-aref vecs 'iovec i) iovec)

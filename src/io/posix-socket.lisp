@@ -90,3 +90,12 @@
     (case-= s
 	    (-1 nil)
 	    (t s))))
+
+
+(defmethod socket-peer ((fd integer))
+  (cffi:with-foreign-object (sa 'sockaddr_in)
+    (cffi:with-foreign-object (len :int)
+      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
+      (when (zerop (getpeername fd sa len))
+	(sockaddr-address-string sa)))))
+

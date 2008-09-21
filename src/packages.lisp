@@ -167,6 +167,7 @@
    #:make-con-listen
    #:make-con-bind
    #:con-dead?
+   #:con-connected?
    #:con-fail
    #:con-add-failure-callback
    #:con-clear-failure-callbacks
@@ -326,11 +327,9 @@
    #:defrecord
    #:datastore-use-file))
 
-(defpackage #:teepeedee2.sutp
-  (:nicknames #:tpd2.sutp)
-  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
-  (:export
-   #:make-socket))
+(defpackage #:teepeedee2.munnel
+  (:nicknames #:tpd2.munnel)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io))
 
 (defpackage #:teepeedee2.blog
   (:nicknames #:tpd2.blog)

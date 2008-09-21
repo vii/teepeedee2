@@ -30,7 +30,6 @@
 				      ("keep-alive" (setf connection-close nil))) ))
 		       value))))))
 	(io 'process-headers con #'process-header))
-      
       (let ((request-body
 	     (unless (zerop request-content-length)
 	       (io 'recv con request-content-length))))
