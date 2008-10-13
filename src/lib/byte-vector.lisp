@@ -1,20 +1,5 @@
 (in-package #:tpd2.lib)
 
-(eval-always
-  (defun make-byte-vector (len)
-    (declare (optimize speed))
-    (declare (type (unsigned-byte *) len))
-    (make-array len :element-type '(unsigned-byte 8))))
-
-(declaim (inline make-byte-vector))
-
-(deftype byte-vector (&optional (len '*))
-  `(vector (unsigned-byte 8) ,len))
-(deftype simple-byte-vector (&optional (len '*))
-  `(simple-array (unsigned-byte 8) (,len)))
-
-(declaim (ftype (function ((unsigned-byte *)) simple-byte-vector) make-byte-vector)) 
-
 (defmacro with-pointer-to-vector-data ((ptr lisp-vector) &body body)
   (check-symbols ptr)
   (once-only (lisp-vector)
@@ -67,7 +52,6 @@
   (aref +byte-to-digit-table+ byte))
 
 (declaim (ftype (function ( (unsigned-byte 8)) (integer -1 36)) byte-to-digit-consistent-internal))
-
 
 (defun byte-vector-parse-integer (string &optional (base 10))
   (declare (optimize speed))

@@ -4,7 +4,7 @@
 
 (defpackage #:teepeedee2.lib
   (:nicknames #:tpd2.lib)
-  (:use #:common-lisp #:iter)
+  (:use #:common-lisp #:iter #:cl-irregsexp-bytestrings)
   (:import-from #:cl-utilities #:with-unique-names)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)

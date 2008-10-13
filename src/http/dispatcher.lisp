@@ -30,7 +30,7 @@
 	  (f
 	   (funcall f me con done path params))
 	  (t
-	   (format *error-output* "LOST ~A~&" (strcat (my canonical-name) "/" path))
+	   ;(format *error-output* "LOST ~A~&" (strcat (my canonical-name) "/" path))
 	   (respond-http con done :code  404 :banner  "Not found"
 			 :body (funcall (my error-responder) me path params))))
       (error (e)

@@ -38,13 +38,12 @@
 							    (:file "macros" :depends-on ("once-only" "one-liners")) 
 							    (:file "once-only")
 							    (:file "one-liners")
-							    (:file "utils" :depends-on ("utf8"))
-							    (:file "utf8" :depends-on ("macros" "byte-vector"))
+							    (:file "utils" :depends-on ("macros" "byte-vector"))
 							    (:file "superquote" :depends-on ("utils"))
 							    (:file "strcat" :depends-on ("macros" "utils"))
 							    (:file "my" :depends-on ("macros" "once-only" "strcat" "one-liners"))
 							    (:file "byte-vector" :depends-on ("macros"))
-							    (:file "callcc")
+							    (:file "callcc" :depends-on ("macros"))
 							    (:file "quick-queue" :depends-on ("utils" "my"))
 							    (:file "timeout" :depends-on ("quick-queue"))))
 				     
@@ -114,7 +113,6 @@
 			:components (
 				     (:file "suite")
 				     (:file "io" :depends-on ("suite"))
-				     (:file "utf8" :depends-on ("suite"))
 				     (:file "http" :depends-on ("suite"))
 				     )))
   :depends-on (

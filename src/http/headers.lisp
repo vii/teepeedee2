@@ -1,5 +1,16 @@
 (in-package #:tpd2.http)
 
+(defun match-int (value)
+  (match-bind ((len (integer))) value
+	      len))
+(defun match-each-word (value func)
+  (match-bind ( (+ word (or (+ (space)) (last))
+		   '(funcall func word)))
+	      value))
+
+(declaim (inline match-int))
+(declaim (inline match-each-word))
+
 (defprotocol process-headers (con process-header-func)
   (let ((last-header-name))
     (loop for line = (io 'recvline con)

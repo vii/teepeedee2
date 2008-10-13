@@ -19,14 +19,15 @@
      ,@(loop for n in names collect
 	     `(cl-cont-pass-through-one-construct ,n))))
   
-
-(cl-cont-pass-through-constructs
- handler-case
- handler-bind
- restart-case
- restart-bind
-
- cl-irregsexp::with-match)
+(eval-always
+  (cl-cont-pass-through-constructs
+   handler-case
+   handler-bind
+   restart-case
+   restart-bind
+   
+   without-call/cc
+   cl-irregsexp::with-match))
 
 #+extra-bugs-please 
 (defmacro cl-cont:call/cc (cc)

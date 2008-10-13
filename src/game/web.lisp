@@ -333,7 +333,7 @@
     (push :tpd2-has-swank *features*)
     nil)
 
-#+start-tpd2 (progn
+(progn
   (let ((socket (tpd2.io:make-con-listen :port 8888)))
     (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
 
@@ -346,5 +346,5 @@
 	   (tpd2.io:event-loop)))
      :name "MOPOKO-EVENT-LOOP")))
 
-(defpage "/test" ()
-  (<p "hello"))
+(defpage "/test" (name)
+  (<p "hello " (<b name)))

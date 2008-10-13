@@ -15,21 +15,19 @@
     (let ((request-content-length 0)
 	  host
 	  (connection-close (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))))
-      (flet ((process-header (name value)
-	       (when (length value)
-		 (case-match-fold-ascii-case name
-		  ("content-length" 
-		   (match-bind ((len (integer))) value
-		     (setf request-content-length len)))
-		  ("host"
-		   (setf host value))
-		  ("connection"
-		   (match-bind ( (+ word (or (+ (space)) (last))
-				    '(case-match-fold-ascii-case word
-				      ("close" (setf connection-close t))
-				      ("keep-alive" (setf connection-close nil))) ))
-		       value))))))
-	(io 'process-headers con #'process-header))
+	(io 'process-headers con (without-call/cc (lambda(name value)
+						    (unless (zerop (length value))
+						      (case-match-fold-ascii-case name
+										  ("content-length" 
+										   (setf request-content-length (match-int value)))
+										  ("host"
+										   (setf host value))
+										  ("connection"
+										   (match-each-word value
+												    (lambda(word)
+												      (case-match-fold-ascii-case word
+																  ("close" (setf connection-close t))
+																  ("keep-alive" (setf connection-close nil))) ))))))))
       (let ((request-body
 	     (unless (zerop request-content-length)
 	       (io 'recv con request-content-length))))

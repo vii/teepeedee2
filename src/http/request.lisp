@@ -29,27 +29,28 @@
 	(flet ((decode (bytes)
 		 (cond (gzip (error "Sorry; haven't implemented GZIP decompression yet"))
 		       (t (funcall done bytes :response-code code)))))
+
 	  (when (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))
 	    (setf connection-close t))
 
-	  (io 'process-headers con (lambda(name value)
-				     (when (length value)
-				       (case-match-fold-ascii-case name
-								   ("content-length"
-								    (match-bind ((len (integer))) value
-								      (setf content-length len)))
-								   ("connection"
-								    (match-bind ( (+ word (or (+ (space)) (last))
-										     '(case-match-fold-ascii-case word
-										       ("close" (setf connection-close t))
-										       ("keep-alive" (setf connection-close nil))) ))
-									value))
-								   ("transfer-encoding"
-								    (match-bind ( (+ word (or (+ (space)) (last))
-										     '(case-match-fold-ascii-case word
-										       ("chunked" (setf chunked t))
-										       ("gzip" (setf gzip t)))))
-									    value))))))
+	  (io 'process-headers con 
+	      (without-call/cc (lambda(name value)
+				 (unless (zerop (length value))
+				   (case-match-fold-ascii-case name
+							       ("content-length"
+								(setf content-length (match-int value)))
+							       ("connection"
+								(match-each-word value
+										 (lambda(word)
+										   (case-match-fold-ascii-case word
+													       ("close" (setf connection-close t))
+													       ("keep-alive" (setf connection-close nil))) )))
+							       ("transfer-encoding"
+								(match-each-word value
+										 (lambda(word)
+										   (case-match-fold-ascii-case word
+													       ("chunked" (setf chunked t))
+													       ("gzip" (setf gzip t)))))))))))
 	  (decode
 	   (cond 
 	     (chunked

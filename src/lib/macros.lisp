@@ -71,16 +71,17 @@
      ,result-form))
 
 (defun generate-case-key (keyform &key test (transform 'identity) clauses)
-  (once-only (keyform)
+  (with-unique-names (xkeyform)
     (flet ((apply-transform (form)
 	     `(,transform ,form)))
-      `(cond ,@(mapcar 
-		(lambda(clause) 
-		  (list* (typecase (first clause)
-			   ((member t otherwise) t)
-			     (list `(member ,keyform (list ,(mapcar #'apply-transform (first clause))) :test (function ,test)))
-			     (t `(funcall (function ,test) ,keyform ,(apply-transform (first clause)))))
-			 (rest clause))) clauses)))))
+      `(let ((,xkeyform ,(apply-transform keyform)))
+	 (cond ,@(mapcar 
+		  (lambda(clause) 
+		    (list* (typecase (first clause)
+			     ((member t otherwise) t)
+			     (list `(member ,xkeyform (list ,(mapcar #'apply-transform (first clause))) :test (function ,test)))
+			     (t `(funcall (function ,test) ,xkeyform ,(apply-transform (first clause)))))
+			   (rest clause))) clauses))))))
 
 (defmacro case-func (keyform func &rest clauses)
   (generate-case-key keyform :test func :clauses clauses))

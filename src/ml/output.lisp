@@ -7,7 +7,7 @@
     (raw-ml-sendbuf
      value)
     (t
-     (macrolet ((f (x) `(force-byte-vector ,x)))
+     (macrolet ((f (x) `(force-simple-byte-vector ,x)))
        (match-replace-all (f value)
 			  (#\< (f "&lt;"))
 			  (#\> (f "&gt;"))
