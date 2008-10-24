@@ -348,3 +348,6 @@
 
 (defpage "/test" (name)
   (<p "hello " (<b name)))
+
+(defpage "/test-plain" ()
+  (<p "hello dude" ))

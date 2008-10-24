@@ -82,12 +82,13 @@
 
 (defun eql-fold-ascii-case (a b)
   (declare (optimize speed (safety 0)))
+  (declare (type (unsigned-byte 8) a b))
   (= (byte-to-ascii-upper a) (byte-to-ascii-upper b)))
 (declaim (inline eql-fold-ascii-case))
 
 (defun byte-vector=-fold-ascii-case (a b)
-  (declare (optimize speed (safety 0)))
-  (declare (type byte-vector a b))
+  (declare (optimize speed))
+  (declare (type simple-byte-vector a b))
   (and (= (length a) (length b))
        (loop for i from 0 below (length a)
 	     always (eql-fold-ascii-case (aref a i) (aref b i)))))

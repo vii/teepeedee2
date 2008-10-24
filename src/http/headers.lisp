@@ -4,7 +4,9 @@
   (match-bind ((len (integer))) value
 	      len))
 (defun match-each-word (value func)
-  (match-bind ( (+ word (or (+ (space)) (last))
+  (declare (type function func))
+  (match-bind (  
+		(+ word (or (+ (space)) (last))
 		   '(funcall func word)))
 	      value))
 
@@ -16,12 +18,12 @@
     (loop for line = (io 'recvline con)
 	  until (zerop (length line))
 	  do (without-call/cc 
-	       (if-match-bind ((+ (space) ) value (progn (* (space)) (last)))
-			      line
-			      (funcall process-header-func last-header-name value)
-			      (match-bind 
-				  (header-name (progn (* (space)) ":") (* (space)) value (progn (* (space)) (last)))
-				  line
-			      (funcall process-header-func header-name value)
-			      (setf last-header-name header-name)))))
+		 (if-match-bind ((+ (space) ) value)
+				line
+				(funcall process-header-func last-header-name value)
+				(match-bind 
+				    (header-name ":" (* (space)) value)
+				    line
+				  (funcall process-header-func header-name value)
+				  (setf last-header-name header-name)))))
   (values)))

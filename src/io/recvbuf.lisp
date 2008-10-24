@@ -5,6 +5,10 @@
   (read-idx 0 :type (integer 0 #x1000000))
   (write-idx 0 :type (integer 0 #x1000000)))
 
+(my-defun recvbuf len ()
+  (my-declare-fast-inline)
+  (length (my store)))
+
 (my-defun recvbuf half-full-or-more ()
   (my-declare-fast-inline)
   (or (>= (* 2 (- (my write-idx) (my read-idx))) (my len))
@@ -13,10 +17,6 @@
 (my-defun recvbuf empty ()
   (my-declare-fast-inline)
   (= (my read-idx) (my write-idx)))
-
-(my-defun recvbuf len ()
-  (my-declare-fast-inline)
-  (length (my store)))
 
 (my-defun recvbuf full ()
   (my-declare-fast-inline)
@@ -59,8 +59,10 @@
 	 (con-when-ready-to-read con retry))
        nil)
       (t
-	(incf (my write-idx) s)
-	s))))
+       (locally
+	   (declare (type fixnum s))
+	 (incf (my write-idx) s)
+	 s)))))
 
 (my-defun recvbuf recv (con &optional done)
   (my-declare-fast-inline)
@@ -96,7 +98,7 @@
 
 (my-defun recvbuf find (delimiter)
   (my-declare-fast-inline)
-  (declare (type byte-vector delimiter))
+  (declare (type simple-byte-vector delimiter))
   (let ((limit (- (my write-idx) (1- (length delimiter)))))
     (loop for i from (my read-idx) below limit
           thereis 

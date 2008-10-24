@@ -105,6 +105,7 @@
 
 (my-defun con 'recvline (done)
   (declare (optimize speed))
+  (declare (type function done))
   (acond
    ((recvbuf-eat-to-delimiter (my recv) +newline+)
     (funcall done it))

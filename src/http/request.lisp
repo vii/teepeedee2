@@ -24,7 +24,7 @@
 	(chunked)
 	(gzip)
 	(connection-close))
-      (match-bind ("HTTP/" (version-major (integer)) "." (version-minor (integer)) (+ (space)) (code (integer)) (+ (space)) banner)
+      (match-bind ("HTTP/" (version-major (integer)) "." (version-minor (integer)) (+ (space)) (code (integer)) (+ (space)))
 	  (io 'recvline con)
 	(flet ((decode (bytes)
 		 (cond (gzip (error "Sorry; haven't implemented GZIP decompression yet"))

@@ -74,7 +74,24 @@
      (con-when-ready-to-write con my-call))))
 
 
-(my-defun sendbuf send-write (con done)
+(my-defun sendbuf shift-up (s)
+  (my-declare-fast-inline)
+  (declare (type sendbuf-small-integer s))
+  (decf (my len) s)
+  (loop until (zerop s)
+	do
+	(debug-assert (my head))
+	(let ((buf (car (my head))))
+	  (cond ((>= s (length buf))
+		 (decf s (length buf))
+		 (decf (my num-bufs))
+		 (setf (my head) 
+		       (cdr (my head))))
+		(t
+		 (setf (car (my head)) (make-displaced-vector buf :start s))
+		 (setf s 0))))))
+
+(my-defun sendbuf send-write-piece-by-piece (con done)
   (my-declare-fast-inline)
   (loop for buf = (car (my head))
 	while 		   
@@ -89,6 +106,15 @@
 		   (setf (my head) (cdr (my head)))
 		   (decf (my num-bufs))
 		   (my head))))))
+  (my check-done con done #'my-call))
+
+(my-defun sendbuf send-write (con done)
+  (my-declare-fast-inline)
+  (let ((buf (my to-byte-vector)))
+    (let ((s (socket-write (con-socket con) buf)))
+      (declare (type (or null sendbuf-small-integer) s))
+      (when s
+	(my shift-up s))))
   (my check-done con done #'my-call))
 
 (my-defun sendbuf send-writev (con done)
@@ -106,26 +132,14 @@
 	(let ((s (socket-writev (con-socket con) vecs count)))
 	  (declare (type (or null sendbuf-small-integer) s))
 	  (when s
-	    (decf (my len) s)
-	    (loop until (zerop s)
-		  do
-		  (debug-assert (my head))
-		  (let ((buf (car (my head))))
-		    (cond ((>= s (length buf))
-			   (decf s (length buf))
-			   (decf (my num-bufs))
-			   (setf (my head) 
-				 (cdr (my head))))
-			  (t
-			   (setf (car (my head)) (make-displaced-vector buf :start s))
-			   (setf s 0))))))))))
+	    (my shift-up s))))))
   (my check-done con done #'my-call))
 
 
 (my-defun sendbuf to-byte-vector ()
-  (declare (optimize speed))
+  (my-declare-fast-inline)
   (let ((result (make-byte-vector (my len))) (i 0))
-    (unless (zerop (length result))
+    (unless (zerop (my len))
       (loop for s in (my head) do
 	    (loop for c across (the simple-byte-vector s) do
 		  (setf (aref result i) c)
