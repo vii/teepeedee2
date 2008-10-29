@@ -21,7 +21,7 @@
 (defmacro defun-simple-io (name lambda-list &body body)
   `(eval-always
      (setf (simple-io-function ',name)
-	   (defun ,(intern (strcat 'simple-io- name) (symbol-package name))
+	   (defun ,(concat-sym-from-sym-package name 'simple-io- name)
 	       ,lambda-list (with-simple-io ,@body)))))
 
 (defun-simple-io recv (stream amount)

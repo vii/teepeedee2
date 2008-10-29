@@ -75,16 +75,16 @@
 		   (remf ret option))
 		 (list* (slot-name slot-def) initform ret)))
 	   (guarded-slot-accessor (slot-name)
-	    (intern (strcat name "-" slot-name)))
+	    (concat-sym '- slot-name))
 	   (real-slot-accessor (slot-name)
-	     (intern (strcat 'unlogged- name "-" slot-name)))
+	     (concat-sym-from-sym-package name 'unlogged- name '- slot-name))
 	   (real-constructor ()
-	     (intern (strcat 'unlogged-make- name)))
+	     (concat-sym-from-sym-package name 'unlogged-make- name))
 	   (guarded-constructor ()
-	     (intern (strcat 'make- name)))
+	     (concat-sym-from-sym-package name 'make- name))
 	   (slot-index (slot-def)
 	     (let ((slot-name (slot-name slot-def)))
-	      `(get ',name ',(intern (strcat 'datastore-index-% name '% slot-name))))))
+	      `(get ',name ',(concat-sym name '-%datastore-index- slot-name)))))
     (let* ((slot-defs (list* '(datastore-id :transient t :index t :initform (datastore-id-next)) original-slot-defs))
 	   (indexed-slots (filter #'slot-indexed slot-defs))
 	   (defstruct-slot-defs (mapcar #'defstruct-slot-def slot-defs))
@@ -95,7 +95,7 @@
 	       (eval-always
 		 (defstruct (,name
 			      (:constructor ,(real-constructor))
-			      (:conc-name ,(intern (strcat 'unlogged- name '-))))
+			      (:conc-name ,(concat-sym-from-sym-package name 'unlogged- name '-)))
 		   ,@defstruct-slot-defs))
 
 	;;; Constructor

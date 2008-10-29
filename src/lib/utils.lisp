@@ -1,12 +1,10 @@
 (in-package #:tpd2.lib)
 
 
-(defun byte-vector-cat (&rest args)
-  (declare (optimize speed))
+(defun-speedy byte-vector-cat (&rest args)
   (apply-byte-vector-cat args))
 
-(defun apply-byte-vector-cat (args)
-  (declare (optimize speed))
+(defun-speedy apply-byte-vector-cat (args)
   (let ((vecs (mapcar (lambda(x)(force-byte-vector x)) args)))
     (let ((len (reduce '+ (mapcar 'length vecs))))
       (let ((ret (make-byte-vector len)) (i 0))
@@ -14,11 +12,8 @@
 	      (replace ret v :start1 i)
 	      (incf i (length v)))
 	ret))))
-(declaim (inline byte-vector-cat byte-vector-cat-args))
 
-
-
-#-ccl
+#-ccl ; compacting gc makes this unreliable
 (ignore-errors
   (let ((v (make-byte-vector 10)) q)
     (with-pointer-to-vector-data (p v)
@@ -38,12 +33,13 @@
 	      (elt sequence i) 
 	    (setf sequence (remove-if (lambda(x) (declare (ignore x)) t) sequence :start i :count 1))))))
 
+(declaim (inline random-elt))
 (defun random-elt (sequence)
   (declare (optimize speed))
   (when sequence
     (elt sequence (random (length sequence)))))
 
-(declaim (inline random-elt))
+
 
 (defun read-safely (&rest args)
   (let ((*read-eval* nil))

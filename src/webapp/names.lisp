@@ -1982,10 +1982,9 @@
 		       "Arden"
 		       "Paralee"))
 
-(defun random-letter ()
-  (declare (optimize speed))
+(defun-speedy random-letter ()
   (code-char (+ (char-code #\A) (random 26))))
-(declaim (inline random-letter))
+
 
 (defun random-name ()
   (strcat (random-elt +names+) " " (random-letter) " " (random-elt +names+)))

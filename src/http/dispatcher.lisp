@@ -9,6 +9,8 @@
   (dispatcher-respond (find-dispatcher host) con done path params))
 
 (defun build-http-response (&key code banner headers body)
+  (declare (type sendbuf body))
+  (declare (dynamic-extent body))
   (with-sendbuf (response)
     "HTTP/1.1 " code " " banner +newline+
     "Content-Length: " (sendbuf-len body) +newline+
@@ -16,12 +18,12 @@
     headers
     +newline+
     body))
-(declaim (inline build-http-response))
+
 
 (defun respond-http (con done &key (code (force-byte-vector 200)) (banner (force-byte-vector "OK"))
 		     headers body)
   (send con done (build-http-response :code code :banner banner :headers headers :body body)))
-(declaim (inline respond-http))
+
 
 (my-defun dispatcher respond (con done path params)
   (let ((f (gethash path (my paths))))

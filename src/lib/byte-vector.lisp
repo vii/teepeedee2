@@ -15,8 +15,7 @@
 	       (setf ,tmp (multiple-value-list (locally ,@body)))))
 	   (values-list ,tmp))))))
 
-(defun concatenate-simple-byte-vectors (args)
-  (declare (optimize speed (safety 0)))
+(defun-speedy concatenate-simple-byte-vectors (args)
   (let ((len 0))
     (declare (type fixnum len))
     (loop for x in args do 
@@ -28,8 +27,15 @@
 		  (setf (aref ret i) c)
 		  (incf i)))
       ret)))
-(declaim (inline concatenate-simple-byte-vectors))
 
+
+(defun-speedy byte-vector (&rest args)
+  (declare (dynamic-extent args))
+  (let ((ret (make-byte-vector (length args))))
+    (loop for i from 0
+	  for arg in args
+	  do (setf (aref ret i) arg))
+    ret))
 
 (defconstant +byte-to-digit-table+
   (make-array 256 :element-type '(integer -1 36) 
@@ -47,11 +53,13 @@
 					    (in-range #\A #\Z i 10)
 					    (in-range #\0 #\9 i 0)
 					    -1)))))
+
+(declaim-defun-consistent-ftype byte-to-digit ((unsigned-byte 8)) (integer -1 36))
 (defun-consistent byte-to-digit (byte)
   (declare (type (unsigned-byte 8) byte))
   (aref +byte-to-digit-table+ byte))
 
-(declaim (ftype (function ( (unsigned-byte 8)) (integer -1 36)) byte-to-digit-consistent-internal))
+
 
 (defun byte-vector-parse-integer (string &optional (base 10))
   (declare (optimize speed))
@@ -71,28 +79,24 @@
       (* sign val))))
 
 
-(defun byte-to-ascii-upper (x)
-  (declare (optimize speed (safety 0)))
+(declaim (ftype (function ((unsigned-byte 8)) (unsigned-byte 8)) byte-to-ascii-upper))
+(defun-speedy byte-to-ascii-upper (x)
   (declare (type (unsigned-byte 8) x))
   (if (and (>= x (char-code #\a)) (<= x (char-code #\z)))
       (+ (- (char-code #\A) (char-code #\a)) x)
       x))
-(declaim (inline byte-to-ascii-upper))
-(declaim (ftype (function ((unsigned-byte 8)) (unsigned-byte 8)) byte-to-ascii-upper))
 
-(defun eql-fold-ascii-case (a b)
-  (declare (optimize speed (safety 0)))
+(defun-speedy eql-fold-ascii-case (a b)
   (declare (type (unsigned-byte 8) a b))
   (= (byte-to-ascii-upper a) (byte-to-ascii-upper b)))
-(declaim (inline eql-fold-ascii-case))
 
-(defun byte-vector=-fold-ascii-case (a b)
-  (declare (optimize speed))
+
+(defun-speedy byte-vector=-fold-ascii-case (a b)
   (declare (type simple-byte-vector a b))
   (and (= (length a) (length b))
        (loop for i from 0 below (length a)
 	     always (eql-fold-ascii-case (aref a i) (aref b i)))))
-(declaim (inline byte-vector=-fold-ascii-case))
+
 
 (defmacro case-match-fold-ascii-case (keyform &rest clauses)
   (generate-case-key keyform :test 'byte-vector=-fold-ascii-case :transform 'force-byte-vector :clauses clauses))

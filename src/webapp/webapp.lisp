@@ -1,5 +1,7 @@
 (in-package #:tpd2.webapp)
 
+(declaim (inline webapp-default-page-footer webapp-default-page-head-contents))
+
 (defun webapp-default-page-footer ()
   (with-ml-output
     (output-raw-ml
@@ -8,7 +10,7 @@
 (defun webapp-default-page-head-contents ()
   (output-raw-ml (js-library)))
 
-(declaim (inline webapp-default-page-footer webapp-default-page-head-contents))
+
 
 (defmacro title-once (title)
   `(sendbuf-to-byte-vector (with-ml-output-start ,@(force-list title))))

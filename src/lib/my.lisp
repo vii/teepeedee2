@@ -60,8 +60,8 @@
 		      :initarg ,(intern (symbol-name slot-name) :keyword)
 		      :initform ,(when (and (force-rest slot-spec) (not (keywordp (second slot-spec))))
 				  (second slot-spec))
-		      :accessor ,(intern (strcat conc-name slot-name))))) slots))
-     (defun ,(intern (strcat 'make- name)) (&rest args)
+		      :accessor ,(concat-sym conc-name slot-name)))) slots))
+     (defun ,(concat-sym-from-sym-package name 'make- name) (&rest args)
        (apply #'make-instance ',name args))
      (defgeneric ,predicate-sym (var))
      (defmethod ,predicate-sym (var)
@@ -78,13 +78,13 @@
      :name name 
      :superclasses superclasses
      :slots slots
-     :conc-name (strcat name "-")
-     :predicate-sym (intern (strcat name '-p)))))
+     :conc-name (concat-sym name '-)
+     :predicate-sym (concat-sym name '-p))))
 
 (defun generate-defstruct (&key defstruct name-and-options slots)
   (multiple-value-bind (name superclasses)
       (parse-defstruct name-and-options)
-    ` (eval-always
+    `(eval-always
 	(progn
 	  (,defstruct ,name-and-options ,@slots)
 	  (defmethod assign ((original ,name) (copy ,name))
@@ -111,7 +111,7 @@
    :slots slots))
     
 (defun my-function (func prefices)
-  (let ((possibilities (mapcar (lambda(prefix) (intern (strcat prefix '- func) (symbol-package prefix))) prefices)))
+  (let ((possibilities (mapcar (lambda(prefix) (concat-sym prefix '- func)) prefices)))
     (or (find-if 'fboundp possibilities) (first possibilities))))
 
 (defmacro its (func instance &rest args)
@@ -179,15 +179,15 @@
 	  (multiple-value-bind 
 		(def name lambda-list)
 	      (my-make-def class func args)
-	    `(progn (,def ,name ,@(force-list combination-type) ,lambda-list
+	    `(progn 
+	       ,(when inline `(declaim (inline ,name)))
+	       (,def ,name ,@(force-list combination-type) ,lambda-list
 			  ,@declarations
 			  (labels ((my-call ()
 				     (let ((me ,class))
 				       (with-shorthand-accessor (my ,class me)
 					 ,@body))))
-			    (my-call)))
-		    ,@(when inline (list `(declaim (inline ,name))))
-		    ',name)))))))
+			    (my-call))))))))))
 
 (defun my-call ()
   "Inside a my-defun, #'my-call is the function call again"

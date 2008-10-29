@@ -1,11 +1,8 @@
 (in-package #:tpd2.lib)
 
 
-(defun strcat-go (&rest args)
-  (declare (optimize speed))
+(defun-speedy strcat-go (&rest args)
   (apply #'concatenate 'string (mapcar (lambda(arg)(force-string arg)) args)))
-
-(declaim (inline strcat-go))
 
 #+replace-is-not-slow-like-a-dog
 (define-compiler-macro strcat (&rest original-args &environment env)
@@ -51,14 +48,14 @@
 				(incf ,i)))
 		   (the string ,result)))))))))
 
-(defun strcat (&rest args)
-  (declare (optimize speed))
-  (apply #'strcat-go args))
 (declaim (ftype (function (&rest t) string) strcat))
-(declaim (inline strcat))
+(defun-speedy strcat (&rest args)
+  (apply #'strcat-go args))
 
+#|
 (defun strcat-bench ()
   (declare (optimize speed))
   (let ((x "abcdefghijklmnopqrstuvw") (z "z"))
     (dotimes (i 2000000)
       (strcat x "xy" z))))
+|#

@@ -23,8 +23,6 @@
 (defun superquote-function (form)
   (superquote-function-go form))
 
-(declaim (inline superquote-function))
-
 (defun superquote-form-constantp (form env)
   (typecase form
     (list (case (first form)

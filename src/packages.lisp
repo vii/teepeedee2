@@ -4,7 +4,7 @@
 
 (defpackage #:teepeedee2.lib
   (:nicknames #:tpd2.lib)
-  (:use #:common-lisp #:iter #:cl-irregsexp-bytestrings)
+  (:use #:common-lisp #:iter #:cl-irregsexp.bytestrings)
   (:import-from #:cl-utilities #:with-unique-names)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
@@ -12,7 +12,25 @@
 		#:match-replace-all #:match-replace-one 
 		#:match-bind #:if-match-bind
 		#:match-failed )
+  (:import-from #:cl-irregsexp.utils
+		#:defun-consistent
+		#:declaim-defun-consistent-ftype
+		#:defun-speedy
+		#:defun-careful
+		#:concat-sym
+		#:concat-sym-from-sym-package
+		#:read-only-load-time-value
+		#:load-time-constantp)
   (:export 
+
+   #:defun-consistent
+   #:declaim-defun-consistent-ftype
+   #:defun-speedy
+   #:defun-careful
+   #:concat-sym
+   #:concat-sym-from-sym-package
+   #:read-only-load-time-value
+   #:load-time-constantp
 
    #:match-replace-all #:match-replace-one 
    #:match-bind #:if-match-bind
@@ -75,14 +93,10 @@
    #:filter-non-nil
    #:filter-until-full
    #:mv-filter
-   #:defun-consistent
    #:make-displaced-vector
    #:let-current-values
    #:with-preserve-specials
    #:with-specials-restored
-
-   #:read-only-load-time-value
-   #:load-time-constantp
 
    #:copy
    #:assign

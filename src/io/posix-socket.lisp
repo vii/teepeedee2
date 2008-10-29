@@ -11,7 +11,6 @@
 
 
 (defmethod socket-read ((fd integer) buf)
-  (declare (optimize speed))
   (debug-assert (not (zerop (length buf))))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
@@ -21,7 +20,6 @@
 	    (t s))))
 
 (defmethod socket-write ((fd integer) buf)
-  (declare (optimize speed))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
 	   (socket-io-syscall (syscall-write fd ptr (length buf))))))
@@ -82,6 +80,7 @@
 			   (setf (aref sa-out i) (cffi:mem-ref sa :unsigned-char i)))
 		     (values s sa-out)))))))))
 
+#+broken
 (defmethod socket-sendto ((fd integer) sa buf)
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)

@@ -77,10 +77,9 @@
 	      collect "="
 	      collect `(percent-hexpair-encode ,val)))))
 
-(defun random-web-safe-char ()
-  (declare (optimize speed))
+(defun-speedy random-web-safe-char ()
   (aref +web-safe-chars+ (random (length +web-safe-chars+))))
-(declaim (inline random-web-safe-char))
+
 
 (defun random-web-sparse-key (length)
   (let ((bv (make-byte-vector length)))

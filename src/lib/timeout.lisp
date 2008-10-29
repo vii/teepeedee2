@@ -30,13 +30,14 @@
 (my-defun timeout position ()
   (quick-queue-get *timeouts* (my time)))
 
+(declaim (inline time-for-delay))
 (defun time-for-delay (delay)
   (declare (optimize speed))
   (when delay
     (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
     (+ (get-universal-time) delay)))
 
-(declaim (inline time-for-delay))
+
 
 (my-defun timeout cancel ()
   (quick-queue-entry-del me))

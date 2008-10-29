@@ -102,15 +102,15 @@
 	 (setf (gethash ,game-name-string *games*) 
 	       (make-game-generator
 		:make-game (lambda(controllers)
-						  (let ((game (,(intern (strcat 'make- name)))))
+						  (let ((game (,(concat-sym-from-sym-package name 'make- name))))
 						    (let ((players 
 							   (mapcar (lambda(c) 
-								     (,(intern (strcat 'make- name '-player)) 
+								     (,(concat-sym-from-sym-package name 'make- name '-player)
 								       :game game 
 								       :controller c)) controllers)))
 						      (setf (game-players game) players))
 						    game))))
-	 ,(defgameclass-form (intern (strcat name '-player)) 
+	 ,(defgameclass-form (concat-sym name '-player)
 			     (or df-superclasses (list 'player))
 			     df-options
 			     df-slots)

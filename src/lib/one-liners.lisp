@@ -5,30 +5,29 @@
   (check-type (second func) symbol)
   (second func))
 
-(defun force-list (val)
+(declaim (ftype (function (t) list) force-list))
+(defun-speedy force-list (val)
   (if (listp val)
       val
       (list val)))
 
-(declaim (ftype (function (t) list) force-list))
-(declaim (inline force-list))
 
 
-(defun force-first (form)
+(defun-speedy force-first (form)
   (typecase form
     (list (first form))
     (t form)))
-(declaim (inline force-first))
 
-(defun force-rest (form)
+(defun-speedy force-rest (form)
   (when (listp form) (rest form)))
-(declaim (inline force-rest))
+
 
 (defun force-class (class)
   (if (symbolp class)
       (find-class class)
       class))
 
+(declaim (inline make-displaced-vector))
 (defun make-displaced-vector (vector &key (start 0) (end (length vector)))
   (multiple-value-bind
 	(orig offset)
@@ -42,11 +41,12 @@
 		:displaced-to vector
 		:displaced-index-offset start)))
 
-(declaim (inline make-displaced-vector))
 
+
+(declaim (inline cdr-assoc))
 (defun cdr-assoc (alist key &key (test 'eq))
   (cdr (assoc key alist :test test)))
-(declaim (inline cdr-assoc))
+
 
 (define-setf-expander cdr-assoc (place key &key (test ''eq) &environment env)
   (multiple-value-bind (dummies vals newval setter getter)
@@ -90,3 +90,5 @@
 
 (defmacro debug-unreachable ()
   `(debug-assert (not 'reached-here)))
+
+

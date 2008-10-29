@@ -1,7 +1,5 @@
 (in-package #:tpd2.lib)
 
-
-
 (defmacro eval-always (&body body)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      ,@body))
@@ -11,14 +9,6 @@
      ,@(loop for n in names collect 
              `(check-type ,n symbol))))
 
-(defmacro read-only-load-time-value (form)
-  `(load-time-value ,form t))
-
-(defun load-time-constantp (form &optional env)
-  (ignore-errors
-    (or (constantp form env) 
-	(let ((expansion (macroexpand form env)))
-	  (and (listp expansion) (eq 'load-time-value (first expansion)))))))
 
 (defmacro with-package (package &body body)
   (let ((*package* (find-package package)))
@@ -144,39 +134,6 @@
 	   else append (append (list (constants)) (list (process-one arg)))
 	   and do (setf joined nil))
 	(when joined (list (constants))))))))
-
-
-#+mopoko-use-compiler-macros-for-consistent
-(defmacro defun-consistent (name lambda-list &body body)
-  (let ((real-function (intern (concatenate 'string (symbol-name name) (symbol-name '-consistent-internal)))))
-    `(progn
-       (defun ,real-function ,lambda-list
-	 ,@body)
-       (defun ,name ,lambda-list
-	 (,real-function ,@lambda-list))
-       (declaim (inline ,real-function ,name))
-       #+cmucl (declaim (extensions:constant-function ,real-function))
-       #+sbcl (sb-c:defknown ,real-function (t) t (sb-c:foldable))
-       (define-compiler-macro ,name (&whole form &environment env ,@lambda-list)
-	 (if (and ,@(mapcar (lambda(l) `(load-time-constantp ,l env)) lambda-list))
-	     `(read-only-load-time-value (,',real-function ,,@lambda-list))
-	     (progn (format *debug-io* "Unable to optimise away ~A~&" form)
-		    form))))))
-
-
-#-mopoko-use-compiler-macros-for-consistent
-(defmacro defun-consistent (name lambda-list &body body)
-  (with-unique-names (env)
-    (let ((real-function (intern (concatenate 'string (symbol-name name) (symbol-name '-consistent-internal)))))
-      `(progn
-	 (defun ,real-function ,lambda-list
-	   ,@body)
-	 (declaim (inline ,real-function))
-	 #+cmucl (declaim (extensions:constant-function ,real-function))
-	 (defmacro ,name (,@lambda-list &environment ,env)
-	   (if (and ,@(mapcar (lambda(l) `(load-time-constantp ,l ,env)) lambda-list))
-	       `(read-only-load-time-value (,',real-function ,,@lambda-list))
-	       `(,',real-function ,,@lambda-list)))))))
 
 (defun separate-declarations (declarations-and-body)
   (loop for form in declarations-and-body

@@ -1,10 +1,13 @@
 (in-package #:tpd2.io)
 
+(deftype syscall-return-integer ()
+  `fixnum)
+
 (eval-always
-  #+linux (pushnew :tpd2-linux *features*)
-  #+CLC-OS-DEBIAN (pushnew :tpd2-linux *features*)
-  #+freebsd (pushnew :tpd2-freebsd *features*))
-  
+ #+linux (pushnew :tpd2-linux *features*)
+ #+CLC-OS-DEBIAN (pushnew :tpd2-linux *features*)
+ #+freebsd (pushnew :tpd2-freebsd *features*))
+
 
 ;;; A simple syscall is one which returns -1 on error and sticks the
 ;;; error in *errno* (of course, this is just the glibc interface to
@@ -12,12 +15,12 @@
 
 (defmacro with-foreign-object-and-slots ((slots var type-unquoted) &body body)
   `(cffi:with-foreign-object (,var ',type-unquoted)
-    (cffi:with-foreign-slots (,slots ,var ,type-unquoted)
-      ,@body)))
+     (cffi:with-foreign-slots (,slots ,var ,type-unquoted)
+       ,@body)))
 
 (defmacro syscall-error-number (symbol number description)
   `(defconstant ,symbol ,number
-    ,description))
+     ,description))
 
 #+tpd2-linux
 (progn
@@ -65,19 +68,19 @@
 
 #+tpd2-linux
 (cffi:defcstruct (sockaddr_in :size 16)
-  (family :uint16)
+    (family :uint16)
   (port :uint16)
   (addr :uint32))
 
 #+tpd2-freebsd
 (cffi:defcstruct (sockaddr_in :size 16)
-  (len :uint8)
+    (len :uint8)
   (family :uint8)
   (port :uint16)
   (addr :uint32))
 
 (eval-always
-  (cffi:defcvar ("errno" +syscall-error-number+) :int))
+ (cffi:defcvar ("errno" +syscall-error-number+) :int))
 
 (cffi:defcfun strerror :string
   (errno :int))
@@ -89,35 +92,36 @@
 	     (with-slots (errno syscall) condition
 	       (format stream "~A failed: ~A (errno ~A)" syscall (strerror errno) errno)))))
 (eval-always
-  (defun syscall-name (name)
-    (string-downcase (force-string name)))
-  (defun direct-syscall-sym (name)
-    (intern (strcat 'syscall-direct- name))))
+ (defun syscall-name (name)
+   (string-downcase (force-string name)))
+ (defun direct-syscall-sym (name)
+   (concat-sym-from-sym-package 'direct-syscall-sym 'syscall-direct- name)))
 
 (defmacro def-syscall (name &rest args)
   `(cffi:defcfun (,(syscall-name name)  ,(direct-syscall-sym name))
-      :int
-      ,@args))
+       :int
+     ,@args))
 
 (defmacro def-simple-syscall (name &rest args)
   (let ((direct-sym (direct-syscall-sym name))
 	(syscall-name (syscall-name name))
 	(arg-names (mapcar #'first args))
-	(func (intern (strcat 'syscall- name))))
+	(func (concat-sym-from-sym-package 'def-simple-syscall 'syscall- name)))
     `(progn
-      (def-syscall ,name ,@args)
-      (defun ,func ,arg-names
-	(declare (optimize speed (safety 0)))
-	(loop
-	    (let ((val (,direct-sym ,@arg-names)))
-	      (cond ((or (/= val -1) (= +syscall-error-number+ +EAGAIN+) (= +syscall-error-number+ +EINPROGRESS+))
-		     (return val))
-		    ((= +syscall-error-number+ +EINTR+)
-		     nil)
-		    (t
-		     (error 'syscall-failed :errno +syscall-error-number+ :syscall ,syscall-name))))))
-      (declaim (inline ,func))
-      ',func)))
+       (declaim (inline ,func ,direct-sym))
+       (declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)))
+		(ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer)))
+       (def-syscall ,name ,@args)
+       (defun ,func ,arg-names
+	 (declare (optimize speed (safety 0)))
+	 (loop
+	       (let ((val (,direct-sym ,@arg-names)))
+		 (cond ((or (/= val -1) (= +syscall-error-number+ +EAGAIN+) (= +syscall-error-number+ +EINPROGRESS+))
+			(return val))
+		       ((= +syscall-error-number+ +EINTR+)
+			nil)
+		       (t
+			(error 'syscall-failed :errno +syscall-error-number+ :syscall ,syscall-name)))))))))
 
 
 (def-simple-syscall close
@@ -128,7 +132,7 @@
 (defconstant +SIGPIPE+ 13)
 
 (cffi:defcfun ("signal" syscall-signal)
-      :pointer
+    :pointer
   (signum :int) 
   (action :pointer)) 
 
@@ -197,13 +201,13 @@
 (defun grovel-from-c-defines (string)
   (dolist (line (cl-ppcre:split "\\n" string))
     (cl-ppcre:register-groups-bind (name val description)
-	("^#define\\s+(\\S+)\\s+(\\S+)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
-      (format t "(defconstant +~A+ ~A \"~A\")~&"
-	      name val (or description name)))
+				   ("^#define\\s+(\\S+)\\s+(\\S+)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
+				   (format t "(defconstant +~A+ ~A \"~A\")~&"
+					   name val (or description name)))
     (cl-ppcre:register-groups-bind (name val description)
-	("^\\s*(\\S+)\\s*=\\s*(\\S+?(?:,)?)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
-      (format t "(defconstant +~A+ ~A \"~A\")~&"
-	      name val (or description name)))))
+				   ("^\\s*(\\S+)\\s*=\\s*(\\S+?(?:,)?)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
+				   (format t "(defconstant +~A+ ~A \"~A\")~&"
+					   name val (or description name)))))
 |#
 
 
@@ -370,7 +374,7 @@
 
 #+tpd2-linux
 (cffi:defcstruct addrinfo
-  (flags :int)
+    (flags :int)
   (family :int)
   (socktype :int)
   (protocol :int)
@@ -381,7 +385,7 @@
 
 #+tpd2-freebsd
 (cffi:defcstruct addrinfo
-  (flags :int)
+    (flags :int)
   (family :int)
   (socktype :int)
   (protocol :int)
@@ -424,7 +428,7 @@
     (setf (cffi:mem-ref on :int) value)
     (syscall-setsockopt fd level optname
 			on (cffi:foreign-type-size :int))))
-  
+
 
 (defun sockaddr-address-string-with-ntop (sa)
   (cffi:with-foreign-pointer-as-string (str 200 str-size)
@@ -455,19 +459,19 @@
 			  action)
   (let ((fd (syscall-socket socket-family socket-type 0)))
     (signal-protect 
-	(let ((network-port (htons port)))
-	  (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
-	  (set-fd-nonblock fd)
-	  (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
-	    (setf family socket-family)
-	    (cffi:with-foreign-string (src address)
-	      (when (<= (inet_pton socket-family src 
-				   (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
-		(error "Internet address is not valid: ~A" address)))
-	    (setf port network-port)
-	    (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in))) 
-	  fd)
-      (syscall-close fd))))
+     (let ((network-port (htons port)))
+       (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
+       (set-fd-nonblock fd)
+       (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
+	 (setf family socket-family)
+	 (cffi:with-foreign-string (src address)
+	   (when (<= (inet_pton socket-family src 
+				(cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
+	     (error "Internet address is not valid: ~A" address)))
+	 (setf port network-port)
+	 (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in))) 
+       fd)
+     (syscall-close fd))))
 
 (defun make-listen-socket (&rest args)
   (apply 'new-socket-helper :action 
@@ -494,7 +498,7 @@
   (len :unsigned-long))
 
 (cffi:defcstruct timeval
-  (sec :unsigned-long)
+    (sec :unsigned-long)
   (usec :unsigned-long))
 
 (def-simple-syscall gettimeofday 
@@ -513,15 +517,15 @@
     (make-precise-time :sec (+ sec +unix-epoch-to-universal-time-offset+) :usec usec)))
 
 (my-defun precise-time 'print-object (stream)
-  (if *print-readably*
-      (call-next-method)
-      (format stream "~D.~6,'0D" (my sec) (my usec))))
+	  (if *print-readably*
+	      (call-next-method)
+	      (format stream "~D.~6,'0D" (my sec) (my usec))))
 
 (my-defun precise-time after (old-time)
-  (check-type old-time precise-time)
-  (let ((usec (- (my usec) (its usec old-time))))
-    (let ((one-over (if (> 0 usec) 1 0)))
-      (make-precise-time :sec (- (my sec) (its sec old-time) one-over) :usec (+ usec (* 1000000 one-over))))))
+	  (check-type old-time precise-time)
+	  (let ((usec (- (my usec) (its usec old-time))))
+	    (let ((one-over (if (> 0 usec) 1 0)))
+	      (make-precise-time :sec (- (my sec) (its sec old-time) one-over) :usec (+ usec (* 1000000 one-over))))))
 
 
 (def-simple-syscall epoll_create
@@ -558,13 +562,13 @@
 (defconstant +EPOLL_CTL_MOD+ 3)
 
 (cffi:defcunion epoll-data
-  (ptr :pointer)
+    (ptr :pointer)
   (fd :int)
   (u32 :uint32)
   (u64 :uint64))
 
 (cffi:defcstruct (epoll-event :size 12)
-  (events :uint32)
+    (events :uint32)
   (data epoll-data :offset 4))
 
 (assert (= (cffi:foreign-type-size 'tpd2.io::epoll-event) 12))

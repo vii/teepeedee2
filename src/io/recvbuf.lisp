@@ -27,7 +27,6 @@
   (- (my write-idx) (my read-idx)))
 
 (my-defun recvbuf prepare-read (&optional (size 1024))
-  (my-declare-fast-inline)
   (declare (type fixnum size))
   (when (> size (- (my len) (my read-idx)))
     (cond 
@@ -48,7 +47,6 @@
   (values))
 
 (my-defun recvbuf read-some (con &optional retry)
-  (my-declare-fast-inline)
   (debug-assert (not (my full)))
   (let ((s
 	 (socket-read (con-socket con)
@@ -97,7 +95,6 @@
   (my eat-to-idx (+ (my read-idx) amount)))
 
 (my-defun recvbuf find (delimiter)
-  (my-declare-fast-inline)
   (declare (type simple-byte-vector delimiter))
   (let ((limit (- (my write-idx) (1- (length delimiter)))))
     (loop for i from (my read-idx) below limit

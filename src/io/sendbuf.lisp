@@ -3,6 +3,7 @@
 (deftype sendbuf-small-integer ()
   '(unsigned-byte 24))
 
+(declaim (inline make-sendbuf))
 (defstruct sendbuf
   (head nil :type list)
   (tail nil :type list)
@@ -29,6 +30,7 @@
 
 (my-defun sendbuf merge (other)
   (my-declare-fast-inline)
+  (declare (dynamic-extent other))
   (cond 
     ((my head)
      (setf (cdr (my tail)) (sendbuf-head other))
@@ -92,7 +94,6 @@
 		 (setf s 0))))))
 
 (my-defun sendbuf send-write-piece-by-piece (con done)
-  (my-declare-fast-inline)
   (loop for buf = (car (my head))
 	while 		   
 	(let ((s (socket-write (con-socket con) buf)))
@@ -109,7 +110,6 @@
   (my check-done con done #'my-call))
 
 (my-defun sendbuf send-write (con done)
-  (my-declare-fast-inline)
   (let ((buf (my to-byte-vector)))
     (let ((s (socket-write (con-socket con) buf)))
       (declare (type (or null sendbuf-small-integer) s))
@@ -118,7 +118,6 @@
   (my check-done con done #'my-call))
 
 (my-defun sendbuf send-writev (con done)
-  (my-declare-fast-inline)
   (unless (my done)
     (let ((count (min +max-iovecs+ (my num-bufs))))
       (cffi:with-foreign-object (vecs 'iovec count)
