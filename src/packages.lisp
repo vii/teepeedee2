@@ -282,6 +282,7 @@
    #:channel
    #:channel-notify
    #:channel-update
+   #:find-channel
 
    #:message-channel
    #:simple-channel
@@ -360,6 +361,11 @@
 (defpackage #:teepeedee2.game.dating
   (:nicknames #:tpd2.game.dating)
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
+(defpackage #:teepeedee2.demo
+  (:nicknames #:tpd2.demo)
+  (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.datastore))
+
 
 
 #.`

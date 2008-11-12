@@ -20,8 +20,10 @@
     body))
 
 
-(defun respond-http (con done &key (code (force-byte-vector 200)) (banner (force-byte-vector "OK"))
+(defun-speedy respond-http (con done &key (code (force-byte-vector 200)) (banner (force-byte-vector "OK"))
 		     headers body)
+  (declare (type sendbuf body))
+  (declare (dynamic-extent body))
   (send con done (build-http-response :code code :banner banner :headers headers :body body)))
 
 

@@ -33,9 +33,10 @@
 (declaim (inline time-for-delay))
 (defun time-for-delay (delay)
   (declare (optimize speed))
-  (when delay
-    (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
-    (+ (get-universal-time) delay)))
+  (let ((delay (floor delay)))
+    (when delay
+      (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
+      (+ (get-universal-time) delay))))
 
 
 

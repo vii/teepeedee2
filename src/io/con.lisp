@@ -76,6 +76,7 @@
 	  (my 'hangup))))
 
 (my-defun con 'recv (done amount)
+  (declare (type fixnum amount))
   (cond
     ((>= (recvbuf-available-to-eat (my recv)) amount)
      (funcall done (recvbuf-eat (my recv) amount)))

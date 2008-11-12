@@ -13,6 +13,9 @@
       do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
+#+sbcl
+(setf sb-ext:*inline-expansion-limit* 50)
+
 (pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
 
 #+comment-out
@@ -123,5 +126,5 @@
 	       :fiveam
 	       :cl-utilities
 	       :cl-irregsexp
-	       :hunchentoot
+	       :trivial-backtrace
 	       :parenscript))

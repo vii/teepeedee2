@@ -75,7 +75,7 @@
 		   (remf ret option))
 		 (list* (slot-name slot-def) initform ret)))
 	   (guarded-slot-accessor (slot-name)
-	    (concat-sym '- slot-name))
+	    (concat-sym name '- slot-name))
 	   (real-slot-accessor (slot-name)
 	     (concat-sym-from-sym-package name 'unlogged- name '- slot-name))
 	   (real-constructor ()

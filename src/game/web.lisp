@@ -347,7 +347,7 @@
      :name "MOPOKO-EVENT-LOOP")))
 
 (defpage "/test" (name)
-  (<p "hello " (<b name)))
+  (<h1 "Hello " name))
 
 (defpage "/test-plain" ()
   (<p "hello dude" ))

@@ -1,16 +1,18 @@
 (in-package #:tpd2.lib)
 
-
+(declaim (ftype (function (t) simple-byte-vector) apply-byte-vector-cat))
 (defun-speedy byte-vector-cat (&rest args)
   (apply-byte-vector-cat args))
 
-(defun-speedy apply-byte-vector-cat (args)
-  (let ((vecs (mapcar (lambda(x)(force-byte-vector x)) args)))
-    (let ((len (reduce '+ (mapcar 'length vecs))))
+(defun apply-byte-vector-cat (args)
+  (let ((vecs (mapcar (lambda(x)(force-simple-byte-vector x)) args)))
+    (let ((len (reduce '+ (mapcar (lambda(x)(length (the simple-byte-vector x))) vecs))))
       (let ((ret (make-byte-vector len)) (i 0))
 	(loop for v in vecs do
-	      (replace ret v :start1 i)
-	      (incf i (length v)))
+	      (locally
+		  (declare (type simple-byte-vector ret v) (type (integer 0 #. most-positive-fixnum) i))
+		(replace ret v :start1 i)
+		(incf i (length v))))
 	ret))))
 
 #-ccl ; compacting gc makes this unreliable
@@ -35,10 +37,9 @@
 
 (declaim (inline random-elt))
 (defun random-elt (sequence)
-  (declare (optimize speed))
-  (when sequence
-    (elt sequence (random (length sequence)))))
-
+  (let ((len (length sequence)))
+    (unless (zerop len)
+      (elt sequence (random len)))))
 
 
 (defun read-safely (&rest args)
@@ -49,4 +50,4 @@
 
 (defun backtrace-description (err)
   (format nil "ERROR ~A:~&~A" (with-output-to-string (*standard-output*) (describe err)) 
-	  (hunchentoot:get-backtrace err)))
+	  (trivial-backtrace:get-backtrace err)))

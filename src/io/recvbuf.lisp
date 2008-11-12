@@ -1,13 +1,16 @@
 (in-package #:tpd2.io)
 
+(deftype recvbuf-small-integer ()
+  `(integer 0 #x10000000))
+
 (defstruct recvbuf
   (store (make-byte-vector 1024) :type simple-byte-vector)
-  (read-idx 0 :type (integer 0 #x1000000))
-  (write-idx 0 :type (integer 0 #x1000000)))
+  (read-idx 0 :type recvbuf-small-integer)
+  (write-idx 0 :type recvbuf-small-integer))
 
 (my-defun recvbuf len ()
   (my-declare-fast-inline)
-  (length (my store)))
+  (the recvbuf-small-integer (length (my store))))
 
 (my-defun recvbuf half-full-or-more ()
   (my-declare-fast-inline)
@@ -24,10 +27,10 @@
 
 (my-defun recvbuf available-to-eat ()
   (my-declare-fast-inline)
-  (- (my write-idx) (my read-idx)))
+  (the recvbuf-small-integer (- (my write-idx) (my read-idx))))
 
 (my-defun recvbuf prepare-read (&optional (size 1024))
-  (declare (type fixnum size))
+  (declare (type recvbuf-small-integer size))
   (when (> size (- (my len) (my read-idx)))
     (cond 
       ((= (my write-idx) (my read-idx))

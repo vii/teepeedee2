@@ -80,7 +80,8 @@
   (addr :uint32))
 
 (eval-always
- (cffi:defcvar ("errno" +syscall-error-number+) :int))
+  (declaim (inline %var-accessor-errno))
+  (cffi:defcvar ("errno" errno) :int))
 
 (cffi:defcfun strerror :string
   (errno :int))
@@ -95,7 +96,9 @@
  (defun syscall-name (name)
    (string-downcase (force-string name)))
  (defun direct-syscall-sym (name)
-   (concat-sym-from-sym-package 'direct-syscall-sym 'syscall-direct- name)))
+   (concat-sym-from-sym-package 'direct-syscall-sym 'syscall-direct- name))
+ (defun noretry-syscall-sym (name)
+   (concat-sym-from-sym-package 'noretry-syscall-sym 'syscall-noretry- name)))
 
 (defmacro def-syscall (name &rest args)
   `(cffi:defcfun (,(syscall-name name)  ,(direct-syscall-sym name))
@@ -104,24 +107,30 @@
 
 (defmacro def-simple-syscall (name &rest args)
   (let ((direct-sym (direct-syscall-sym name))
+	(noretry-sym (noretry-syscall-sym name))
 	(syscall-name (syscall-name name))
 	(arg-names (mapcar #'first args))
 	(func (concat-sym-from-sym-package 'def-simple-syscall 'syscall- name)))
     `(progn
-       (declaim (inline ,func ,direct-sym))
-       (declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)))
-		(ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer)))
+       (declaim (inline ,func ,direct-sym ,noretry-sym))
+       (declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)) ,noretry-sym)
+		(ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer) ,func ,direct-sym))
        (def-syscall ,name ,@args)
+       (defun ,noretry-sym ,arg-names
+	 (declare (optimize speed (safety 0)))
+	 (let ((val (,direct-sym ,@arg-names)))
+	   (cond ((or (/= val -1) (= errno +EAGAIN+) (= errno +EINPROGRESS+))
+		  val)
+		 ((= errno +EINTR+)
+		  nil)
+		 (t
+		  (error 'syscall-failed :errno errno :syscall ,syscall-name)))))
+
        (defun ,func ,arg-names
 	 (declare (optimize speed (safety 0)))
 	 (loop
-	       (let ((val (,direct-sym ,@arg-names)))
-		 (cond ((or (/= val -1) (= +syscall-error-number+ +EAGAIN+) (= +syscall-error-number+ +EINPROGRESS+))
-			(return val))
-		       ((= +syscall-error-number+ +EINTR+)
-			nil)
-		       (t
-			(error 'syscall-failed :errno +syscall-error-number+ :syscall ,syscall-name)))))))))
+	       (let ((val (,noretry-sym ,@arg-names)))
+		 (when val (return val))))))))
 
 
 (def-simple-syscall close
@@ -429,14 +438,13 @@
     (syscall-setsockopt fd level optname
 			on (cffi:foreign-type-size :int))))
 
-
 (defun sockaddr-address-string-with-ntop (sa)
-  (cffi:with-foreign-pointer-as-string (str 200 str-size)
+  (cffi:with-foreign-pointer-as-string ((str str-size) 200)
     (unless (inet_ntop (cffi:foreign-slot-value sa 'sockaddr_in 'family)
 		       (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)
 		       str
 		       str-size)
-      (error "Cannot convert address: ~A" (strerror +syscall-error-number+)))))
+      (error "Cannot convert address: ~A" (strerror errno)))))
 
 #+tpd2-old-sockaddr-address-string
 (defun sockaddr-address-string (sa)
@@ -517,15 +525,15 @@
     (make-precise-time :sec (+ sec +unix-epoch-to-universal-time-offset+) :usec usec)))
 
 (my-defun precise-time 'print-object (stream)
-	  (if *print-readably*
-	      (call-next-method)
-	      (format stream "~D.~6,'0D" (my sec) (my usec))))
+  (if *print-readably*
+      (call-next-method)
+      (format stream "~D.~6,'0D" (my sec) (my usec))))
 
 (my-defun precise-time after (old-time)
-	  (check-type old-time precise-time)
-	  (let ((usec (- (my usec) (its usec old-time))))
-	    (let ((one-over (if (> 0 usec) 1 0)))
-	      (make-precise-time :sec (- (my sec) (its sec old-time) one-over) :usec (+ usec (* 1000000 one-over))))))
+  (check-type old-time precise-time)
+  (let ((usec (- (my usec) (its usec old-time))))
+    (let ((one-over (if (> 0 usec) 1 0)))
+      (make-precise-time :sec (- (my sec) (its sec old-time) one-over) :usec (+ usec (* 1000000 one-over))))))
 
 
 (def-simple-syscall epoll_create

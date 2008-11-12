@@ -2,17 +2,21 @@
 
 (defstruct (raw-ml-sendbuf (:include sendbuf)))
 
+(declaim (ftype (function (simple-byte-vector) simple-byte-vector) really-escape-string))
+(defun really-escape-string (value)
+  (declare (type simple-byte-vector value))
+  (match-replace-all value
+		     (#\< "&lt;")
+		     (#\> "&gt;")
+		     (#\& "&amp;")
+		     (#\' "&#39;"))) ; &apos; is *not* HTML but only XML
+
 (defun-consistent escape-data (value)
   (typecase value
     (raw-ml-sendbuf
      value)
     (t
-     (match-replace-all (force-simple-byte-vector value)
-			(#\< "&lt;")
-			(#\> "&gt;")
-			(#\& "&amp;")
-			(#\' "&#39;")) ; &apos; is *not* HTML but only XML
-			)))
+     (really-escape-string (force-simple-byte-vector value)))))
 
 (defmacro output-escaped-ml (&rest args)
   `(with-ml-output        

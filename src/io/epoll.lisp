@@ -42,27 +42,27 @@
   (setf (my postpone-registration) t)
 
   (let ((nevents
-	 (syscall-epoll_wait (my fd) (my events) (my max-events) 
+	 (syscall-noretry-epoll_wait (my fd) (my events) (my max-events) 
 			     (if timeout 
 				 (floor (* 1000 timeout))
 				 -1))))
-    (assert (>= (my max-events) nevents))
-    (dotimes (i nevents)
-      (let ((event (cffi:mem-aref (my events) 'epoll-event i)))
-	(cffi:with-foreign-slots ((events data) event epoll-event)
-	  (cffi:with-foreign-slots ((fd) data epoll-data)
-	    (awhen (my 'mux-find-fd fd)
-	      (con-run it)
-	      (unless (and (zerop (logand (logior +POLLERR+ +POLLHUP+) events))
-			  (or (zerop (logand +POLLRDHUP+ events)) (not (zerop (logand +POLLIN+ events)))))
-		(con-fail it)))))))
-    (setf (my postpone-registration) nil)
-    (adolist (my postponed-registrations)
-      (my 'mux-add it))
-    (setf (my postponed-registrations) nil)
+    (when nevents
+      (assert (>= (my max-events) nevents))
+      (dotimes (i nevents)
+	(let ((event (cffi:mem-aref (my events) 'epoll-event i)))
+	  (cffi:with-foreign-slots ((events data) event epoll-event)
+	    (cffi:with-foreign-slots ((fd) data epoll-data)
+	      (awhen (my 'mux-find-fd fd)
+		(con-run it)
+		(unless (and (zerop (logand (logior +POLLERR+ +POLLHUP+) events))
+			     (or (zerop (logand +POLLRDHUP+ events)) (not (zerop (logand +POLLIN+ events)))))
+		  (con-fail it)))))))
+      (setf (my postpone-registration) nil)
+      (adolist (my postponed-registrations)
+	(my 'mux-add it))
+      (setf (my postponed-registrations) nil)))
   
-    (values)))
-
+    (values))
 
 (defvar *global-epoll* (make-epoll))
 
@@ -84,9 +84,19 @@
 (defun events-pending-p ()
   (not (mux-empty *global-epoll*)))
 
+
+
 (defun wait-for-next-event (&optional timeout)
   (with-shorthand-accessor (my epoll *global-epoll*)
     (my wait timeout)))
+
+#+tpd2-io-wait-for-next-event-check-timeout
+(defun wait-for-next-event (&optional timeout)
+  (with-shorthand-accessor (my epoll *global-epoll*)
+    (let ((time (get-universal-time)))
+      (my wait timeout)
+      (when (and timeout (> (get-universal-time) (+ timeout time 2)))
+	(warn "Timeout took too long: waited ~As for ~As" (- (get-universal-time) time) timeout )))))
 
 (defun event-loop ()
   (loop for timeout = (next-timeout)
