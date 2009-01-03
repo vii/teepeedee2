@@ -41,35 +41,6 @@
 		:displaced-to vector
 		:displaced-index-offset start)))
 
-
-
-(declaim (inline cdr-assoc))
-(defun cdr-assoc (alist key &key (test 'eq))
-  (cdr (assoc key alist :test test)))
-
-
-(define-setf-expander cdr-assoc (place key &key (test ''eq) &environment env)
-  (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion place env)
-    (with-unique-names (store key-val test-val)
-      (values 
-       (append dummies (list key-val test-val))
-       (append vals (list key test))
-       `(,store ,@newval)
-       (with-unique-names (tmp cur)
-	 `(let (,@(loop for d in dummies 
-			for v in vals
-			collect `(,d ,v))
-		(,cur ,getter))
-	    (let ((,tmp (assoc ,key-val ,cur :test ,test-val)))
-	      (cond (,tmp 
-		     (rplacd ,tmp ,store))
-		    (t
-		     (setf ,(first newval) (acons ,key ,store ,cur))
-		     ,setter))
-	      ,store)))
-       `(cdr-assoc ,getter)))))
-
 (defmacro without-call/cc (&body body)
   `(locally ,@body))
 

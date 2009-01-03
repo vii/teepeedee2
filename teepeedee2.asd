@@ -18,7 +18,7 @@
 
 (pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
 
-#+comment-out
+#+tpd2-debug
 (progn
   (proclaim '(optimize debug))
   (pushnew :tpd2-debug-assert *features*))

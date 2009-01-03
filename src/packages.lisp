@@ -13,6 +13,7 @@
 		#:match-bind #:if-match-bind
 		#:match-failed )
   (:import-from #:cl-irregsexp.utils
+		#:cdr-assoc
 		#:defun-consistent
 		#:declaim-defun-consistent-ftype
 		#:defun-speedy

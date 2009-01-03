@@ -10,8 +10,8 @@
 (my-defun list-channel del (message)
   (deletef message (my list)))
 
-(my-defun list-channel 'object-to-ml ()
+(my-defun list-channel 'simple-channel-body-ml ()
   (<div :class "list-channel"
 	(loop for x in (reverse (my list)) do
-	      (output-object-to-ml x))
-	(output-raw-ml (call-next-method))))
+	      (output-object-to-ml x))))
+

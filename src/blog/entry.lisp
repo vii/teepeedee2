@@ -93,19 +93,18 @@
 					 ("${static-base}"  (blog-static-base-url (my blog)))))))
 
 (defun parse-time (str)
-  (match-bind ( (- #\0 #\9) 
-	       (year (and ((string) a0 (month
-
-  (flet ((parse-number (str)
-	   (or (and str (parse-integer str)) 0)))
-    (regex-bind ((#'parse-number year) 
-		 (#'parse-number month) 
-		 (#'parse-number date) 
-		 (#'parse-number hour)  
-		 (#'parse-number minute) 
-		 (#'parse-number second))
-		("(\\d\\d\\d\\d)\\D*(\\d\\d?)\\D*(\\d\\d?)\\D*(?:(\\d\\d?)\\D*(\\d\\d?)\\D*(?:(\\d\\d?))?)?" str)
-		(apply 'encode-universal-time (mapcar (lambda(x) (or x 0)) (list second minute hour date month year))))))
+  (match-bind 
+   (macrolet ((int (name &optional (len 2))
+		 `(progn t (,name (unsigned-byte :max-len ,len) 0))))
+      (int year 4)
+      (int month)
+      (int day)
+      (:? 
+       (int hour)
+       (int minute)
+       (:? (int second))))
+      str
+    (encode-universal-time second minute hour day month year)))
 
 (defun read-in-blog-entry (name)
   (let ((blog-entry (make-blog-entry :name name)))

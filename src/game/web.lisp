@@ -137,10 +137,10 @@
 		   
 		   friendly-move-type
 		   "? "
-		    
-		   (output-raw-ml (html-action-link "Yes" (my queue-choice t) (values)))
+		   
+		   (html-action-link "Yes" (my queue-choice t) (values))
 		   " "
-		   (output-raw-ml (html-action-link "No" (my queue-choice nil) (values)))))
+		   (html-action-link "No" (my queue-choice nil) (values))))
 		((eql :select-card (my move-type))
 		 (<p friendly-move-type "."))
 		(t
@@ -150,13 +150,12 @@
 					    (apply 'max (choices-list (my choices))) ". "))
 			   (t
 			    (with-ml-output (format nil " ~{~A ~}" (my args)) " from " (format nil "~A" (my choices) ))))
-     
-		     (output-raw-ml 
-		      (html-action-form 		     
-			  ""
-			  ((choice (first (choices-list (my choices)))))
-			(my queue-choice (read-safely-from-string choice))
-			(values)))))))))
+		     
+		     (html-action-form 		     
+			 ""
+			 ((choice (first (choices-list (my choices)))))
+		       (my queue-choice (read-safely-from-string choice))
+		       (values))))))))
 
 
 
@@ -167,7 +166,7 @@
 	      unless once do (<div :class "separate")
 	      do (output-object-to-ml p))
 	(<div :style (css-attrib :clear "both" :float "none" :border "none"))))
-	  
+
 
 (my-defun game 'object-to-ml :around ()
 	  (if (my game-over)
@@ -191,10 +190,9 @@
 	(<div :class "game-header"
 	      (<h2 :class "game-title"
 		   (string-capitalize (force-string (game-name (my game-state))))))
-
-
+	
 	(call-next-method)
-
+	
 	(<div :class "talk"
 	      (html-action-form "Talk " 
 		  (text)
@@ -202,29 +200,30 @@
 		  (game-talk (my game-state) me text))))))
 
 (my-defun web-state 'simple-channel-body-ml ()
-  (<div :class "game-state-body" 
-	(<p :class "close-game"		
-	    (cond ((its game-over (my game-state))
-		   (html-replace-link "Play again"
-		     (web-game-start (game-generator (my game-state)))))
-		  (t
-		   (html-action-link "Resign"
-		     (my resign))))))
-  
-  (<div :class "messages-and-talk"
-	(<div :class tpd2.webapp::+html-class-scroll-to-bottom+
-	      (output-object-to-ml (my announcements))))
-  
-  (cond ((my resigned)
-	 (<p "Resigned."))
-	(t
-	 (output-object-to-ml (my game-state))
-	 
-	 (when (my waiting-for-input)
-	   (<div :class "moves"
-		 (loop for m in (my waiting-for-input)
-		       do 
-		       (output-object-to-ml m)))))))
+  (<div :class "game-state" 
+	(<div :class "game-state-body" 
+	      (<p :class "close-game"		
+		  (cond ((its game-over (my game-state))
+			 (html-replace-link "Play again"
+			   (web-game-start (game-generator (my game-state)))))
+			(t
+			 (html-action-link "Resign"
+			   (my resign))))))
+	
+	(<div :class "messages-and-talk"
+	      (<div :class tpd2.webapp::+html-class-scroll-to-bottom+
+		    (output-object-to-ml (my announcements))))
+	
+	(cond ((my resigned)
+	       (<p "Resigned."))
+	      (t
+	       (output-object-to-ml (my game-state))
+	       
+	       (when (my waiting-for-input)
+		 (<div :class "moves"
+		       (loop for m in (my waiting-for-input)
+			     do 
+			     (output-object-to-ml m))))))))
 
 (my-defun player 'object-to-ml ()
   (<div :class "player"
@@ -303,9 +302,9 @@
 					  `(<head
 					     (<title "mopoko.com " (output-raw-ml ,title))
 					     (output-raw-ml 
-					     (<noscript
-					       (output-raw-ml 
-						(<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
+					      (<noscript
+						(output-raw-ml 
+						 (<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
 					     (css)
 					     (webapp-default-page-head-contents))))
 
@@ -342,7 +341,7 @@
 
   #+sbcl
   (with-preserve-specials (*trace-output* *standard-output* *error-output* *debug-io* 
-				     #+tpd2-has-swank swank::*emacs-connection*)
+					  #+tpd2-has-swank swank::*emacs-connection*)
     (sb-thread:make-thread 
      (lambda() 
        (with-specials-restored

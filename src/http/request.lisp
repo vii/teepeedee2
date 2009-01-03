@@ -3,7 +3,9 @@
 (defprotocol http-read-chunked (con)
   (let ((body
 	 (loop 
-	       for len = (match-bind ((len (integer 16)) (* (space)) (last))  
+	       for len = (match-bind ((len (unsigned-byte :base 16 
+							  :max-len 7 ; maximum chunk size of (expt 16 7) = 268435456
+							  )) (* (space)) (last))  
 		   (io 'recvline con) 
 		 len)
 	       until (zerop len)

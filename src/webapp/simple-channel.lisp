@@ -14,4 +14,6 @@
 				   (simple-channel-body-ml me))))))))
 
 (my-defun simple-channel 'object-to-ml ()
-  (<div :id (my id) (simple-channel-body-ml me)))
+  (<div :id (my id) 
+	(simple-channel-body-ml me)
+	(call-next-method)))

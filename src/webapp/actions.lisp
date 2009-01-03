@@ -69,12 +69,12 @@
   (defpage-lambda +action-page-name+ #'action-respond-body (.id. .channels. .javascript. all-http-params)))
 
 
-(my-defun frame 'object-to-ml ()
+(my-defun frame 'simple-channel-body-ml ()
   (<div :class "frame"
 	(<div :class "change-name" 
 	      (html-action-form "Your name " ((new-name (my username)))
 		(setf (my username) new-name)
 		(my notify)
 		(values)))
-	(output-object-to-ml (my messages))
-	(output-raw-ml (call-next-method))))
+	(output-object-to-ml (my messages))))
+
