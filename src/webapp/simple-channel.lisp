@@ -1,8 +1,8 @@
 (in-package #:tpd2.webapp)
 
-(defvar *horrible-simple-channel-object-to-ml-hack* nil)
-
 (defmyclass (simple-channel (:include channel)))
+
+(defgeneric simple-channel-body-ml (simple-channel))
 
 (my-defun simple-channel update (subscriber-state)
   (declare (ignore subscriber-state))
@@ -11,10 +11,7 @@
      (js-to-string
        (reset-element-id (unquote (force-string (my id)))
 			 (unquote (force-string 
-				   (let ((*horrible-simple-channel-object-to-ml-hack* t))
-				     (object-to-ml me)))))))))
+				   (simple-channel-body-ml me))))))))
 
-(my-defun simple-channel 'object-to-ml :around ()
-	  (if *horrible-simple-channel-object-to-ml-hack*
-	      (call-next-method)
-	      (<div :id (my id) (call-next-method))))
+(my-defun simple-channel 'object-to-ml ()
+  (<div :id (my id) (simple-channel-body-ml me)))

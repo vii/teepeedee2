@@ -10,7 +10,7 @@
 
 
 ;;; A simple syscall is one which returns -1 on error and sticks the
-;;; error in *errno* (of course, this is just the glibc interface to
+;;; error in errno (of course, this is just the glibc interface to
 ;;; the syscall).
 
 (defmacro with-foreign-object-and-slots ((slots var type-unquoted) &body body)
@@ -80,8 +80,17 @@
   (addr :uint32))
 
 (eval-always
-  (declaim (inline %var-accessor-errno))
-  (cffi:defcvar ("errno" errno) :int))
+;; Threaded lisps need a more complex way to get errno on Linux
+  #+ccl
+  (define-symbol-macro errno (- (ccl::int-errno-call -1)))
+  #+sbcl
+  (define-symbol-macro errno (sb-alien:get-errno))
+  #-(or ccl sbcl)
+  (progn
+    (declaim (inline %var-accessor-errno))
+    (cffi:defcvar ("errno" errno) :int)))
+
+
 
 (cffi:defcfun strerror :string
   (errno :int))
@@ -119,12 +128,13 @@
        (defun ,noretry-sym ,arg-names
 	 (declare (optimize speed (safety 0)))
 	 (let ((val (,direct-sym ,@arg-names)))
-	   (cond ((or (/= val -1) (= errno +EAGAIN+) (= errno +EINPROGRESS+))
-		  val)
-		 ((= errno +EINTR+)
-		  nil)
-		 (t
-		  (error 'syscall-failed :errno errno :syscall ,syscall-name)))))
+	   (let ((errno errno))
+	     (cond ((or (/= val -1) (= errno +EAGAIN+) (= errno +EINPROGRESS+))
+		    val)
+		   ((= errno +EINTR+)
+		    nil)
+		   (t
+		    (error 'syscall-failed :errno errno :syscall ,syscall-name))))))
 
        (defun ,func ,arg-names
 	 (declare (optimize speed (safety 0)))
@@ -515,35 +525,28 @@
 
 (defconstant +unix-epoch-to-universal-time-offset+ 2208988800)
 
-(defstruct precise-time
-  sec
-  usec)
-
-(defun get-precise-time ()
+(defun get-universal-us ()
   (with-foreign-object-and-slots ((sec usec) tv timeval)
     (syscall-gettimeofday tv (cffi:null-pointer))
-    (make-precise-time :sec (+ sec +unix-epoch-to-universal-time-offset+) :usec usec)))
-
-(my-defun precise-time 'print-object (stream)
-  (if *print-readably*
-      (call-next-method)
-      (format stream "~D.~6,'0D" (my sec) (my usec))))
-
-(my-defun precise-time after (old-time)
-  (check-type old-time precise-time)
-  (let ((usec (- (my usec) (its usec old-time))))
-    (let ((one-over (if (> 0 usec) 1 0)))
-      (make-precise-time :sec (- (my sec) (its sec old-time) one-over) :usec (+ usec (* 1000000 one-over))))))
-
+    (+ (* 1000000 (+ sec +unix-epoch-to-universal-time-offset+)) usec)))
 
 (def-simple-syscall epoll_create
     (size :int))
 
 (def-simple-syscall epoll_wait
-    (epfd :int)
+  (epfd :int)
   (events :pointer)
   (maxevents :int)
   (timeout :int))
+
+(defun syscall-retry-epoll_wait (epfd events maxevents timeout-ms)
+  (let ((start (get-universal-us)))
+    (loop
+	  (let ((retval (syscall-noretry-epoll_wait epfd events maxevents timeout-ms)))
+	    (when retval (return retval))
+	    (unless (>= 0 timeout-ms)
+	      (setf timeout-ms
+		    (max (- timeout-ms (floor (- (get-universal-us) start) 1000)) 0)))))))
 
 (def-simple-syscall epoll_ctl
     (epfd :int)

@@ -188,40 +188,43 @@
 
 (my-defun web-state 'object-to-ml ()
   (<div :class "game-state" 
-	(output-raw-ml (call-next-method))
 	(<div :class "game-header"
 	      (<h2 :class "game-title"
-		   (string-capitalize (force-string (game-name (my game-state)))))
+		   (string-capitalize (force-string (game-name (my game-state))))))
 
-	      (<p :class "close-game"		
-		  (cond ((its game-over (my game-state))
-			 (html-replace-link "Play again"
-			   (web-game-start (game-generator (my game-state)))))
-			(t
-			 (html-action-link "Resign"
-			   (my resign))))))
 
-	(<div :class "messages-and-talk"
-	      (<div :class tpd2.webapp::+html-class-scroll-to-bottom+
-		    (output-object-to-ml (my announcements)))
-	      (<div :class "talk"
-		    (html-action-form "Talk " 
-			(text)
-		      (without-ml-output
-			(game-talk (my game-state) me text)
-			))))
-	
-	(when (my resigned)
-	  (<p "Resigned."))
+	(call-next-method)
 
-	(unless (my resigned)
-	  (output-object-to-ml (my game-state))
-	  
-	  (when (my waiting-for-input)
-	    (<div :class "moves"
-		  (loop for m in (my waiting-for-input)
-			do 
-			(output-object-to-ml m)))))))
+	(<div :class "talk"
+	      (html-action-form "Talk " 
+		  (text)
+		(without-ml-output
+		  (game-talk (my game-state) me text))))))
+
+(my-defun web-state 'simple-channel-body-ml ()
+  (<div :class "game-state-body" 
+	(<p :class "close-game"		
+	    (cond ((its game-over (my game-state))
+		   (html-replace-link "Play again"
+		     (web-game-start (game-generator (my game-state)))))
+		  (t
+		   (html-action-link "Resign"
+		     (my resign))))))
+  
+  (<div :class "messages-and-talk"
+	(<div :class tpd2.webapp::+html-class-scroll-to-bottom+
+	      (output-object-to-ml (my announcements))))
+  
+  (cond ((my resigned)
+	 (<p "Resigned."))
+	(t
+	 (output-object-to-ml (my game-state))
+	 
+	 (when (my waiting-for-input)
+	   (<div :class "moves"
+		 (loop for m in (my waiting-for-input)
+		       do 
+		       (output-object-to-ml m)))))))
 
 (my-defun player 'object-to-ml ()
   (<div :class "player"

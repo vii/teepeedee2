@@ -286,6 +286,7 @@
 
    #:message-channel
    #:simple-channel
+   #:simple-channel-body-ml
    #:list-channel-add
    #:list-channel-del
    #:make-message-channel

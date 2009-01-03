@@ -33,8 +33,8 @@
 
 (defun channel-string-to-states (channels)
   (let ((channel-states))
-    (match-bind ( (* channel "|" state (or ";" (last)) 
-		     '(awhen (find-channel channel) (push (cons it (byte-vector-parse-integer state)) channel-states))))
+    (match-bind ( (* channel "|" (state (integer)) (or ";" (last)) 
+		     '(awhen (find-channel channel) (push (cons it state) channel-states))))
 	channels)
     channel-states))
 

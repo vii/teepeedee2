@@ -40,7 +40,7 @@
        (funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 'all-http-params defaulting-lambda-list)))))
 
 
-(defmacro defpage-lambda (path function defaulting-lambda-list)
+(defmacro defpage-lambda (path function &optional defaulting-lambda-list)
   (with-unique-names (mvl)
     `(dispatcher-register-path (site-dispatcher *default-site*) ,path
 			       (lambda(dispatcher con done path all-http-params)

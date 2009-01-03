@@ -38,31 +38,32 @@
     (syscall-epoll_ctl (my fd) ctl fd-wanted event))
   (values))
 
+
+
 (my-defun epoll wait (timeout)
   (setf (my postpone-registration) t)
 
   (let ((nevents
-	 (syscall-noretry-epoll_wait (my fd) (my events) (my max-events) 
+	 (syscall-retry-epoll_wait (my fd) (my events) (my max-events) 
 			     (if timeout 
 				 (floor (* 1000 timeout))
 				 -1))))
-    (when nevents
-      (assert (>= (my max-events) nevents))
-      (dotimes (i nevents)
-	(let ((event (cffi:mem-aref (my events) 'epoll-event i)))
-	  (cffi:with-foreign-slots ((events data) event epoll-event)
-	    (cffi:with-foreign-slots ((fd) data epoll-data)
-	      (awhen (my 'mux-find-fd fd)
+    (assert (>= (my max-events) nevents))
+    (dotimes (i nevents)
+      (let ((event (cffi:mem-aref (my events) 'epoll-event i)))
+	(cffi:with-foreign-slots ((events data) event epoll-event)
+	  (cffi:with-foreign-slots ((fd) data epoll-data)
+	    (awhen (my 'mux-find-fd fd)
 		(con-run it)
 		(unless (and (zerop (logand (logior +POLLERR+ +POLLHUP+) events))
 			     (or (zerop (logand +POLLRDHUP+ events)) (not (zerop (logand +POLLIN+ events)))))
 		  (con-fail it)))))))
-      (setf (my postpone-registration) nil)
-      (adolist (my postponed-registrations)
-	(my 'mux-add it))
-      (setf (my postponed-registrations) nil)))
+    (setf (my postpone-registration) nil)
+    (adolist (my postponed-registrations)
+      (my 'mux-add it))
+    (setf (my postponed-registrations) nil))
   
-    (values))
+  (values))
 
 (defvar *global-epoll* (make-epoll))
 

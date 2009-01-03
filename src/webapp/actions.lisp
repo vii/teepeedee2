@@ -40,10 +40,17 @@
      (<p
        ,title
        ,@(loop for nv in lambda-list collect
-	       (destructuring-bind (name &optional value)
+	       (destructuring-bind (name &optional value &key (type '<input))
 		   (force-list nv)
-		 `(<input :type :text :name ,(force-byte-vector name) 
-			  ,@(when value `(:value ,value)))))
+		 (let ((name (force-byte-vector name)))
+		   (ecase type
+		     (<input
+		       `(<input :type :text :name ,name
+				,@(when value `(:value ,value))))
+		     (<textarea
+		       `(<textarea :name ,name ,value))
+		     (:hidden
+		      `(<input :type :text :name ,name :value ,value :style (css-attrib :display "none")))))))
        (<input :class "plain-submit" :type :submit :value "↵"))))
 
 (defun find-action (id)

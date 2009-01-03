@@ -1,6 +1,5 @@
 (in-package #:tpd2.webapp)
 
-
 (defmyclass (message-channel (:include channel))
     (messages nil))
 
@@ -16,9 +15,9 @@
        (append-element-id (unquote (force-string (my id))) (unquote
 							    (force-string
 							     (let ((sendbuf (with-sendbuf())))
-							    (loop for x in (subseq (reverse (my messages)) subscriber-state)
-								  do (sendbuf-add sendbuf x))
-							    sendbuf))))
+							       (loop for x in (subseq (reverse (my messages)) subscriber-state)
+								     do (sendbuf-add sendbuf x))
+							       sendbuf))))
        (channel (unquote (force-string (my id))) (unquote (my state)))))))
 
 (my-defun message-channel 'object-to-ml ()
