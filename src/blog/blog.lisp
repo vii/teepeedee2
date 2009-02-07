@@ -11,16 +11,13 @@
   (let ((*default-site* (my site))) 
     (setf (my entries) 
 	  (sort
-	   (iter:iter (iter:for filename in (cl-fad:list-directory (my dir)))
-		 (unless (or (find #\# filename) (find #\~ filename))
-		   (let ((entry (read-in-blog-entry me (file-namestring filename))))
-		     (when (and entry (blog-entry-ready entry)) 
-		       (iter:collect entry)))))
-	    #'> :key #'blog-entry-time))
-    (defpage-lambda "/"
-	(lambda()
-	  (webapp (my filename)
-	    (output-object-to-ml me))))))
+	   (iter:iter (iter:for path in (last (cl-fad:list-directory (my dir)) 10))
+		      (let ((filename (force-string path)))
+			(unless (or (find #\# filename) (find #\~ filename))
+			  (let ((entry (read-in-entry me (file-namestring filename))))
+			    (when entry  
+			      (iter:collect entry))))))
+		      #'> :key #'entry-time))))
 
 (my-defun blog 'object-to-ml ()
   (<div :class "blog"

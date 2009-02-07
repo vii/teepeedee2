@@ -7,6 +7,13 @@
   (time :initform (get-universal-time))
   trace-details)
 
+
+(my-defun comment 'object-to-ml ()
+  (<div :class "comment"
+	(loop for p in (force-list (my text)) do (<p p))
+
+	(<p :class "time" "Posted " (time-string (my time)) " by " (my author))))
+
 (defmyclass (entry (:include simple-channel))
   blog
   name
@@ -15,9 +22,19 @@
   time
   paragraphs)
 
+(my-defun blog link-base ()
+  "")
+
 (my-defun entry 'simple-channel-body-ml ()
   (output-object-to-ml
-   (my comments))) 
+   (my comments)))
+
+(defun split-into-paragraphs (str)
+  (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
+	       str))
+(defun split-into-paragraphs-by-single-line (str)
+  (match-split #\Newline 
+	       str))
 
 (defun time-string (&optional (ut (get-universal-time)))
   (multiple-value-bind
@@ -33,7 +50,7 @@
   (>= (get-universal-time) (my time)))
 
 (my-defun entry url-path ()
-  (with-sendbuf () (its link-base (my blog)) (my name)))
+  (byte-vector-cat (its link-base (my blog)) (my name)))
 
 (my-defun entry link ()
   (page-link (my url-path)))
@@ -41,8 +58,8 @@
 (my-defun entry index-name ()
   (strcat (its name (my blog)) ":" (my name)))
 
-(my-defun entry body-ml ()
-  (<div :class "blog-entry-body"
+(my-defun entry story-ml ()
+  (<div :class "blog-entry-story"
 	(loop for p in (my paragraphs)
 	      do (<p (output-raw-ml p)))
 	(<p :class "time" "Posted " (time-string (my time)))))
@@ -62,7 +79,7 @@
 	    (cond ((and (zerop (length keep-this-empty)) (equalp hidden-value time))
 		   (make-comment 
 		    :author author
-		    :text text
+		    :text (split-into-paragraphs-by-single-line text)
 		    :trace-details (frame-trace-info (webapp-frame))
 		    :entry-index-name (my index-name))
 		   (my 'channel-notify))
@@ -72,7 +89,7 @@
 
 (my-defun entry 'object-to-ml ()
   (<div :class "blog-entry"
-	(my body-ml)
+	(my story-ml)
 	(call-next-method)
 	(my comment-ml)))
 
@@ -85,9 +102,9 @@
 
 (my-defun entry read-paragraphs-from-buffer (buffer)
   (setf (my paragraphs)
-	(match-split (progn #\Newline (* (space)) #\Newline)
-		     (match-replace-all buffer
-					("${static-base}"  (blog-static-base-url (my blog)))))))
+	(split-into-paragraphs
+	 (match-replace-all buffer
+			    ("${static-base}"  (blog-static-base-url (my blog)))))))
 
 (defun parse-time (str)
   (match-bind 
@@ -104,16 +121,21 @@
     (encode-universal-time second minute hour day month year)))
 
 (defun slurp-file (filename)
-  (with-open-file (s filename :element-type 'byte-vector)
+  (with-open-file (s filename :element-type '(unsigned-byte 8))
     (let ((buf (make-byte-vector (file-length s))))
       (read-sequence buf s)
       buf)))
 
+(defun normally-capitalized-string-to-symbol (string &optional (package (symbol-package 'normally-capitalized-string-to-symbol)))
+  (with-standard-io-syntax
+    (let ((*read-eval* nil) (*package* package))
+      (read-from-string (force-string string)))))
 
 (defun read-in-entry (blog name)
   (let ((entry (make-entry :blog blog :name name)))
     (with-shorthand-accessor (my entry)
       (let ((remaining (slurp-file (my filename))))
+	(setf (my time) (file-write-date (my filename)))
 	(loop for line = 
 	      (match-bind (line #\Newline after)
 		  remaining
@@ -125,12 +147,12 @@
 		   (return-from read-in-entry))
 	      do (match-bind ((* (space)) header ":" value)
 			     line
-			     (when (equalp header "time")
+			     (when (equalp (force-string header) "time")
 			       (setf value (parse-time value)))
 			  
 			  (setf (slot-value entry (normally-capitalized-string-to-symbol header))
 				value)))
-	(my read-paragraphs-from-buffer remaining)))
-    (my set-page)
+	(my read-paragraphs-from-buffer remaining))
+      (my set-page))
     entry))
 

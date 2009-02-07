@@ -4,7 +4,8 @@
   (defconstant +site-customization-funcs+ '(page-head page-body-start page-body-footer))
   (defconstant +site-customization-func-args+ '(title)))
 
-#.`(defstruct (site (:constructor %make-site))
+#.`
+(defstruct (site (:constructor %make-site))
   (dispatcher *default-dispatcher*)
   (page-head (lambda(title)
 	       `(<head
@@ -53,11 +54,7 @@
        
        (macrolet ((compile-time-default-site ()
 		    `(load-time-value *default-site*)))
-	 ,@body)
-       
-       (eval-always
-	 (prog1 *default-site*
-	   (makunbound '*default-site*))))))
+	 ,@body))))
 
 (defun default-site-func-expansion (func &rest args)
   (cond ((boundp '*default-site*)
