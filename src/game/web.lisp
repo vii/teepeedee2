@@ -348,8 +348,3 @@
 	   (tpd2.io:event-loop)))
      :name "MOPOKO-EVENT-LOOP")))
 
-(defpage "/test" (name)
-  (<h1 "Hello " name))
-
-(defpage "/test-plain" ()
-  (<p "hello dude" ))

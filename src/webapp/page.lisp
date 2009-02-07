@@ -1,6 +1,6 @@
 (in-package #:tpd2.webapp)
 
-(defvar *webapp-frame* nil)
+(defvar *webapp-frame*)
 (defconstant +webapp-frame-id-param+ (force-byte-vector ".webapp-frame."))
 
 (defconstant +web-safe-chars+ 
@@ -19,34 +19,34 @@
 	  if (eq name 'all-http-params)
 	  collect params-var
 	  else
-	  collect `(or (cdr-assoc ,params-var ,(force-byte-vector name) 
+	  collect `(or (alist-get ,params-var ,(force-byte-vector name) 
 				  :test 'byte-vector=-fold-ascii-case)
 		       ,value))))
 
-(defmacro with-webapp-frame ((params) &body body)
-  (check-symbols params)
+(defmacro with-webapp-frame ((con params) &body body)
+  (check-symbols params con)
   `(let ((*webapp-frame*
-	  (awhen (cdr-assoc ,params +webapp-frame-id-param+ :test 'byte-vector=-fold-ascii-case)
+	  (awhen (alist-get ,params +webapp-frame-id-param+ :test 'byte-vector=-fold-ascii-case)
 	    (find-frame it))))
+     (setf (frame-trace-info (webapp-frame :site (compile-time-default-site))) (con-peer-info con))
      (frame-reset-timeout (webapp-frame))
      (locally
 	 ,@body)))
 
-
-(defmacro apply-page-call (function &rest args)
+(defmacro apply-page-call (con function &rest args)
   (let* ((defaulting-lambda-list (car (last args)))
 	 (normal-args (butlast args)))
-    `(with-webapp-frame (all-http-params)
+    `(with-webapp-frame (,con all-http-params)
        (funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 'all-http-params defaulting-lambda-list)))))
 
 
 (defmacro defpage-lambda (path function &optional defaulting-lambda-list)
-  (with-unique-names (mvl)
-    `(dispatcher-register-path (site-dispatcher *default-site*) ,path
-			       (lambda(dispatcher con done path all-http-params)
-				 (declare (ignore dispatcher path))
-				 (let ((,mvl (multiple-value-list (apply-page-call ,function ,defaulting-lambda-list))))
-				   (respond-http con done :body (first ,mvl) :headers (second ,mvl)))))))
+  `(dispatcher-register-path (site-dispatcher *default-site*) ,path
+			     (lambda(dispatcher con done path all-http-params)
+			       (declare (ignore dispatcher path))
+			       (multiple-value-bind (body headers)
+				   (apply-page-call con ,function ,defaulting-lambda-list)
+				 (respond-http con done :body body :headers headers)))))
 
 (defmacro defpage (path defaulting-lambda-list &body body)
   (let ((normal-func-name (intern (strcat 'page- 

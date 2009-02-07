@@ -29,7 +29,7 @@
 
 (defun channel-respond-page (dispatcher con done path all-http-params)
   (declare (ignore dispatcher path))
-  (apply-page-call 'channel-respond con done (.channels.)))
+  (apply-page-call con 'channel-respond con done (.channels.)))
 
 (defun channel-string-to-states (channels)
   (let ((channel-states))
@@ -55,19 +55,21 @@
 
 (defun channel-respond (con done &key .channels.)
   (let ((channel-states (channel-string-to-states .channels.)))
-    (flet ((finished () 
-	     (when (con-dead? con)
-	       (return-from finished t))
-	     (awhen (channel-respond-body channel-states)
-	       (respond-http con done :body it)
-	       t)))
+    (with-preserve-specials (*webapp-frame*) 
+      (flet ((finished () 
+	       (when (con-dead? con)
+		 (return-from finished t))
+	       (with-specials-restored
+		   (awhen (channel-respond-body channel-states)
+		     (respond-http con done :body it)
+		     t))))
       (unless (finished)
 	(let (func)
 	  (flet ((unsubscribe ()
 		   (loop for (channel ) in channel-states do (channel-unsubscribe channel func))))
 	    (setf func
 		  (lambda() (when (finished) (unsubscribe))))
-	    (loop for (channel ) in channel-states do (channel-subscribe channel func))))))))
+	    (loop for (channel ) in channel-states do (channel-subscribe channel func)))))))))
 
 (defun register-channel-page ()
   (dispatcher-register-path *default-dispatcher*  +channel-page-name+ #'channel-respond-page))

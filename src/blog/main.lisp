@@ -1,19 +1,11 @@
 (in-package #:tpd2.blog)
 
-(defrecord message
-  (entry-name :index t)
-  text
-  (author :index t)
-  (time :initform (get-universal-time))
-  trace-details)
-
-
 (defvar *root-dir* "/home/john/Junk/mopoko/")
 (defvar *blog-dir* (strcat *root-dir* "/Blog/"))
 
 (datastore-use-file (strcat *root-dir* "tpd2-datastore.log.lisp"))
 
-
+(make-blog 
 
 (defun css ()
   (let ((unimportant-color "#888888"))
@@ -123,79 +115,3 @@
       (loop for l in (datastore-retrieve-all 'phone-contact 1) do
 	    (<h2 "What telephone number to call to talk to me")
 	    (output-object-to-ml l)))))
-
-(defun time-string (ut)
-  (multiple-value-bind
-	(second minute hour date month year day daylight-p zone)
-      (decode-universal-time ut 0)
-    (declare (ignore day daylight-p zone))
-    (format nil "~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D UTC" year month date hour minute second)))
-
-(defun empty-line (line)
-  (if-match ((:progn :whitespace? :$) line)))
-
-(my-defun blog-entry read-paragraphs-from-stream (stream)
-  (setf (my paragraphs)
-	(loop for paragraph = (loop for line = (read-line stream nil "")
-				 until (empty-line line)
-				 collect line collect " ")
-	   until (not paragraph)
-	   collect (match-replace-all (apply 'strcat paragraph) ("\\$\\{static-base\\}"  (strcat "../static-blog/" (my name)))))))
-
-(defvar *check-blogs-timeout* (make-timeout :func 'check-blogs))
-
-
-(defun check-blogs ()
-  (setf *blog-entries* nil)
-  (loop for filename in (directory (strcat *blog-dir* "/*"))
-     for name = (file-namestring filename)
-     unless (or (find #\# name) (find #\~ name))
-     do (read-in-blog-entry (file-namestring name)))
-  (timeout-set *check-blogs-timeout* 500))
-
-(defun parse-time (str)
-  0)
-
-(defun read-in-blog-entry (name)
-  (let ((blog-entry (make-blog-entry :name name)))
-    (with-shorthand-accessor (my blog-entry)
-      (with-open-file (stream (my filename))
-	(setf (my time) (or (file-write-date stream) (get-universal-time)))
-
-	(loop for line = (read-line stream nil "")
-	   until (empty-line line)
-	   do (when (if-match (("XXX") line))
-		(format *debug-io* "Entry not ready (XXX): ~A~&" name)
-		(return-from read-in-blog-entry))
-	   do (match-bind ( (* (space)) header (progn (* (space)) ":")  (* (space)) value (progn (* (space)) (last)))
-		  line
-		(when (equalp (force-string header) "time")
-		  (setf value (parse-time value)))
-			  
-		(setf (slot-value blog-entry (intern (string-upcase (force-string header)) (find-package #.(package-name *package*))))
-		      value)))
-	(my read-paragraphs-from-stream stream))
-      (my publish))))
-
-
-(defvar *blog-entries* nil)
-
-(my-defun blog-entry publish ()
-  (setf *blog-entries*
-	(merge 'list (list me)
-	       (delete-if (lambda(other) (equalp (my name) (blog-entry-name other))) 
-			  *blog-entries*) #'> :key #'blog-entry-time))
-
-  (setf (my raw-ml)
-	(tpd2.io:sendbuf-to-byte-vector
-	  (<div :class "blog-entry"
-		(loop for paragraph in (my paragraphs)
-		   do (<p (output-raw-ml paragraph)))
-		(<p :class "time" "Posted " (time-string (my time)))))))
-
-(check-blogs)
-
-(my-defun blog-entry 'object-to-ml ()
-  (<div :class "blog-entry-wrapper"
-	(<h2 (my title))
-	(output-raw-ml (my raw-ml))))

@@ -57,7 +57,7 @@
 (defvar *dispatchers* nil)
 
 (defun do-find-dispatcher (host)
-  (cdr-assoc *dispatchers* host :test 'equalp))
+  (alist-get *dispatchers* host :test 'equalp))
 
 (defun find-dispatcher (host)
   (or (do-find-dispatcher host) *default-dispatcher*))

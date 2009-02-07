@@ -2,10 +2,6 @@
   (:use #:cl))
 (cl:in-package #:teepeedee2.system)
 
-#.(progn
-    (asdf:operate 'asdf:load-op 'cl-fad)
-    nil)
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (asdf:operate 'asdf:load-op 'cl-fad))
 
@@ -106,6 +102,10 @@
 							   (:file "card")
 							   (:file "unassigned-controller" :depends-on ("controllers"))
 							   (:file "web" :depends-on ("card" "controllers" "unassigned-controller"))))
+				     (:module :blog
+					      :depends-on (:webapp :ml :datastore)
+					      :components ((:file "entry")
+							   (:file "blog" :depends-on ("entry"))))
 				     (:module :truc
 					      :depends-on (:game)
 					      :components ( (:file "truc") (:file "web" :depends-on ("truc"))

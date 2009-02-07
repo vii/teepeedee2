@@ -33,7 +33,7 @@
      :action 
      (page-action-link 
       (let ,(loop for p in lambda-list collect
-		  `(,(force-first p) (or (cdr-assoc all-http-params ,(force-byte-vector (force-first p)) 
+		  `(,(force-first p) (or (alist-get all-http-params ,(force-byte-vector (force-first p)) 
 						    :test 'byte-vector=-fold-ascii-case)
 					 ,(second (force-list p)))))
 	  ,@body))

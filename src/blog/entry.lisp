@@ -24,7 +24,7 @@
 	(second minute hour date month year day daylight-p zone)
       (decode-universal-time ut 0)
     (declare (ignore day daylight-p zone))
-    (format nil "~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D UTC" year month date hour minute second)))
+    (format nil "~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D GMT" year month date hour minute second)))
 
 (my-defun entry filename ()
   (strcat (its dir (my blog)) (my name)))
@@ -55,14 +55,15 @@
 	(let ((hidden-value (force-byte-vector (time-string))))
 	  (html-action-form "Post a comment"
 	      ((author "Anonymous")
-	       (text nil :type '<textarea)
-	       (keep-this-empty nil :type :hidden) (time hidden-value :type :hidden))
+	       (text nil :type <textarea)
+	       (keep-this-empty nil :type :hidden) 
+	       (time hidden-value :type :hidden))
 
 	    (cond ((and (zerop (length keep-this-empty)) (equalp hidden-value time))
 		   (make-comment 
 		    :author author
 		    :text text
-		    :trace-details ...
+		    :trace-details (frame-trace-info (webapp-frame))
 		    :entry-index-name (my index-name))
 		   (my 'channel-notify))
 		  (t
@@ -76,21 +77,17 @@
 	(my comment-ml)))
 
 (my-defun entry set-page ()
-  (defpage-lambda (my url-path)
-      (lambda()
-	(webapp (my name)
-	  (output-object-to-ml me)))))
+  (let ((*default-site* (its site (my blog))))
+    (defpage-lambda (my url-path)
+	(lambda()
+	  (webapp (my name)
+	    (output-object-to-ml me))))))
 
-
-
-(my-defun entry read-paragraphs-from-stream (stream)
+(my-defun entry read-paragraphs-from-buffer (buffer)
   (setf (my paragraphs)
-	(loop for paragraph = (loop for line = (read-line stream nil "")
-				    until (if-match-bind ((*(space)) (last)) line)
-				    collect line collect (string #\Newline))
-	      until (not paragraph)
-	      collect (match-replace-all (apply 'strcat paragraph) 
-					 ("${static-base}"  (blog-static-base-url (my blog)))))))
+	(match-split (progn #\Newline (* (space)) #\Newline)
+		     (match-replace-all buffer
+					("${static-base}"  (blog-static-base-url (my blog)))))))
 
 (defun parse-time (str)
   (match-bind 
@@ -106,24 +103,34 @@
       str
     (encode-universal-time second minute hour day month year)))
 
-(defun read-in-blog-entry (name)
-  (let ((blog-entry (make-blog-entry :name name)))
-    (with-shorthand-accessor (my blog-entry)
-      (with-open-file (stream (my filename))
-	(setf (my time) (or (file-write-date stream) (get-universal-time)))
+(defun slurp-file (filename)
+  (with-open-file (s filename :element-type 'byte-vector)
+    (let ((buf (make-byte-vector (file-length s))))
+      (read-sequence buf s)
+      buf)))
 
-	(loop for line = (read-line stream nil "")
+
+(defun read-in-entry (blog name)
+  (let ((entry (make-entry :blog blog :name name)))
+    (with-shorthand-accessor (my entry)
+      (let ((remaining (slurp-file (my filename))))
+	(loop for line = 
+	      (match-bind (line #\Newline after)
+		  remaining
+		(setf remaining after)
+		line)
 	      until (if-match-bind ( (* (space)) (last)) line)
 	      do (when (if-match-bind "XXX" line)
 		   (format *debug-io* "Entry not ready (XXX): ~A~&" name)
-		   (return-from read-in-blog-entry))
+		   (return-from read-in-entry))
 	      do (match-bind ((* (space)) header ":" value)
 			     line
 			     (when (equalp header "time")
 			       (setf value (parse-time value)))
 			  
-			  (setf (slot-value blog-entry (normally-capitalized-string-to-symbol header))
+			  (setf (slot-value entry (normally-capitalized-string-to-symbol header))
 				value)))
-	(my read-paragraphs-from-stream stream))
-      (my publish))))
+	(my read-paragraphs-from-buffer remaining)))
+    (my set-page)
+    entry))
 

@@ -10,39 +10,37 @@
 (defun webapp-default-page-head-contents ()
   (output-raw-ml (js-library)))
 
-
-
-(defmacro title-once (title)
-  `(sendbuf-to-byte-vector (with-ml-output-start ,@(force-list title))))
+(defmacro ml-to-byte-vector (ml)
+  `(sendbuf-to-byte-vector (with-ml-output-start ,ml)))
 
 (defmacro webapp-ml (title &body body)
   (with-unique-names (title-ml)
     `(let ((,title-ml
-	    (title-once ,title)))
+	    (ml-to-byte-vector ,title)))
        (with-ml-output-start 
 	 (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
 			" \"http://www.w3.org/TR/html4/loose.dtd\">")
 	 (<html
-	   ,(funcall (site-page-head *default-site*) title-ml)
+	   ,(default-site-func-expansion 'page-head  title-ml)
 	   (<body
-	     ,(funcall (site-page-body-start *default-site*) title-ml)
+	     ,(default-site-func-expansion 'page-body-start title-ml)
 	     ,@body
-	     ,(funcall (site-page-body-footer *default-site*) title-ml)))))))
+	     ,(default-site-func-expansion 'page-body-footer title-ml)))))))
 
 (defmacro webapp-lambda (title &body body)
   (with-unique-names (l)
-  `(let ((,l))
-     (setf ,l (lambda()
-		(setf (frame-current-page (webapp-frame)) ,l)
-		(webapp-ml ,title ,@body)))
-     ,l)))
+  `(labels ((,l ()
+	      (setf (frame-current-page (webapp-frame)) 
+		    #',l)
+	      (webapp-ml ,title ,@body)))
+     #',l)))
 
 (defmacro webapp (title &body body)
   `(funcall (webapp-lambda ,title ,@body)))
 
 (defmacro link-to-webapp (title &body body)
   (with-unique-names (title-ml)
-    `(let ((,title-ml (title-once ,title)))
+    `(let ((,title-ml (ml-to-byte-vector ,title)))
        (html-replace-link (output-raw-ml ,title-ml) 
 	 (webapp ((output-raw-ml ,title-ml)) ,@body)))))
 

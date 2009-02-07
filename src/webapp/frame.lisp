@@ -2,10 +2,12 @@
 
 (defmyclass (frame (:include simple-channel))
   current-page
+  (site *default-site*)
   variables
   (username (random-name))
   (messages (make-list-channel))
-  timeout)
+  timeout
+  trace-info)
 
 (defvar *frames* (make-hash-table :test #'equalp))
 
@@ -21,12 +23,11 @@
   (my reset-timeout))
 
 (defun find-frame (id)
-  (awhen (gethash id *frames*)
-    it))
+  (gethash id *frames*))
 
-(defun webapp-frame ()
+(defun webapp-frame (&rest args-for-make-frame)
   (unless *webapp-frame*
-    (setf *webapp-frame* (make-frame)))
+    (setf *webapp-frame* (apply 'make-frame args-for-make-frame)))
   *webapp-frame*)
 
 (my-defun frame var (id)

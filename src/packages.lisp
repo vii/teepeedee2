@@ -9,11 +9,11 @@
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
   (:import-from #:cl-irregsexp 
-		#:match-replace-all #:match-replace-one 
+		#:match-replace-all #:match-replace-one #:match-split
 		#:match-bind #:if-match-bind
 		#:match-failed )
   (:import-from #:cl-irregsexp.utils
-		#:cdr-assoc
+		#:alist-get
 		#:defun-consistent
 		#:declaim-defun-consistent-ftype
 		#:defun-speedy
@@ -35,7 +35,7 @@
 
    #:match-replace-all #:match-replace-one 
    #:match-bind #:if-match-bind
-   #:match-failed
+   #:match-failed #:match-split
 
    #:superquote
    #:superquote-function
@@ -117,7 +117,7 @@
    #:random-shuffle
    #:random-elt
 
-   #:cdr-assoc
+   #:alist-get
 
    #:case-match-fold-ascii-case
 
@@ -188,6 +188,7 @@
    #:con-clear-failure-callbacks
    #:con-when-ready-to-read
    #:con-peek
+   #:con-peer-info
    
    #:+newline+
    #:+SOCK_DGRAM+
@@ -258,6 +259,7 @@
    #:link-to-webapp
 
    #:defpage
+   #:defpage-lambda
 
    #:webapp-default-page-head-contents
    #:webapp-default-page-footer
@@ -271,6 +273,7 @@
    #:frame-var
    #:frame-username
    #:frame-messages
+   #:frame-trace-info
    #:list-all-frames
    #:find-frame
    #:frame-id

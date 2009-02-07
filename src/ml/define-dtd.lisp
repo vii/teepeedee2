@@ -23,6 +23,7 @@
     (loop for form in body
 	  do (when
 		 (typecase form
+		   (null nil)
 		   (list
 		    (when (and (symbolp (first form)) (eq #\< (char (force-string (first form)) 0))
 			       (not (eq (symbol-package (first form)) (find-package :cl))))
