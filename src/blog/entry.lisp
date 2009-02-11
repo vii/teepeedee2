@@ -10,9 +10,9 @@
 
 (my-defun comment 'object-to-ml ()
   (<div :class "comment"
-	(loop for p in (force-list (my text)) do (<p p))
+	(<p :style (css-attrib :white-space "pre") (my text))
 
-	(<p :class "time" "Posted " (time-string (my time)) " by " (my author))))
+	(<p :class "time" "Posted " (time-string (my time)) " by " (<span :class "author" (my author)))))
 
 (defmyclass (entry (:include simple-channel))
   blog
@@ -22,12 +22,10 @@
   time
   paragraphs)
 
-(my-defun blog link-base ()
-  "")
-
 (my-defun entry 'simple-channel-body-ml ()
-  (output-object-to-ml
-   (my comments)))
+  (<div :class "blog-entry-comments"
+	(output-object-to-ml
+	 (my comments))))
 
 (defun split-into-paragraphs (str)
   (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
@@ -70,16 +68,16 @@
 (my-defun entry comment-ml ()
   (<div :class "blog-entry-post-comment"
 	(let ((hidden-value (force-byte-vector (time-string))))
-	  (html-action-form "Post a comment"
-	      ((author "Anonymous")
-	       (text nil :type <textarea)
+	  (html-action-form-collapsed "Post a comment"
+	      ((text nil :type <textarea)
+	       (author "Anonymous")
 	       (keep-this-empty nil :type :hidden) 
 	       (time hidden-value :type :hidden))
 
 	    (cond ((and (zerop (length keep-this-empty)) (equalp hidden-value time))
 		   (make-comment 
 		    :author author
-		    :text (split-into-paragraphs-by-single-line text)
+		    :text text
 		    :trace-details (frame-trace-info (webapp-frame))
 		    :entry-index-name (my index-name))
 		   (my 'channel-notify))
@@ -94,10 +92,10 @@
 	(my comment-ml)))
 
 (my-defun entry set-page ()
-  (let ((*default-site* (its site (my blog))))
+  (with-site ((its site (my blog)))
     (defpage-lambda (my url-path)
 	(lambda()
-	  (webapp (my name)
+	  (webapp (my title)
 	    (output-object-to-ml me))))))
 
 (my-defun entry read-paragraphs-from-buffer (buffer)

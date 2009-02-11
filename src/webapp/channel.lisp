@@ -60,9 +60,10 @@
 	       (when (con-dead? con)
 		 (return-from finished t))
 	       (with-specials-restored
-		   (awhen (channel-respond-body channel-states)
-		     (respond-http con done :body it)
-		     t))))
+		   (with-frame-site 
+		     (awhen (channel-respond-body channel-states)
+		       (respond-http con done :body it)
+		       t)))))
       (unless (finished)
 	(let (func)
 	  (flet ((unsubscribe ()

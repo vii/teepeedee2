@@ -90,13 +90,11 @@
 	   (defstruct-slot-defs (mapcar #'defstruct-slot-def slot-defs))
 	   (persistent? (some #'slot-persistent slot-defs)))
       (with-unique-names (constructed-object)
-	`(eval-always
-	   (multiple-value-prog1
-	       (eval-always
-		 (defstruct (,name
-			      (:constructor ,(real-constructor))
-			      (:conc-name ,(concat-sym-from-sym-package name 'unlogged- name '-)))
-		   ,@defstruct-slot-defs))
+	`(progn
+	   (defstruct (,name
+			(:constructor ,(real-constructor))
+			(:conc-name ,(concat-sym-from-sym-package name 'unlogged- name '-)))
+	     ,@defstruct-slot-defs)
 
 	;;; Constructor
 
@@ -151,7 +149,10 @@
 	
 	,@(loop for slot-def in indexed-slots collect
 		`(defmethod datastore-retrieve-indexed ((class (eql ',name)) (index (eql ',(slot-name slot-def))) value)
-		   (datastore-index-get ,(slot-index slot-def) value)))))))))
+		   (datastore-index-get ,(slot-index slot-def) value)))
+
+	',name)))))
+
 
 
 (defun datastore-delete-all (class)

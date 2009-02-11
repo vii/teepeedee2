@@ -10,3 +10,5 @@
 
 (defconstant +html-id-async-status+ "-async-status-")
 (defconstant +html-class-scroll-to-bottom+ "-scroll-to-bottom-")
+(defconstant +html-class-collapsed+ "-collapsed-")
+

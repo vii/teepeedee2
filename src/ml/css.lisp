@@ -154,7 +154,7 @@
 (defun validate-properties (properties)
   (loop for (property value) on properties by #'cddr
      when (keywordp property) do 
-       (assert (member property +css-properties+))))
+       (assert (member property +css-properties+) (property))))
 
 (defun css-output-properties (properties)
   (append (list " {")

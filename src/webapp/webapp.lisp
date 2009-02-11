@@ -17,16 +17,18 @@
   (with-unique-names (title-ml)
     `(let ((,title-ml
 	    (ml-to-byte-vector ,title)))
-       (with-ml-output-start 
-	 (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
-			" \"http://www.w3.org/TR/html4/loose.dtd\">")
-	 (<html
-	   ,(default-site-func-expansion 'page-head  title-ml)
-	   (<body
-	     ,(default-site-func-expansion 'page-body-start title-ml)
-	     ,@body
-	     ,(default-site-func-expansion 'page-body-footer title-ml)))))))
-
+       (setf (webapp-frame-var 'actions) nil)
+       (with-frame-site
+	   (with-ml-output-start 
+	     (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
+			  " \"http://www.w3.org/TR/html4/loose.dtd\">")
+	     (<html
+	       (current-site-call page-head  ,title-ml)
+	       (<body
+		 (current-site-call page-body-start ,title-ml)
+		 ,@body
+		 (current-site-call page-body-footer ,title-ml))))))))
+  
 (defmacro webapp-lambda (title &body body)
   (with-unique-names (l)
   `(labels ((,l ()
@@ -61,7 +63,6 @@
 				    (replace
 				     `(<li (html-replace-link (funcall ,display ,i) (funcall ,replace ,i))))
 				    (t (error "Please specify an action or a replacement")))))))))
-
 
 (defmacro webapp-display (object)
   `(output-object-to-ml ,object))

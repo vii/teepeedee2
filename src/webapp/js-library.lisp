@@ -21,7 +21,9 @@
 	  (setf element.href (+ "javascript:asyncSubmitLinkHref(\'" element.href "\')"))))
       (dolist (element (parent.get-elements-by-tag-name "div"))
 	(when (== element.class-name (unquote +html-class-scroll-to-bottom+))
-	  (setf element.scroll-top element.scroll-height))))
+	  (setf element.scroll-top element.scroll-height))
+	(when (== element.class-name (unquote +html-class-collapsed+))
+	  (toggle-hiding element))))
 
     (defun reset-element (element content)
       (setf element.inner-h-t-m-l content)
@@ -59,7 +61,7 @@
 		(debug-log "async request completed okay" req)))
 	    (progn
 	      (debug-log "async request unsuccessful" req)
-	      (ps:do-set-timeout (100)
+	      (ps:do-set-timeout (500)
 		(when (=== req *active-request*)
 		  (async-request url "Retrying")))))))
     
@@ -117,7 +119,13 @@
     (unless *channels* (setf *channels* (ps:new *object)))
    
    (defun channel (name counter)
-     (setf (aref *channels* name) (max (if (aref *channels* name) (aref *channels* name) 0) counter)))))
+     (setf (aref *channels* name) (max (if (aref *channels* name) (aref *channels* name) 0) counter)))
+
+   (defun toggle-hiding (element)
+     (setf element.style.display
+	   (if (== "none" element.style.display)
+	       ""
+	       "none")))))
 
 (defun js-library-footer ()
   (js-html-script

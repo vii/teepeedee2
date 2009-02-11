@@ -28,7 +28,7 @@
   `(let ((*webapp-frame*
 	  (awhen (alist-get ,params +webapp-frame-id-param+ :test 'byte-vector=-fold-ascii-case)
 	    (find-frame it))))
-     (setf (frame-trace-info (webapp-frame :site (compile-time-default-site))) (con-peer-info con))
+     (setf (frame-trace-info (webapp-frame :site (current-site))) (con-peer-info con))
      (frame-reset-timeout (webapp-frame))
      (locally
 	 ,@body)))
@@ -41,7 +41,7 @@
 
 
 (defmacro defpage-lambda (path function &optional defaulting-lambda-list)
-  `(dispatcher-register-path (site-dispatcher *default-site*) ,path
+  `(dispatcher-register-path (site-dispatcher (current-site)) ,path
 			     (lambda(dispatcher con done path all-http-params)
 			       (declare (ignore dispatcher path))
 			       (multiple-value-bind (body headers)

@@ -289,24 +289,26 @@
      :background-color "rgb(228,228,228)"
      :cursor "pointer")))
 
-
-(with-site (:page-body-start (lambda(title)
-			       (declare (ignore title))
+(defsite *site*
+    :page-body-start (lambda(title)
+		       (declare (ignore title))
 			       `(<div :class "header"	
 				      (<h1 :class "mopoko" 
 					   (<A :href (page-link "/") 
 					       :class "inherit" 
 					       (<span :style (css-attrib :color "black") "mopoko") ".com" ))
 				      (output-object-to-ml (webapp-frame))))
-			     :page-head (lambda(title)
-					  `(<head
-					     (<title "mopoko.com " (output-raw-ml ,title))
+    :page-head (lambda(title)
+		 `(<head
+		    (<title "mopoko.com " (output-raw-ml ,title))
 					     (output-raw-ml 
 					      (<noscript
 						(output-raw-ml 
 						 (<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
 					     (css)
 					     (webapp-default-page-head-contents))))
+
+(with-compile-time-site (*site*)
 
   (defun webapp-play-bot (game-name bot)
     (let ((game-state

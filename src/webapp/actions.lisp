@@ -26,6 +26,17 @@
   `(<A :class +action-link-class+ 
        :href (page-action-link ,@body) ,text))
 
+(defmacro html-collapser (toggle &body body)
+  `(with-ml-output 
+       (<div :onclick (js-attrib (toggle-hiding this.next-sibling))
+	     ,toggle)
+       (<div :class +html-class-collapsed+
+	     ,@body)))
+
+(defmacro html-action-form-collapsed (title lambda-list &body body)
+  `(html-collapser (<p ,title)
+		   (html-action-form nil ,lambda-list ,@body)))
+
 (defmacro html-action-form (title lambda-list &body body)
   `(<form 
      :onsubmit (js-attrib (return (async-submit-form this))) 
@@ -57,14 +68,15 @@
   (and id (find id (webapp-frame-var 'actions) :key 'action-id :test 'equalp)))
 
 (defun action-respond-body (&key .id. .channels. .javascript. all-http-params)
-  (awhen (find-action .id.)
-    (funcall (action-func it) all-http-params))
-  (with-sendbuf
-      ()
-    (if .javascript.
-	(channel-respond-body (channel-string-to-states .channels.))
-	(funcall (frame-current-page (webapp-frame))))))
-
+  (with-frame-site 
+    (awhen (find-action .id.)
+      (funcall (action-func it) all-http-params))
+    (with-sendbuf
+	()
+      (if .javascript.
+	  (channel-respond-body (channel-string-to-states .channels.))
+	  (funcall (frame-current-page (webapp-frame)))))))
+  
 (defun register-action-page ()
   (defpage-lambda +action-page-name+ #'action-respond-body (.id. .channels. .javascript. all-http-params)))
 
@@ -73,8 +85,7 @@
   (<div :class "frame"
 	(<div :class "change-name" 
 	      (html-action-form "Your name " ((new-name (my username)))
-		(setf (my username) new-name)
-		(my notify)
+		(my change-username new-name)
 		(values)))
 	(output-object-to-ml (my messages))))
 

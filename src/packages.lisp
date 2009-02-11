@@ -281,6 +281,7 @@
    #:html-action-form
    #:html-action-link
    #:html-replace-link
+   #:html-action-form-collapsed
    #:action-script-helper
 
    #:channel
@@ -298,6 +299,9 @@
    #:channel-script-helper
    #:js-library
    #:with-site
+   #:with-compile-time-site
+   #:defsite
+   #:current-site
    ))
 
 

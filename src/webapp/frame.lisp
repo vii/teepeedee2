@@ -2,7 +2,7 @@
 
 (defmyclass (frame (:include simple-channel))
   current-page
-  (site *default-site*)
+  (site (current-site))
   variables
   (username (random-name))
   (messages (make-list-channel))
@@ -49,3 +49,8 @@
 
 (defun frame-id (frame)
   (channel-id frame))
+
+(my-defun frame change-username (new-name)
+  (setf (my username) new-name)
+  (my notify)
+  new-name)
