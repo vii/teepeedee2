@@ -19,8 +19,8 @@
      (really-escape-string (force-simple-byte-vector value)))))
 
 (defmacro output-escaped-ml (&rest args)
-  `(with-ml-output        
-       ,@args))
+  `(with-ml-output
+       ,@args)) 
 
 (defmacro output-raw-ml (&rest body)
   `(with-ml-output

@@ -75,12 +75,14 @@
 	       (time hidden-value :type :hidden))
 
 	    (cond ((and (zerop (length keep-this-empty)) (equalp hidden-value time))
-		   (make-comment 
-		    :author author
-		    :text text
-		    :trace-details (frame-trace-info (webapp-frame))
-		    :entry-index-name (my index-name))
-		   (my 'channel-notify))
+		   (unless (equalp text 
+				   (ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name (my index-name))))))
+		     (make-comment 
+		      :author author
+		      :text text
+		      :trace-details (frame-trace-info (webapp-frame))
+		      :entry-index-name (my index-name))
+		     (my 'channel-notify)))
 		  (t
 		   (webapp "Comment rejected by spam protection"
 		     (<p "Sorry for the inconvenience. Please contact the blog owner with a description of the problem."))))))))
@@ -91,18 +93,22 @@
 	(call-next-method)
 	(my comment-ml)))
 
+(my-defun entry combined-title ()
+ (with-ml-output
+   (its name (my blog)) ": " (my title)))
+
 (my-defun entry set-page ()
   (with-site ((its site (my blog)))
     (defpage-lambda (my url-path)
 	(lambda()
-	  (webapp (my title)
+	  (webapp (my combined-title)
 	    (output-object-to-ml me))))))
 
 (my-defun entry read-paragraphs-from-buffer (buffer)
   (setf (my paragraphs)
 	(split-into-paragraphs
 	 (match-replace-all buffer
-			    ("${static-base}"  (blog-static-base-url (my blog)))))))
+			    ("${static-base}"  (byte-vector-cat (blog-static-base-url (my blog)) (my name)))))))
 
 (defun parse-time (str)
   (match-bind 

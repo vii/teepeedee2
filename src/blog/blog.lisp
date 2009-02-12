@@ -26,7 +26,7 @@
   (with-site ((my site))
     (defpage-lambda (my link-base) 
 	(lambda(&key n)
-	  (webapp "John"
+	  (webapp (my name)
 	    (let ((n (byte-vector-parse-integer n)))
 	      (let ((entries (subseq (my entries) n)) (count 10))
 		(<div :class "blog"
