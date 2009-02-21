@@ -15,7 +15,8 @@
 
 (defun datastore-log (list)
   (when (and (boundp '*datastore*) *datastore*)
-    (format *datastore* "~W~&" list)
+    (with-standard-io-syntax
+      (format *datastore* "~S~&" list))
     (force-output *datastore*)))
 
 (defvar *datastore-id-max* 0)
@@ -54,6 +55,21 @@
     (assert ret)
     (assert (not (cdr ret)))
     (car ret)))
+
+(defgeneric datastore-save-form (object))
+(defmethod datastore-save-form (object)
+  `',object)
+(defmethod datastore-save-form ((object standard-object))
+  (make-load-form object))
+(defmethod datastore-save-form ((object structure-object))
+  (make-load-form object))
+(defmethod datastore-save-form ((string string))
+  string)
+
+(defmethod datastore-save-form ((array array))
+  `(make-array ',(array-dimensions array)
+	       :element-type ',(array-element-type array)
+	       :initial-contents (list ,@(map 'list 'datastore-save-form array))))
 
 (defmacro defrecord (name &rest original-slot-defs)
   (labels ((slot-name (slot-def)
@@ -132,7 +148,7 @@
 			   `(datastore-index-add ,(slot-index slot-def) ,name))
 		    ,(when (slot-persistent slot-def)
 			   `(datastore-log
-			     `(setf (,',(guarded-slot-accessor slot-name) ,(datastore-ref-form ,name)) ',new-value))))))
+			     `(setf (,',(guarded-slot-accessor slot-name) ,(datastore-ref-form ,name)) ,(datastore-save-form new-value)))))))
 
 	(defmethod datastore-delete ((object ,name))
 	  ,(when persistent?

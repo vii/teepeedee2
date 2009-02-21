@@ -50,13 +50,14 @@
 
 (defmacro with-compile-time-site ((site) &body body)
   (check-symbols site)
+  (assert (eq site (site-runtime-name (symbol-value site))))
   `(eval-always 
      (macrolet ((current-site-call (method &rest args)
 		  (apply (funcall (concat-sym 'site- method) ,site) args))
-		  (current-site () (site-runtime-name ,site))
+		  (current-site () ',site)
 		(with-site ((&optional site) &body body)
 		  (declare (ignore site))
-		  `(let ((*current-site* (site-runtime-name ,',site)))
+		  `(let ((*current-site* ,',site))
 		     ,@body)))
        (with-site ()
 	 ,@body))))

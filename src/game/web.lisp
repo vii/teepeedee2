@@ -333,20 +333,4 @@
 			 (lambda(game-name)
 			   (web-game-start (find-game-generator game-name)))))))
 
-#.(when (find-package :swank)
-    (push :tpd2-has-swank *features*)
-    nil)
-
-(progn
-  (let ((socket (tpd2.io:make-con-listen :port 8888)))
-    (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http::http-serve))
-
-  #+sbcl
-  (with-preserve-specials (*trace-output* *standard-output* *error-output* *debug-io* 
-					  #+tpd2-has-swank swank::*emacs-connection*)
-    (sb-thread:make-thread 
-     (lambda() 
-       (with-specials-restored
-	   (tpd2.io:event-loop)))
-     :name "MOPOKO-EVENT-LOOP")))
 

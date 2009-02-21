@@ -6,6 +6,7 @@
   entries
   (site (current-site))
   (link-base "/")
+  comment-index-prefix
   static-base-url)
 
 (my-defun blog read-in ()

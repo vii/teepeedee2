@@ -54,7 +54,7 @@
   (page-link (my url-path)))
 
 (my-defun entry index-name ()
-  (strcat (its name (my blog)) ":" (my name)))
+  (strcat (its comment-index-prefix (my blog)) ":" (my name)))
 
 (my-defun entry story-ml ()
   (<div :class "blog-entry-story"
