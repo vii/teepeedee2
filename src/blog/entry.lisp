@@ -7,10 +7,16 @@
   (time :initform (get-universal-time))
   trace-details)
 
+(defun split-into-paragraphs (str)
+  (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
+	       str))
+(defun split-into-paragraphs-by-single-line (str)
+  (match-split #\Newline 
+	       str))
 
 (my-defun comment 'object-to-ml ()
   (<div :class "comment"
-	(<p :style (css-attrib :white-space "pre") (my text))
+	(loop for p in (split-into-paragraphs-by-single-line (my text)) do (<p p))
 
 	(<p :class "time" "Posted " (time-string (my time)) " by " (<span :class "author" (my author)))))
 
@@ -27,12 +33,6 @@
 	(output-object-to-ml
 	 (my comments))))
 
-(defun split-into-paragraphs (str)
-  (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
-	       str))
-(defun split-into-paragraphs-by-single-line (str)
-  (match-split #\Newline 
-	       str))
 
 (defun time-string (&optional (ut (get-universal-time)))
   (multiple-value-bind

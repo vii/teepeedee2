@@ -47,7 +47,7 @@
 		 (set-fd-nonblock s)
 		 (make-con 
 		  :socket s
-		  :peer-info (make-peer-info :address (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))))))))
+		  :peer-info (sockaddr-address-string sa))))))))
 
 
 (defmethod socket-close ( (fd integer) )

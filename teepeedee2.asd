@@ -49,12 +49,11 @@
 				     (:module :io
 					       :depends-on (:lib)
 					       :components (
-							    (:file "peer-info")
 							    (:file "socket")
 							    (:file "recvbuf" :depends-on ("socket"))
 							    (:file "sendbuf" :depends-on ("socket" "syscalls"))
 							    (:file "posix-socket" :depends-on ("syscalls" "socket" "con"))
-							    (:file "con" :depends-on ("peer-info" "sendbuf" "recvbuf"))
+							    (:file "con" :depends-on ("sendbuf" "recvbuf"))
 							    (:file "mux" :depends-on ("con"))
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
