@@ -73,7 +73,7 @@
 	    (loop for (channel ) in channel-states do (channel-subscribe channel func)))))))))
 
 (defun register-channel-page ()
-  (dispatcher-register-path *default-dispatcher*  +channel-page-name+ #'channel-respond-page))
+  (dispatcher-register-path (site-dispatcher (current-site)) +channel-page-name+ #'channel-respond-page))
 
 (my-defun channel 'object-to-ml ()
   (js-html-script (channel (unquote (force-string (my id))) (unquote (my state)))))
