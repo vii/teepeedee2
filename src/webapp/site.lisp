@@ -71,7 +71,7 @@
     (awhen (getf args :dispatcher)
       (typecase it
 	((or string byte-vector)
-	 (setf (getf args :dispatcher) `(find-or-make-dispatcher ,it)))))
+	 (setf (getf args :dispatcher) (find-or-make-dispatcher it)))))
     (let ((site (apply '%make-site args)))
       (with-site (site)
 	(register-action-page)
