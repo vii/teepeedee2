@@ -17,8 +17,7 @@
 		      (let ((filename (force-string path)))
 			(unless (or (find #\# filename) (find #\~ filename))
 			  (let ((entry (read-in-entry me (file-namestring filename))))
-			    (when (and entry (entry-ready entry))  
-			      (iter:collect entry))))))
+			    (iter:collect entry)))))
 		      #'> :key #'entry-time))
     (my set-page))
   me)
@@ -29,7 +28,7 @@
 	(lambda(&key n)
 	  (webapp (my name)
 	    (let ((n (byte-vector-parse-integer n)))
-	      (let ((entries (subseq (my entries) n)) (count 10))
+	      (let ((entries (subseq (remove-if-not 'entry-ready (my entries)) n)) (count 10))
 		(<div :class "blog"
 		      (loop while entries
 			    repeat count
