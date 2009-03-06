@@ -11,8 +11,9 @@
   (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
 	       str))
 (defun split-into-paragraphs-by-single-line (str)
-  (match-split #\Newline 
-	       str))
+  (when str
+    (match-split #\Newline 
+		 str)))
 
 (my-defun comment 'object-to-ml ()
   (<div :class "comment"
