@@ -32,7 +32,7 @@
 (my-defun entry 'simple-channel-body-ml ()
   (<div :class "blog-entry-comments"
 	(output-object-to-ml
-	 (my comments))))
+	 (reverse (my comments)))))
 
 
 (defun time-string (&optional (ut (get-universal-time)))
@@ -76,8 +76,10 @@
 	       (time hidden-value :type :hidden))
 
 	    (cond ((and (zerop (length keep-this-empty)) (equalp hidden-value time))
-		   (unless (equalp text 
-				   (ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name (my index-name))))))
+		   (unless (or 
+			    (not text)
+			    (equalp text 
+				    (ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name (my index-name)))))))
 		     (make-comment 
 		      :author author
 		      :text text
