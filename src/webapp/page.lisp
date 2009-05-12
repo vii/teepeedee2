@@ -1,14 +1,16 @@
 (in-package #:tpd2.webapp)
 
 (defvar *webapp-frame*)
-(defconstant +webapp-frame-id-param+ (force-byte-vector ".webapp-frame."))
+(define-constant +webapp-frame-id-param+ (force-byte-vector ".webapp-frame.")
+  :test 'equalp)
 
-(defconstant +web-safe-chars+ 
+(define-constant +web-safe-chars+ 
   (force-byte-vector 
    (append (loop for c from (char-code #\A) to (char-code #\Z) collect c)
 	   (loop for c from (char-code #\a) to (char-code #\z) collect c)
 	   (loop for c from (char-code #\0) to (char-code #\9) collect c)
-	   (mapcar 'char-code '(#\- #\_)))))
+	   (mapcar 'char-code '(#\- #\_))))
+  :test 'equalp)
 
 (defun generate-args-for-defpage-from-params (params-var defaulting-lambda-list)
   (let ((arg-names (mapcar 'force-first defaulting-lambda-list))

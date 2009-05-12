@@ -1,7 +1,7 @@
 (in-package #:tpd2.game)
 
 (eval-always
-  (defconstant +suits+ '(:clubs :hearts :spades :diamonds))
+  (define-constant +suits+ '(:clubs :hearts :spades :diamonds) :test 'equal)
   (defconstant +cards-per-suit+ 13))
 
 (defstruct card 

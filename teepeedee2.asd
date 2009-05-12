@@ -13,6 +13,7 @@
 (setf sb-ext:*inline-expansion-limit* 50)
 
 (pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
+(pushnew "../trivial-backtrace/" asdf:*central-registry* :test #'equal)
 
 #+tpd2-debug
 (progn
@@ -76,7 +77,8 @@
 							   (:file "define-dtd" :depends-on ("object-to-ml"))
 							   (:file "css" :depends-on ("html"))
 							   (:file "js" :depends-on ("html"))
-							   (:file "html" :depends-on ("define-dtd"))))
+							   (:file "html" :depends-on ("define-dtd"))
+							   (:file "atom" :depends-on ("define-dtd"))))
 				     (:module :datastore
 					      :depends-on (:lib)
 					      :components ((:file "datastore")))
@@ -104,26 +106,19 @@
 				     (:module :blog
 					      :depends-on (:webapp :ml :datastore)
 					      :components ((:file "entry")
+							   (:file "feed" :depends-on ("blog"))
 							   (:file "blog" :depends-on ("entry"))))
 				     (:module :truc
 					      :depends-on (:game)
 					      :components ( (:file "truc") (:file "web" :depends-on ("truc"))
-							    (:file "robots" :depends-on ("truc"))))))
-
-	       (:module :t 
-			:depends-on (:src)
-			:components (
-				     (:file "suite")
-				     (:file "io" :depends-on ("suite"))
-				     (:file "http" :depends-on ("suite"))
-				     )))
+							    (:file "robots" :depends-on ("truc")))))))
   :depends-on (
 	       :trivial-garbage
 	       :cl-cont
 	       :cffi
 	       :iterate
-	       :fiveam
-	       :cl-utilities
+	       :alexandria
 	       :cl-irregsexp
 	       :trivial-backtrace
 	       :parenscript))
+

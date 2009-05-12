@@ -1,9 +1,10 @@
 (in-package #:tpd2.game.truc)
 
-(defconstant +truc-ranking+ '(6 7 0 12 11 10 9 8))
-(defconstant +truc-deck+ 
-  (mapcar 'card-number 
-	  (loop for s in +suits+ append (loop for i in +truc-ranking+ collect (make-card :suit s :value i)))))
+(define-constant +truc-ranking+ '(6 7 0 12 11 10 9 8) :test 'equal)
+(define-constant +truc-deck+ 
+  (map 'vector 'card-number 
+	  (loop for s in +suits+ append (loop for i in +truc-ranking+ collect (make-card :suit s :value i))))
+  :test 'equalp)
 (defconstant +truc-winning-stack+ 12)
 
 (defgame truc ()

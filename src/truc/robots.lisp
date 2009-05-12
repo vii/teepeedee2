@@ -26,7 +26,7 @@
 	      (t my-best-card))))))
 
 
-(defconstant +best-starts+ #(0 0 0 0 0 0 0 0 0 2 2 2 2 2 2 2 0 2 2 2 2 2 2 2 0 2 2 0 2 2 2 2 0 2 2 2
+(define-constant +best-starts+ #(0 0 0 0 0 0 0 0 0 2 2 2 2 2 2 2 0 2 2 2 2 2 2 2 0 2 2 0 2 2 2 2 0 2 2 2
   0 0 2 2 0 2 2 2 0 0 0 2 0 2 2 2 2 0 0 0 0 2 2 2 2 2 0 0 0 2 2 2 2 2 2 2
   2 0 1 1 1 1 1 1 2 1 2 1 1 2 2 2 2 1 1 0 1 1 2 2 2 1 1 1 0 1 1 2 2 1 2 1
   1 0 1 2 2 1 2 2 1 1 0 1 2 1 2 2 2 2 1 0 0 2 2 2 2 2 2 2 2 1 2 1 1 2 2 2
@@ -41,10 +41,11 @@
   0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 2 2 2 2 2 0 0 2 1 2 2 2 2 1 0 2 2 1 2
   2 1 1 0 2 2 2 1 2 1 1 0 2 2 2 2 1 1 1 0 2 2 1 1 1 1 1 0 0 1 1 1 1 1 0 0
   0 0 0 0 0 0 0 0)
-  "Given the hand described by the index, 0 means play the highest card, 1 the middle card and 2 the lowest card first")
+  :documentation "Given the hand described by the index, 0 means play the highest card, 1 the middle card and 2 the lowest card first"
+  :test 'equalp)
 
 
-(defconstant +three-card-win-probabilities+ 
+(define-constant +three-card-win-probabilities+ 
   #(0 1/1218 1/522 11/3654 5/1218 19/3654 23/3654 3/406 1/1218 79/3654 44/1827
     71/1827 122/1827 197/1827 296/1827 419/1827 1/522 44/1827 101/3654 82/1827
     5/63 8/63 49/261 478/1827 11/3654 71/1827 82/1827 143/1827 64/609 323/1827
@@ -100,7 +101,8 @@
     298/609 55/87 179/261 1375/1827 1457/1827 1651/1827 1 892/1827 49/87
     170/261 1375/1827 1468/1827 1574/1827 1720/1827 1 373/609 132/203 428/609
     1457/1827 1574/1827 545/609 1765/1827 1 2609/3654 1441/1827 1558/1827
-    1651/1827 1720/1827 1765/1827 3575/3654 1 1 1 1 1 1 1 1 1))
+    1651/1827 1720/1827 1765/1827 3575/3654 1 1 1 1 1 1 1 1 1)
+  :test 'equalp)
 
 (my-defun truc-player win-probability ()
   "Rough and ready win probability not taking into account who starts or anything much"

@@ -63,3 +63,7 @@
   `(debug-assert (not 'reached-here)))
 
 
+(defmacro defconstant-string (name value &optional documentation)
+  `(define-constant ,name ,value
+     :test 'string=
+     ,@(when documentation `((:documentation ,documentation)))))

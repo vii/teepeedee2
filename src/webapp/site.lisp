@@ -1,8 +1,8 @@
 (in-package #:tpd2.webapp)
 
 (eval-always
-  (defconstant +site-customization-funcs+ '(page-head page-body-start page-body-footer))
-  (defconstant +site-customization-func-args+ '(title)))
+  (define-constant +site-customization-funcs+ '(page-head page-body-start page-body-footer) :test 'equalp)
+  (define-constant +site-customization-func-args+ '(title) :test 'equalp))
 
 (defparameter *current-site* nil)
 
@@ -14,9 +14,9 @@
   (runtime-name '*current-site*)
   (dispatcher *default-dispatcher*)
   (page-head (lambda(title)
-	       `(<head
-		  (<title ,title)
-		  (webapp-default-page-head-contents))))
+	       `(with-ml-output
+		  (<title ,title))
+		  (webapp-default-page-head-contents)))
   (page-body-start 
    (lambda(title)
      `(<h1 ,title)))

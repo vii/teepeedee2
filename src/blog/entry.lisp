@@ -37,9 +37,8 @@
 
 (defun time-string (&optional (ut (get-universal-time)))
   (multiple-value-bind
-	(second minute hour date month year day daylight-p zone)
+	(second minute hour date month year)
       (decode-universal-time ut 0)
-    (declare (ignore day daylight-p zone))
     (format nil "~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D GMT" year month date hour minute second)))
 
 (my-defun entry filename ()
@@ -104,7 +103,7 @@
   (with-site ((its site (my blog)))
     (defpage-lambda (my url-path)
 	(lambda()
-	  (webapp (my combined-title)
+	  (webapp ((my combined-title))
 	    (output-object-to-ml me))))))
 
 (my-defun entry read-paragraphs-from-buffer (buffer)

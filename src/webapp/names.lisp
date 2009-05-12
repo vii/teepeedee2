@@ -1,6 +1,6 @@
 (in-package #:tpd2.webapp)
 
-(defconstant +names+ '("Mildred"
+(define-constant +names+ #("Mildred"
 		       "Henry"
 		       "Alice"
 		       "Walter"
@@ -1980,7 +1980,8 @@
 		       "Lenord"
 		       "Macy"
 		       "Arden"
-		       "Paralee"))
+		       "Paralee")
+  :test 'equalp)
 
 (defun-speedy random-letter ()
   (code-char (+ (char-code #\A) (random 26))))

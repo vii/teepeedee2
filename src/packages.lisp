@@ -5,7 +5,7 @@
 (defpackage #:teepeedee2.lib
   (:nicknames #:tpd2.lib)
   (:use #:common-lisp #:iter #:cl-irregsexp.bytestrings)
-  (:import-from #:cl-utilities #:with-unique-names)
+  (:import-from #:alexandria #:with-unique-names #:define-constant)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
   (:import-from #:cl-irregsexp 
@@ -48,7 +48,8 @@
 
    #:with-unique-names
    #:once-only
-
+   #:define-constant
+   #:defconstant-string
 
    #:copy-byte-vector
    #:make-byte-vector
@@ -236,6 +237,8 @@
    #:js-html-script
    #:js-attrib
    #:js-to-string
+
+   #:w3c-timestring
 ))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

@@ -2,7 +2,7 @@
 
 ; From http://www.w3.org/TR/REC-CSS2/propidx.html
 ; if you want more just use "strings"
-(defconstant +css-properties+ '(
+(define-constant +css-properties+ '(
 				:azimuth
 				:background
 				:background-color 
@@ -147,7 +147,8 @@
 				:x-opacity
 				:x-column-width
 				:x-column-gap
-				))
+				)
+  :test 'equalp)
 
 ;; Write CSS like this: (("p.asdfsaf" "p + p") :property "value" :property "value")
 

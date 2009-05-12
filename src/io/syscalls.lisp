@@ -146,8 +146,8 @@
 (def-simple-syscall close
     (fd :int))
 
-(defconstant +SIG_IGN+ (cffi:make-pointer 1))
-(defconstant +SIG_DFL+ (cffi:make-pointer 0))
+(define-constant +SIG_IGN+ (cffi:make-pointer 1) :test 'cffi:pointer-eq)
+(define-constant +SIG_DFL+ (cffi:make-pointer 0)  :test 'cffi:pointer-eq)
 (defconstant +SIGPIPE+ 13)
 
 (cffi:defcfun ("signal" syscall-signal)

@@ -37,7 +37,7 @@
 	  do (setf (aref ret i) arg))
     ret))
 
-(defconstant +byte-to-digit-table+
+(define-constant +byte-to-digit-table+
   (make-array 256 :element-type '(integer -1 36) 
 	      :initial-contents (loop for i from 0 below 256 
 				      collect 
@@ -52,7 +52,8 @@
 					(or (in-range #\a #\z i 10)
 					    (in-range #\A #\Z i 10)
 					    (in-range #\0 #\9 i 0)
-					    -1)))))
+					    -1))))
+  :test 'equalp)
 
 (declaim-defun-consistent-ftype byte-to-digit ((unsigned-byte 8)) (integer -1 36))
 (defun-consistent byte-to-digit (byte)

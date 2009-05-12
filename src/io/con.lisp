@@ -54,7 +54,8 @@
   (timeout-set (my timeout) delay)
   (values))
 
-(defconstant +newline+ (force-byte-vector #(13 10)))
+(define-constant +newline+ (force-byte-vector #(13 10))
+  :test 'equalp)
 
 (my-defun con set-callback (func)
   (setf (my ready-callback) func))

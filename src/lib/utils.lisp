@@ -50,4 +50,4 @@
 
 (defun backtrace-description (err)
   (format nil "ERROR ~A:~&~A" (with-output-to-string (*standard-output*) (describe err)) 
-	  (trivial-backtrace:get-backtrace err)))
+	  (trivial-backtrace:backtrace-string)))
