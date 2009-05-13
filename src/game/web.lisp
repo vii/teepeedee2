@@ -299,7 +299,7 @@
 					       (<span :style (css-attrib :color "black") "mopoko") ".com" ))
 				      (output-object-to-ml (webapp-frame))))
     :page-head (lambda(title)
-		 `(<head
+		 `(with-ml-output
 		    (<title "mopoko.com " (output-raw-ml ,title))
 					     (output-raw-ml 
 					      (<noscript

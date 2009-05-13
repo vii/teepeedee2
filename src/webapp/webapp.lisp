@@ -16,7 +16,10 @@
 (defmacro webapp-ml (title-and-options &body body)
   (with-unique-names (title-ml)
     (destructuring-bind (title &key head-contents)
-	(force-list title-and-options)
+	(typecase title-and-options
+	  (null (list nil))
+	  (list title-and-options)
+	  (t (list title-and-options)))
       `(let ((,title-ml
 	      (ml-to-byte-vector ,title)))
 	 (setf (webapp-frame-var 'actions) nil)

@@ -18,7 +18,6 @@
 		     (tpd2.ml.atom:<updated (w3c-timestring (entry-time entry)))
 		     (tpd2.ml.atom:<id (entry-url-path entry))
 		     (tpd2.ml.atom:<link (entry-url-path entry))
-		     (tpd2.ml.atom:<content :type "text/html" 
-					    (loop for p in (entry-paragraphs entry) do
-						  (<p p ))))))) ; if there are any XML errors the whole feed won't display
+		     (tpd2.ml.atom:<content :type "html" 
+					    (tpd2.io:sendbuf-to-byte-vector (entry-story-ml entry)))))))
 	   (byte-vector-cat "Content-Type: application/atom+xml" tpd2.io:+newline+)))
