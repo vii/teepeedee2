@@ -42,13 +42,22 @@
        (funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 'all-http-params defaulting-lambda-list)))))
 
 
-(defmacro defpage-lambda (path function &optional defaulting-lambda-list)
-  `(dispatcher-register-path (site-dispatcher (current-site)) ,path
+(defmacro defpage-lambda (path function &key defaulting-lambda-list)
+  (multiple-value-bind (function defaulting-lambda-list)
+      (cond ((and (not defaulting-lambda-list)
+		  (listp function)
+		  (eq (first function) 'lambda))
+	     (values `(lambda (&key ,@(second function))
+			,@(cddr function))
+		     (second function)))
+	    (t
+	     (values function defaulting-lambda-list)))
+    `(dispatcher-register-path (site-dispatcher (current-site)) ,path
 			     (lambda(dispatcher con done path all-http-params)
 			       (declare (ignore dispatcher path))
 			       (multiple-value-bind (body headers)
 				   (apply-page-call con ,function ,defaulting-lambda-list)
-				 (respond-http con done :body body :headers headers)))))
+				 (respond-http con done :body body :headers headers))))))
 
 (defmacro defpage (path defaulting-lambda-list &body body)
   (let ((normal-func-name (intern (strcat 'page- 
@@ -59,7 +68,7 @@
        (defun ,normal-func-name (&key ,@defaulting-lambda-list)
 	 ,@body)
        (defpage-lambda 
-	   ,path ',normal-func-name ,defaulting-lambda-list)
+	   ,path ',normal-func-name :defaulting-lambda-list ,defaulting-lambda-list)
        ',normal-func-name)))
 
 (defmacro page-link (&optional (page '+action-page-name+) &rest args)

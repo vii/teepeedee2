@@ -78,7 +78,7 @@
 	  (funcall (frame-current-page (webapp-frame)))))))
   
 (defun register-action-page ()
-  (defpage-lambda +action-page-name+ #'action-respond-body (.id. .channels. .javascript. all-http-params)))
+  (defpage-lambda +action-page-name+ #'action-respond-body :defaulting-lambda-list (.id. .channels. .javascript. all-http-params)))
 
 
 (my-defun frame 'simple-channel-body-ml ()
