@@ -60,7 +60,8 @@
 		   (destructuring-bind (name &key attributes children etag-optional stag-optional)
 		       tag
 		     (declare (ignore stag-optional))
-		     (let ((tag-sym (intern (strcat "<" name) (find-package pkg))))
+		     (let ((tag-sym (intern (strcat "<" name) (find-package pkg)))
+			   (name (string-downcase (force-string name))))
 		       `(defmacro ,tag-sym (&body contents)
 			  (validate contents :tag ',tag-sym
 				    :attributes ',(mapcar (lambda(x)(force-string x)) attributes) 

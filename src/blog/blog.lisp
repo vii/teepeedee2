@@ -31,20 +31,31 @@
 (my-defun blog ready-entries (&key (start 0))
 	  (subseq (remove-if-not 'entry-ready (my entries)) start))
 
-(my-defun blog feed-url ()
+(my-defun blog atom-feed-url ()
 	  (byte-vector-cat (my link-base) "feed.atom"))
+(my-defun blog rss-feed-url ()
+	  (byte-vector-cat (my link-base) "feed.rss"))
+
 (my-defun blog admin-url ()
 	  (byte-vector-cat (my link-base) "blog-admin"))
 
 (my-defun blog set-page ()
   (with-site ((my site))
-    (defpage-lambda (my feed-url)
+    (defpage-lambda (my atom-feed-url)
 	(lambda ()
-	  (my feed)))
+	  (my atom-feed)))
+    (defpage-lambda (my rss-feed-url)
+	(lambda ()
+	  (my rss-feed)))
 
     (defpage-lambda (my admin-url) 
 	(lambda (password entry-name)
 	  (webapp "Blog administration"
+		  (<form :method :post
+			 :action (my admin-url)
+			 (<p "Password "
+			  (<input :type :text :name "password" )
+			  (<input :class "plain-submit" :type :submit :value "↵")))
 		  (when (and password (equal (force-string password) (force-string (my admin-password))))
 		    (let ((comments 
 			   (if entry-name
@@ -52,7 +63,7 @@
 			       (remove-if-not (lambda (comment)
 						(and (typecase (comment-entry-index-name comment)
 						       ((or string byte-vector) t))
-						     (if-match-bind ((= (my comment-index-prefix)))
+						     (if-match-bind ((= (my comment-index-prefix)) ":")
 								    (comment-entry-index-name comment)))) 
 					      (datastore-retrieve-all 'comment)))))
 		      (loop for c in comments
@@ -72,7 +83,10 @@
 
     (defpage-lambda (my link-base) 
 	(lambda ((n (force-byte-vector 0)))
-	  (webapp ((my name) :head-contents (<link :rel "alternate" :type "application/atom+xml" :href (my feed-url)))
+	  (webapp ((my name) :head-contents 
+		   (with-ml-output
+		       (<link :rel "alternate" :type "application/atom+xml" :href (my atom-feed-url))
+		     (<link :rel "alternate" :type "application/rss+xml" :href (my rss-feed-url))))
 	    (let ((n (byte-vector-parse-integer n)))
 	      (let ((entries (my ready-entries :start n)) (count 10))
 		(<div :class "blog"

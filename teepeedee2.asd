@@ -78,7 +78,8 @@
 							   (:file "css" :depends-on ("html"))
 							   (:file "js" :depends-on ("html"))
 							   (:file "html" :depends-on ("define-dtd"))
-							   (:file "atom" :depends-on ("define-dtd"))))
+							   (:file "atom" :depends-on ("define-dtd"))
+							   (:file "rss" :depends-on ("define-dtd"))))
 				     (:module :datastore
 					      :depends-on (:lib)
 					      :components ((:file "datastore")))
