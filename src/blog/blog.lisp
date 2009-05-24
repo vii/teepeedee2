@@ -90,7 +90,7 @@
 ; disable the RSS feed as RSS wants to have absolute URLs
 ;		     (<link :rel "alternate" :type "application/rss+xml" :href (my rss-feed-url)))
 
-		     )
+		     ))
 	    (let ((n (byte-vector-parse-integer n)))
 	      (let ((entries (my ready-entries :start n)) (count 10))
 		(<div :class "blog"
