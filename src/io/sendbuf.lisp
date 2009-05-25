@@ -140,9 +140,15 @@
   (let ((result (make-byte-vector (my len))) (i 0))
     (unless (zerop (my len))
       (loop for s in (my head) do
-	    (loop for c across (the simple-byte-vector s) do
-		  (setf (aref result i) c)
-		  (incf i))))
+	    (etypecase s
+	      (simple-byte-vector 
+	       (loop for c across (the simple-byte-vector s) do
+		     (setf (aref result i) c)
+		     (incf i)))
+	      (byte-vector
+	       (loop for c across (the byte-vector s) do
+		     (setf (aref result i) c)
+		     (incf i))))))
     result))
 
 (my-defun sendbuf 'print-object (stream)
