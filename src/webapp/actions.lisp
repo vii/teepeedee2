@@ -71,11 +71,9 @@
   (with-frame-site 
     (awhen (find-action .id.)
       (funcall (action-func it) all-http-params))
-    (with-sendbuf
-	()
-      (if .javascript.
-	  (channel-respond-body (channel-string-to-states .channels.))
-	  (funcall (frame-current-page (webapp-frame)))))))
+    (if .javascript.
+	(channel-respond-body (channel-string-to-states .channels.))
+	(funcall (frame-current-page (webapp-frame))))))
   
 (defun register-action-page ()
   (defpage-lambda +action-page-name+ #'action-respond-body :defaulting-lambda-list (.id. .channels. .javascript. all-http-params)))
