@@ -32,7 +32,9 @@
 (my-defun entry 'simple-channel-body-ml ()
   (<div :class "blog-entry-comments"
 	(output-object-to-ml
-	 (reverse (my comments)))))
+	 (let (ret) 
+	   (loop for c in (my comments) repeat 10 do (push c ret))
+	   ret))))
 
 
 (defun time-string (&optional (ut (get-universal-time)))
