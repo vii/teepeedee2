@@ -50,9 +50,8 @@
 						   (unquote (channel-state channel)))))
 		     (output-raw-ml (channel-update channel state))))
 	     (output-raw-ml (js-to-string (trigger-fetch-channels))))))
-      (if at-least-one
-	sendbuf
-	(with-ml-output (output-raw-ml "/* nothing ready to send */"))))))
+      (when at-least-one
+	sendbuf))))
 
 (defun channel-respond (con done &key .channels.)
   (let ((channel-states (channel-string-to-states .channels.)))
@@ -63,7 +62,7 @@
 	       (with-specials-restored
 		   (with-frame-site 
 		     (awhen (channel-respond-body channel-states)
-		       (respond-http con done :body it)
+		       (respond-http con done :headers +http-header-html-content-type+ :body it)
 		       t)))))
       (unless (finished)
 	(let (func)

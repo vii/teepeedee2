@@ -36,7 +36,7 @@
 		  (current-site-call page-body-start ,title-ml)
 		  ,@body
 		  (current-site-call page-body-footer ,title-ml)))))
-	  (byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+))))))
+	  +http-header-html-content-type+)))))
 
 (defmacro webapp-lambda (title-and-options &body body)
   (with-unique-names (l)

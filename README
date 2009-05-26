@@ -1,6 +1,31 @@
+-- What's this?
+
 teepeedee2 is a webapplication framework for dynamic webpages. I made
 it to see whether it was possible to write a high performance
 application in Lisp. There were many obstacles in the way.
+
+-- Getting started
+
+Very rough notes!
+
+Start sbcl (note that the server at john.freml.in is actually running on CCL).
+
+(require 'asdf-install)
+(loop for x in '(:cffi
+	       :iterate
+	       :cl-irregsexp
+	       :trivial-backtrace) (asdf-install:install x))
+
+(in-package #:tpd2)
+(loop for port in '(8888) do
+      (let ((socket (tpd2.io:make-con-listen :port port)))
+	(tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http:http-serve)))
+
+(tpd2.io:event-loop)
+
+
+
+-- More info
 
 This webserver is not finished and I wrote it to learn and experiment
 with Common Lisp. There is a lot to be tidied up, now I know the
@@ -25,6 +50,7 @@ However, it also includes general support libraries for quickly
 generating XML/HTML (tpd2.ml2), for doing fast networking in a
 continuation passing style, i.e. fast event driven userspace
 threading (tpd2.io).
+
 
 For an example application, loaded by default, see the src/game directory.
 

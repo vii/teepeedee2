@@ -296,7 +296,7 @@
 				      (<h1 :class "mopoko" 
 					   (<A :href (page-link "/") 
 					       :class "inherit" 
-					       (<span :style (css-attrib :color "black") "mopoko") ".com" ))
+					       (<span :style (css-attrib :color "black") "mopoko") ".com prerelease" ))
 				      (output-object-to-ml (webapp-frame))))
     :page-head (lambda(title)
 		 `(with-ml-output

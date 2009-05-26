@@ -204,6 +204,7 @@
   (:nicknames #:tpd2.http)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export 
+   #:http-serve
    #:launch-http-request
    #:http-serve-timeout
    #:test-http-request
