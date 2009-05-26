@@ -137,5 +137,6 @@
    (defun trigger-fetch-channels ()
      (ps:do-set-timeout (50) 
        (fetch-channels)))
+   #- (and)
     (trigger-fetch-channels)))
 
