@@ -1,10 +1,15 @@
 (in-package #:tpd2.io)
 
+(defun make-mux-array (len)
+  (make-array len :element-type '(or null con) :initial-element nil))
+
 (defstruct mux
-  (fd-to-con (make-array 128 :element-type '(or null con) :initial-element nil)))
+  (fd-to-con (make-mux-array 128)
+	     :type (simple-array (or null con))))
 
 (my-defun mux empty ()
-  (every 'not (my fd-to-con))) 
+	  (my-declare-fast-inline)
+	  (every #'not (my fd-to-con))) 
 
 (my-defun mux find-fd (fd)
   (when fd
@@ -16,7 +21,9 @@
     (when fd
       (debug-assert (not (my find-fd fd)))
       (when (>= fd (length (my fd-to-con)))
-	(setf (my fd-to-con) (adjust-array (my fd-to-con) (* 2 (length (my fd-to-con))) :initial-element nil))
+	(let ((new (make-mux-array  (* 2 (length (my fd-to-con))))))
+	  (replace new (my fd-to-con))
+	  (setf (my fd-to-con) new))
 	(debug-assert (> (length (my fd-to-con)) fd)))
       (setf (aref (my fd-to-con) fd) con))))
 
