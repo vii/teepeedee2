@@ -1,7 +1,7 @@
 (in-package #:tpd2.lib)
 
 (defstruct (timeout (:include quick-queue-entry) (:constructor %make-timeout-internal))
-  time
+  (time nil :type (or null integer))
   func)
 
 (defun make-timeout (&key func delay)
@@ -34,9 +34,8 @@
 (defun time-for-delay (delay)
   (declare (optimize speed))
   (let ((delay (floor delay)))
-    (when delay
-      (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
-      (+ (get-universal-time) delay))))
+    (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
+    (+ (get-universal-time) delay)))
 
 
 

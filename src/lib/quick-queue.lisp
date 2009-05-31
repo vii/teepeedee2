@@ -5,26 +5,30 @@
   prev)
 
 (my-defun quick-queue-entry init ()
-  (setf (my next) me)
-  (setf (my prev) me)
-  me)
+	  (my-declare-fast-inline)
+	  (setf (my next) me)
+	  (setf (my prev) me)
+	  me)
 
 (defstruct quick-queue
   (entries 
    (let ((len (* 16 1024)))
-     (map '(vector quick-queue-entry) 'identity 
-	  (loop for i below len collect 
-		   (let ((entry (make-quick-queue-entry)))
-		     (quick-queue-entry-init entry)
-		     entry))))
+     (copy-seq (map '(vector quick-queue-entry) 'identity 
+		    (loop for i below len collect 
+			  (let ((entry (make-quick-queue-entry)))
+			    (quick-queue-entry-init entry)
+			    entry)))))
 
-   :type (vector quick-queue-entry)))
+   :type (simple-array quick-queue-entry)))
 
 (my-defun quick-queue len ()
-  (length (my entries)))
+	  (my-declare-fast-inline)
+	  (length (my entries)))
 
 (my-defun quick-queue get (position)
-  (aref (my entries) (mod (ceiling position) (my len))))
+	  (my-declare-fast-inline)
+	  (declare (type integer position))
+	  (aref (my entries) (mod position (my len))))
 
 (my-defun quick-queue-entry add (base)
   (setf (my prev) base)
