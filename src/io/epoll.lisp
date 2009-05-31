@@ -82,7 +82,7 @@
   (with-shorthand-accessor (my epoll *global-epoll*)
     (my 'mux-del fd)))
 
-(defun events-pending-p ()
+(defun-speedy events-pending-p ()
   (not (mux-empty *global-epoll*)))
 
 
@@ -102,7 +102,13 @@
 (defun event-loop ()
   (loop for timeout = (next-timeout)
 	while (or timeout (events-pending-p)) do
-	(wait-for-next-event timeout)))
+	(wait-for-next-event timeout)
+	(let ((start-time (get-universal-time)))
+	 (loop 
+	       while (events-pending-p)
+	       do
+	       (wait-for-next-event 1)
+	       thereis (/= start-time (get-universal-time))))))
 
 (defun event-loop-reset ()
   (mux-close-all *global-epoll*)
