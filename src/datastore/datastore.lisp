@@ -152,9 +152,11 @@
 
 	(defmethod datastore-delete ((object ,name))
 	  ,(when persistent?
-		 `(datastore-log `(datastore-delete ,(datastore-ref-form object))))
+		 `(when (slot-value object 'datastore-id)
+		    (datastore-log `(datastore-delete ,(datastore-ref-form object)))))
 	  ,@(loop for slot-def in indexed-slots collect
-		  `(datastore-index-del ,(slot-index slot-def) object)))
+		  `(datastore-index-del ,(slot-index slot-def) object))
+	  (setf (slot-value object 'datastore-id) nil))
 	(defmethod datastore-retrieve-all ((class (eql ',name)) &optional max-returned)
 	  (let ((i 0))
 	    (loop for v being the hash-values of (datastore-index-table ,(slot-index 'datastore-id))
