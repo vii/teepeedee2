@@ -22,12 +22,13 @@
 	  (t (list title-and-options)))
       `(let ((,title-ml
 	      (ml-to-byte-vector ,title)))
-	 (setf (webapp-frame-var 'actions) nil)
+	 (when (webapp-frame-available-p)
+	   (setf (webapp-frame-var 'actions) nil))
 	 (values
 	  (with-frame-site
 	      (with-ml-output-start 
-	     (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
-			    " \"http://www.w3.org/TR/html4/loose.dtd\">")
+		  (output-raw-ml "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" 
+				 " \"http://www.w3.org/TR/html4/loose.dtd\">")
 		(<html
 		 (<head
 		  (current-site-call page-head ,title-ml)
@@ -38,16 +39,14 @@
 		  (current-site-call page-body-footer ,title-ml)))))
 	  +http-header-html-content-type+)))))
 
-(defmacro webapp-lambda (title-and-options &body body)
-  (with-unique-names (l)
-  `(labels ((,l ()
-	      (setf (frame-current-page (webapp-frame)) 
-		    #',l)
-	      (webapp-ml ,title-and-options ,@body)))
-     #',l)))
-
 (defmacro webapp (title-and-options &body body)
-  `(funcall (webapp-lambda ,title-and-options ,@body)))
+  (with-unique-names (l)
+    `(labels ((,l ()
+		(when (webapp-frame-available-p)
+		  (setf (frame-current-page (webapp-frame)) 
+			#',l))
+		(webapp-ml ,title-and-options ,@body)))
+	   (,l))))
 
 (defmacro link-to-webapp (title &body body)
   (with-unique-names (title-ml)

@@ -1,10 +1,13 @@
 (in-package #:tpd2.blog)
 
+(defconstant +max-comment-length+ 8000)
+
 (defstruct blog
   name
   admin-password-file
   dir
   entries
+  entries-table
   (site (current-site))
   (link-base "/")
   comment-index-prefix
@@ -17,14 +20,18 @@
 
 (my-defun blog read-in ()
   (with-site ((my site)) 
-    (setf (my entries) 
-	  (sort
-	   (iter:iter (iter:for path in (cl-fad:list-directory (my dir)))
-		      (let ((filename (force-string path)))
-			(unless (or (find #\# filename) (find #\~ filename))
+    (setf 
+     (my entries-table) (make-hash-table :test 'equalp)
+     (my entries) 
+     (sort
+      (iter:iter (iter:for path in (cl-fad:list-directory (my dir)))
+		 (let ((filename (force-string path)))
+		   (unless (or (find #\# filename) (find #\~ filename))
 			  (let ((entry (read-in-entry me (file-namestring filename))))
 			    (iter:collect entry)))))
-		      #'> :key #'entry-time))
+      #'> :key #'entry-time))
+    (loop for entry in (my entries)
+	  do (setf (gethash (entry-index-name entry) (my entries-table)) entry))
     (my set-page))
   me)
 
@@ -36,19 +43,25 @@
 (my-defun blog rss-feed-url ()
 	  (byte-vector-cat (my link-base) "feed.rss"))
 
+(my-defun blog post-comment-url ()
+	  (byte-vector-cat (my link-base) "comment.form"))
+
 (my-defun blog admin-url ()
 	  (byte-vector-cat (my link-base) "blog-admin"))
 
+(defmacro defpage-lambda-blog (path function &rest args)
+  `(defpage-lambda ,path ,function :create-frame nil ,@args))
+
 (my-defun blog set-page ()
   (with-site ((my site))
-    (defpage-lambda (my atom-feed-url)
+    (defpage-lambda-blog (my atom-feed-url)
 	(lambda ()
 	  (my atom-feed)))
-    (defpage-lambda (my rss-feed-url)
+    (defpage-lambda-blog (my rss-feed-url)
 	(lambda ()
 	  (my rss-feed)))
 
-    (defpage-lambda (my admin-url) 
+    (defpage-lambda-blog (my admin-url) 
 	(lambda (password entry-name)
 	  (webapp "Blog administration"
 		  (<form :method :post
@@ -81,9 +94,40 @@
 								  (output-object-to-ml c)
 								  (datastore-delete c)))))))))))
 
-    (defpage-lambda (my link-base) 
+    (defpage-lambda-blog (my post-comment-url)
+	(lambda (text author entry-name keep-this-empty .javascript. http-peer-info! all-http-params!)
+	  (let ((entry-name (force-string entry-name)))
+	   (let ((success 
+	     (when (and 
+		    (zerop (length keep-this-empty))
+		    text
+		    (< (length text) +max-comment-length+)
+		    (not (equalp 
+			  text 
+			  (ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)))))))
+		   (let ((entry (gethash entry-name (my entries-table))))
+		     (when entry
+		       (make-comment 
+			:author author
+			:text text
+			:trace-details http-peer-info!
+			:entry-index-name entry-name)
+		       (channel-notify entry))
+		     t))))
+	     (cond 
+	       (.javascript.
+		(webapp-respond-ajax-body all-http-params!))
+	       (success
+		(webapp "Comment accepted" (<p "Thank you.")))
+	       (t
+		(webapp "Comment rejected by spam protection"
+			(<p "Sorry for the inconvenience. Please contact the blog owner with a description of the problem."))))))))
+
+
+    (defpage-lambda-blog (my link-base) 
 	(lambda ((n (force-byte-vector 0)))
-	  (webapp ((my name) :head-contents 
+	  (webapp ((my name) 
+		   :head-contents 
 		   (with-ml-output
 		       (<link :rel "alternate" :type "application/atom+xml" :href (my atom-feed-url))
 

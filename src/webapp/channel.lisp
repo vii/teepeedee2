@@ -27,9 +27,9 @@
 
 (defgeneric channel-update (channel subscriber-state))
 
-(defun channel-respond-page (dispatcher con done path all-http-params)
+(defun channel-respond-page (dispatcher con done path all-http-params!)
   (declare (ignore dispatcher path))
-  (apply-page-call con 'channel-respond con done (.channels.)))
+  (apply-page-call (:con con :function 'channel-respond :create-frame nil) con done (.channels.)))
 
 (defun channel-string-to-states (channels)
   (let ((channel-states))
@@ -38,7 +38,7 @@
 	channels)
     channel-states))
 
-(defun channel-respond-body (channel-states)
+(defun channel-respond-body (channel-states &key always-body)
   (let (at-least-one)
     (let ((sendbuf
 	   (with-ml-output
@@ -50,7 +50,7 @@
 						   (unquote (channel-state channel)))))
 		     (output-raw-ml (channel-update channel state))))
 	     (output-raw-ml (js-to-string (trigger-fetch-channels))))))
-      (when at-least-one
+      (when (or at-least-one always-body)
 	sendbuf))))
 
 (defun channel-respond (con done &key .channels.)

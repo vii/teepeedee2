@@ -61,39 +61,23 @@
 (my-defun entry story-ml ()
   (<div :class "blog-entry-story"
 	(loop for p in (my paragraphs)
-	      do (<p (output-raw-ml p)))
-	(<p :class "time" "Posted " (time-string (my time)))))
+	      do (<p (output-raw-ml p)))))
 
 (my-defun entry comments ()
   (datastore-retrieve-indexed 'comment 'entry-index-name (my index-name)))
 
 (my-defun entry comment-ml ()
   (<div :class "blog-entry-post-comment"
-	(let ((hidden-value (force-byte-vector (time-string))))
-	  (html-action-form-collapsed "Post a comment"
-	      ((text nil :type <textarea)
-	       (author "Anonymous")
-	       (keep-this-empty nil :type :hidden) 
-	       (time hidden-value :type :hidden))
-
-	    (cond ((and (zerop (length keep-this-empty)) (equalp hidden-value time))
-		   (unless (or 
-			    (not text)
-			    (equalp text 
-				    (ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name (my index-name)))))))
-		     (make-comment 
-		      :author author
-		      :text text
-		      :trace-details (frame-trace-info (webapp-frame))
-		      :entry-index-name (my index-name))
-		     (my 'channel-notify)))
-		  (t
-		   (webapp "Comment rejected by spam protection"
-		     (<p "Sorry for the inconvenience. Please contact the blog owner with a description of the problem."))))))))
+	(html-action-form-collapsed ("Post a comment" :action-link (blog-post-comment-url (my blog)))
+				    ((text nil :type <textarea :reset "")
+				     (author "Anonymous")
+				     (entry-name (my index-name) :type :hidden)
+				     (keep-this-empty nil :type :hidden)))))
 
 (my-defun entry 'object-to-ml ()
   (<div :class "blog-entry"
 	(my story-ml)
+	(<p :class "time" "Posted " (time-string (my time)))
 	(call-next-method)
 	(my comment-ml)))
 

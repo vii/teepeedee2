@@ -9,18 +9,16 @@
       do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
-#+sbcl
-(setf sb-ext:*inline-expansion-limit* 50)
-
 (pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
 (pushnew "../trivial-backtrace/" asdf:*central-registry* :test #'equal)
+
+(proclaim '(optimize speed))
 
 #+tpd2-debug
 (progn
   (proclaim '(optimize debug))
   (pushnew :tpd2-debug-assert *features*))
 
-(proclaim '(optimize speed))
 
 (asdf:defsystem :teepeedee2
   :name "teepeedee2"

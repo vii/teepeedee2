@@ -214,6 +214,7 @@
    #:build-http-response
    #:respond-http
    #:*default-dispatcher*
+   #:dispatcher-add-alias
    #:find-or-make-dispatcher
    #:http-parse-and-generate-response))
 
@@ -292,6 +293,11 @@
    #:channel-notify
    #:channel-update
    #:find-channel
+
+   #:webapp-respond-ajax-body
+
+   #:http-peer-info! 
+   #:all-http-params!
 
    #:message-channel
    #:simple-channel

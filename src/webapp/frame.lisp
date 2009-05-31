@@ -25,6 +25,9 @@
 (defun find-frame (id)
   (gethash id *frames*))
 
+(defun-speedy webapp-frame-available-p ()
+  (and (boundp '*webapp-frame*) *webapp-frame*))
+
 (defun webapp-frame (&rest args-for-make-frame)
   (unless *webapp-frame*
     (setf *webapp-frame* (apply 'make-frame args-for-make-frame)))

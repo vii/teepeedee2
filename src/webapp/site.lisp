@@ -13,6 +13,7 @@
 (defstruct (site (:constructor %make-site))
   (runtime-name '*current-site*)
   (dispatcher *default-dispatcher*)
+  (frameless-lambda-callbacks)
   (page-head (lambda(title)
 	       `(with-ml-output
 		  (<title ,title))
@@ -63,8 +64,10 @@
 	 ,@body))))
 
 (defmacro with-frame-site (&body body)
-  `(with-site ((frame-site (webapp-frame)))
-     ,@body))
+  `(if (webapp-frame-available-p) 
+       (with-site ((frame-site (webapp-frame)))
+	 ,@body)
+       (locally ,@body)))
   
 (defun make-site (&rest args)
   (let ((args (copy-list args)))
@@ -72,6 +75,10 @@
       (typecase it
 	((or string byte-vector)
 	 (setf (getf args :dispatcher) (find-or-make-dispatcher it)))))
+    (awhen (getf args :dispatcher-aliases)
+	   (loop for a in it do 
+		 (dispatcher-add-alias (getf args :dispatcher) a))
+	   (remf args :dispatcher-aliases))
     (let ((site (apply '%make-site args)))
       (with-site (site)
 	(register-action-page)

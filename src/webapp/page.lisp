@@ -12,51 +12,69 @@
 	   (mapcar 'char-code '(#\- #\_))))
   :test 'equalp)
 
-(defun generate-args-for-defpage-from-params (params-var defaulting-lambda-list)
+(defun generate-args-for-defpage-from-params (&key params-var con-var defaulting-lambda-list)
   (let ((arg-names (mapcar 'force-first defaulting-lambda-list))
 	(arg-values (mapcar (lambda(x)(second (force-list x))) defaulting-lambda-list)))
-    (loop for name in arg-names
-	  for value in arg-values
-	  collect (intern (force-string name) :keyword)
-	  if (eq name 'all-http-params)
-	  collect params-var
-	  else
-	  collect `(or (alist-get ,params-var ,(force-byte-vector name) 
-				  :test 'byte-vector=-fold-ascii-case)
-		       ,value))))
+    (flet ((xlate (name)
+	     (case name 
+	       (all-http-params! params-var)
+	       (http-peer-info! `(con-peer-info ,con-var)))))
+     (loop for name in arg-names
+	   for value in arg-values
+	   for xlated = (xlate name)
+	   collect (intern (force-string name) :keyword)
+	   if xlated
+	   collect xlated 
+	   else
+	   collect (let ((val-form `(alist-get ,params-var ,(force-byte-vector name) 
+					       :test #'byte-vector=-fold-ascii-case)))
+		     (if value
+			 `(or ,val-form
+			      ,value)
+			 val-form))))))
 
-(defmacro with-webapp-frame ((con params) &body body)
+(defmacro with-webapp-frame ((con params &key (create-frame t)) &body body)
   (check-symbols params con)
   `(let ((*webapp-frame*
-	  (awhen (alist-get ,params +webapp-frame-id-param+ :test 'byte-vector=-fold-ascii-case)
-	    (find-frame it))))
-     (setf (frame-trace-info (webapp-frame :site (current-site))) (con-peer-info con))
-     (frame-reset-timeout (webapp-frame))
+	  (awhen (alist-get ,params +webapp-frame-id-param+ :test #'byte-vector=-fold-ascii-case)
+		 (find-frame it))))
+     (when ,(if create-frame t `(webapp-frame-available-p))
+       (setf (frame-trace-info (webapp-frame :site (current-site))) (con-peer-info con))
+       (frame-reset-timeout (webapp-frame)))
      (locally
 	 ,@body)))
 
-(defmacro apply-page-call (con function &rest args)
+(defmacro apply-page-call-without-frame (con function &rest args)
   (let* ((defaulting-lambda-list (car (last args)))
 	 (normal-args (butlast args)))
-    `(with-webapp-frame (,con all-http-params)
-       (funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 'all-http-params defaulting-lambda-list)))))
+    `(funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 
+					 :con-var con
+					 :params-var 'all-http-params! 
+					 :defaulting-lambda-list defaulting-lambda-list))))
 
-
-(defmacro defpage-lambda (path function &key defaulting-lambda-list)
+(defmacro apply-page-call ((&key con function create-frame) &rest args)
+  `(with-webapp-frame (,con all-http-params! :create-frame ,create-frame)
+     (apply-page-call-without-frame ,con ,function ,@args)))
+ 
+(defmacro defpage-lambda (path function &key defaulting-lambda-list (create-frame t))
   (multiple-value-bind (function defaulting-lambda-list)
-      (cond ((and (not defaulting-lambda-list)
-		  (listp function)
-		  (eq (first function) 'lambda))
-	     (values `(lambda (&key ,@(second function))
-			,@(cddr function))
-		     (second function)))
+      (cond ((and 
+	      (not defaulting-lambda-list)
+	      (listp function)
+	      (eq (first function) 'lambda))
+	     (let ((args (second function)))
+	      (values `(lambda (&key ,@args)
+			 ,@(cddr function))
+		      args)))
 	    (t
 	     (values function defaulting-lambda-list)))
     `(dispatcher-register-path (site-dispatcher (current-site)) ,path
-			     (lambda(dispatcher con done path all-http-params)
+			     (lambda(dispatcher con done path all-http-params!)
 			       (declare (ignore dispatcher path))
+			       (declare (ignorable all-http-params!))
 			       (multiple-value-bind (body headers)
-				   (apply-page-call con ,function ,defaulting-lambda-list)
+				   (apply-page-call
+				    (:con con :function ,function :create-frame ,create-frame)  ,defaulting-lambda-list)
 				 (respond-http con done :body body :headers headers))))))
 
 (defmacro defpage (path defaulting-lambda-list &body body)
@@ -65,10 +83,11 @@
 					    ((or string byte-vector) path)
 					    (t ()))))))
     `(progn
+       ;; for some reason inlining this |PAGE-...| thing makes it very slow on SBCL
        (defun ,normal-func-name (&key ,@defaulting-lambda-list)
 	 ,@body)
        (defpage-lambda 
-	   ,path ',normal-func-name :defaulting-lambda-list ,defaulting-lambda-list)
+	   ,path #',normal-func-name :defaulting-lambda-list ,defaulting-lambda-list ,@(loop for (key value) on body by #'cddr while (keywordp key) collect key collect value))
        ',normal-func-name)))
 
 (defmacro page-link (&optional (page '+action-page-name+) &rest args)
@@ -77,11 +96,12 @@
       ,page
       "?.unique.="
       (random-web-sparse-key 4)
-      "&"
-      +webapp-frame-id-param+
-      "="
-      (awhen *webapp-frame*
-	(frame-id it))
+      (when (webapp-frame-available-p)
+	     (with-sendbuf-continue (sendbuf)
+	       "&"
+	       +webapp-frame-id-param+
+	       "="
+	      (frame-id (webapp-frame))))
       ,@(loop for (param val) on args by #'cddr
 	      collect "&"
 	      collect (symbol-name param)

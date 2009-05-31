@@ -55,15 +55,18 @@
 
 (defvar *dispatchers* nil)
 
-(defun do-find-dispatcher (host)
+(defun find-dispatcher-go (host)
   (alist-get *dispatchers* host :test 'equalp))
 
 (defun find-dispatcher (host)
-  (or (do-find-dispatcher host) *default-dispatcher*))
+  (or (find-dispatcher-go host) *default-dispatcher*))
 
 (defun find-or-make-dispatcher (host)
   (let ((host (force-byte-vector host)))
-    (or (do-find-dispatcher host)
+    (or (find-dispatcher-go host)
 	(let ((it (make-dispatcher :canonical-name host)))
 	  (push (cons host it) *dispatchers*)
 	  it))))
+
+(defun dispatcher-add-alias (dispatcher alias)
+  (setf (alist-get *dispatchers* (force-byte-vector alias)) dispatcher))

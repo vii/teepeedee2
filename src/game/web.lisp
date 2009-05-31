@@ -231,11 +231,6 @@
 	     (when (my waiting-for-input)
 	       (<span :class "turn" "'s turn")))))
 
-(defmethod player-controller-message ((controller web-state) sender message)
-  (web-state-add-announcement controller
-			      (<p :class "message" (<span :class "sender" (frame-username sender))
-				  " " message)))
-
 (defun css ()
   (css-html-style 
     ((".inherit" <input <a)
