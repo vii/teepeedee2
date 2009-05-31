@@ -33,7 +33,7 @@
   (<div :class "blog-entry-comments"
 	(output-object-to-ml
 	 (let (ret) 
-	   (loop for c in (my comments) repeat 10 do (push c ret))
+	   (loop for c in (my comments) repeat 50 do (push c ret))
 	   ret))))
 
 
