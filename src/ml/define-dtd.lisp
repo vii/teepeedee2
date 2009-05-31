@@ -13,7 +13,7 @@
 (defun validate (contents &key tag attributes children)
   (multiple-value-bind (attrs body)
       (separate-keywords contents)
-    (loop for (attr value) on attrs by #'cddr
+    (loop for (attr) on attrs by #'cddr
 	  when (not (member (force-string attr) attributes :test 'equalp))
 	  do (error 'ml-validation-forbidden-attribute-error
 		    :tag tag
