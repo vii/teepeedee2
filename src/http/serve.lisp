@@ -9,7 +9,7 @@
 (defprotocol http-serve (con)
   (reset-timeout con (http-serve-wait-timeout))
   (match-bind (method (+ (space)) url (or (last) (+ (space)))
-		      (:? "HTTP/" (version-major (integer) 1) "." (version-minor (integer) 0)))
+		      (:? "HTTP/" (version-major (unsigned-byte :max-len 3) 1) "." (version-minor (unsigned-byte :max-len 3) 0)))
       (io 'recvline con)
     (reset-timeout con (http-serve-timeout))
     (let ((request-content-length 0)
