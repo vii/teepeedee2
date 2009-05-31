@@ -80,7 +80,7 @@
     (awhen (find-action .id.)
 	   (funcall (action-func it) all-http-params!))
     (if .javascript.
-	(webapp-respond-ajax all-http-params!)
+	(webapp-respond-ajax-body all-http-params!)
 	(funcall (frame-current-page (webapp-frame))))))
 
 (defun webapp-respond-ajax-body (all-http-params!)
