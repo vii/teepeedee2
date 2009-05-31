@@ -19,7 +19,7 @@
   (let ((len 0))
     (declare (type fixnum len))
     (loop for x in args do 
-	  (incf len (length (the simple-byte-vector x))))
+	  (incf len (the fixnum (length (the simple-byte-vector x)))))
     (let ((ret (make-byte-vector len)) (i 0))
       (declare (type fixnum i))
       (loop for x in args do 
@@ -83,8 +83,8 @@
 (declaim (ftype (function ((unsigned-byte 8)) (unsigned-byte 8)) byte-to-ascii-upper))
 (defun-speedy byte-to-ascii-upper (x)
   (declare (type (unsigned-byte 8) x))
-  (if (and (>= x (char-code #\a)) (<= x (char-code #\z)))
-      (+ (- (char-code #\A) (char-code #\a)) x)
+  (if (>= #.(char-code #\z) x #.(char-code #\a))
+      (+ #.(- (char-code #\A) (char-code #\a)) x)
       x))
 
 (defun-speedy eql-fold-ascii-case (a b)

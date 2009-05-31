@@ -115,12 +115,23 @@
 
 (defun merge-constant-arguments (args &key (process-one 'identity) join env)
   (let ((joined))
-    (flet ((constants ()
+    (labels (
+	     (out (list)
+		(cond 
+		  ((or (every 'constantp list)
+		       (loop for x in list for exp = (macroexpand x env) 
+			     always (constantp exp) 
+			     collect exp into e
+			     finally (setf list e)))
+		   (eval `(,join ,@list)))
+		  ((rest list)
+		   `(read-only-load-time-value (,join ,@list)))
+		  (t
+		   `(read-only-load-time-value ,(first list)))))
+	     (constants ()
 	     (when joined
 	       (prog1 
-		   (if (rest joined)
-		       `(read-only-load-time-value (,join ,@joined))
-		       `(read-only-load-time-value ,(first joined)))
+		   (out joined)
 		 (setf joined nil))))
 	   (process-one (arg)
 	     (if (eq 'identity process-one)
@@ -171,7 +182,7 @@
   (let ((tmps (mapcar (lambda(x)(gensym (symbol-name x))) specials)))
     `(let ,(loop for s in specials
 		 for m in tmps
-		 collect `(,m ,s))
+		 collect `(,m (when (boundp ',s),s)))
        (macrolet ((with-specials-restored (&body body)
 		  `(let ,',(loop for s in specials
 				 for m in tmps
