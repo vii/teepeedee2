@@ -1,31 +1,69 @@
--- What's this?
+teepeedee2 
+================================
 
-teepeedee2 is a webapplication framework for dynamic webpages. I made
-it to see whether it was possible to write a high performance
-application in Lisp. There were many obstacles in the way.
+What's this?
+--------
 
--- Getting started
+teepeedee2 is a webapplication framework for dynamic webpages. It's goal is to be fast 
+
+Getting started
+--------
 
 Very rough notes!
 
-Start sbcl (note that the server at john.freml.in is actually running on CCL).
+      $ cd teepeedee2
 
-(require 'asdf-install)
-(loop for x in '(:cffi
+Start sbcl 
+      
+      $ sbcl
+
+or ClozureCL
+   
+      $ lx86cl -K utf-8
+
+Now enter into the Lisp
+
+      (asdf:oos 'asdf:load-op 'teepeedee2)
+
+If some dependencies are missing, either download and install them by hand, or use the following
+
+      (require 'asdf-install)
+      (loop for x in '(:cffi
 	       :iterate
 	       :cl-irregsexp
 	       :trivial-backtrace) (asdf-install:install x))
 
-(in-package #:tpd2)
-(loop for port in '(8888) do
-      (let ((socket (tpd2.io:make-con-listen :port port)))
-	(tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http:http-serve)))
+To start the server listing on port 8888, do the following
 
-(tpd2.io:event-loop)
+      (in-package #:tpd2)
+      (loop for port in '(8888) do
+            (let ((socket (tpd2.io:make-con-listen :port port)))
+            	(tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http:http-serve)))
+
+      (tpd2.io:event-loop)
+
+Now go to http://localhost:8888/
+
+
+Benchmarking
+--------
+
+	(in-package #:tpd2)
+	(defsite *bench*)
+	(with-site (*bench*)
+	 (defpage "/test" (name) :create-frame nil
+	    (tpd2.ml.html:<h1 "Hello " name)))
+	(launch-io 'accept-forever (make-con-listen :port 3000) 'tpd2.http::http-serve)
+	(event-loop)
+
+Use apachebench
+
+	$ ab -n 100000 -c10 http://127.0.0.1:3000/test?name=John
 
 
 
--- More info
+More info
+--------
 
 This webserver is not finished and I wrote it to learn and experiment
 with Common Lisp. There is a lot to be tidied up, now I know the
