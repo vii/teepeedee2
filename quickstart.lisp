@@ -5,6 +5,8 @@
 (eval-when (:compile-toplevel :execute :load-toplevel)
   (require 'asdf-install))
 
+
+;;; WARNING -- SIGNATURES NOT CHECKED!
 (handler-bind (((or asdf-install::key-not-found asdf-install::download-error asdf-install::no-signature) 
 		(lambda(c) (declare (ignore c)) (invoke-restart 'asdf-install::skip-gpg-check))))
   (asdf-install:install 		   
@@ -19,18 +21,26 @@
   (handler-bind ((error (lambda(c) (declare (ignore c)) (invoke-restart 'CONTINUE))))
     (asdf:oos 'asdf:load-op 'teepeedee2)))
 
+(defpackage #:teepeedee2.quickstart
+  (:use #:cl #:tpd2 #:tpd2.ml.html))
+
+(in-package #:teepeedee2.quickstart)
+
 ;;; Define a /hello page
 
-(tpd2:defpage "/hello" ((name "Friend")) :create-frame nil
-  (tpd2.ml.html:<h1 "Hello " name))
+(defpage "/hello" ((name "Friend"))
+  (<h1 "Hello " name))
 
 ;;; Start tpd2 listening
 
-(let ((socket (tpd2.io:make-con-listen :port 8080)))
-  (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http:http-serve))
+(http-start-server 8080)
 
 ;;; Enter the event-loop
 
-(tpd2:event-loop)
+#+sbcl
+(sb-thread:make-thread #'event-loop :name "tpd2")
+#-sbcl
+(event-loop)
 
 ;;; Visit http://localhost:8080/hello
+

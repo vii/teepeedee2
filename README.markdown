@@ -4,61 +4,70 @@ teepeedee2
 What's this?
 --------
 
-teepeedee2 is a webapplication framework for dynamic webpages. It's goal is to be fast 
+teepeedee2 is a webapplication framework for dynamic webpages. It's
+goal is to be fast. It only works on Linux.
 
-Getting started
+Quickstart
 --------
 
-Very rough notes!
+You need SBCL. On Ubuntu or Debian
+
+    $ sudo apt-get install sbcl
+
+Untar or git clone
+
+      $ git clone git://github.com/vii/teepeedee2.git
 
       $ cd teepeedee2
 
-Start sbcl 
+Start sbcl and run the quickstart.lisp
       
-      $ sbcl
+      $ sbcl --load quickstart.lisp
 
-or ClozureCL
-   
-      $ lx86cl -K utf-8
+This will download the following packages with asdf-install, and their
+dependencies: iterate cffi cl-irregsexp trivial-backtrace
 
-Now enter into the Lisp
+Note that it DISABLES the GPG signature checking! You will be running
+UNVERIFIED CODE.
 
-      (asdf:oos 'asdf:load-op 'teepeedee2)
+	      It will try to download the following packages with 
+	      Install where?
+	      1) System-wide install: 
+	         System in /usr/lib/sbcl/site-systems/
+	         Files in /usr/lib/sbcl/site/ 
+	      2) Personal installation: 
+	         System in /home/username/.sbcl/systems/
+	         Files in /home/username/.sbcl/site/ 
+	       --> 
 
-If some dependencies are missing, either download and install them by hand, or use the following
+Enter "2" and press enter.
 
-      (require 'asdf-install)
-      (loop for x in '(:cffi
-	       :iterate
-	       :cl-irregsexp
-	       :trivial-backtrace) (asdf-install:install x))
+Lots of downloading and compiling will occur.
 
-To start the server listing on port 8888, do the following
+Then visit http://localhost:8080/hello
 
-      (in-package #:tpd2)
-      (loop for port in '(8888) do
-            (let ((socket (tpd2.io:make-con-listen :port port)))
-            	(tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http:http-serve)))
+You can now enter new pages at the SBCL REPL
 
-      (tpd2.io:event-loop)
+    CL-USER> (in-package #:teepeedee2.quickstart)
 
-Now go to http://localhost:8888/
+    QUICKSTART> (defpage "/goodbye" ((name "Friend"))
+    		(<div (<h1 "Bye bye " name) (<p "The universal time is " (get-universal-time))))
 
 
 Benchmarking
 --------
 
 	(in-package #:tpd2)
-	(defsite *bench*)
-	(with-site (*bench*)
-	 (defpage "/test" (name) :create-frame nil
-	    (tpd2.ml.html:<h1 "Hello " name)))
-	(launch-io 'accept-forever (make-con-listen :port 3000) 'tpd2.http::http-serve)
+	(defpage "/test" (name) :create-frame nil
+	    (tpd2.ml.html:<h1 "Hello " name))
+
+	(http-start-server 8080)
+
 	(event-loop)
 
 Use apachebench
 
-	$ ab -n 100000 -c10 http://127.0.0.1:3000/test?name=John
+	$ ab -n 100000 -c10 http://127.0.0.1:8080/test?name=John
 
 
 
