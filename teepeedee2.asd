@@ -90,6 +90,7 @@
 							   (:file "names")
 							   (:file "html-constants")
 							   (:file "site")
+							   (:file "default-site" :depends-on ("site" "webapp" "js-library"))
 							   (:file "js-library" :depends-on ("html-constants" "page"))
 							   (:file "actions" :depends-on ("page" "html-constants" "frame"))
 							   (:file "channel" :depends-on ("page" "html-constants"))

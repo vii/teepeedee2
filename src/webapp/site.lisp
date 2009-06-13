@@ -4,7 +4,7 @@
   (define-constant +site-customization-funcs+ '(page-head page-body-start page-body-footer) :test 'equalp)
   (define-constant +site-customization-func-args+ '(title) :test 'equalp))
 
-(defparameter *current-site* nil)
+(defvar *current-site*)
 
 (defmacro current-site ()
   `*current-site*)
@@ -94,3 +94,6 @@
 	  (def-runtime-funcs site))
 
     	site))))
+
+
+
