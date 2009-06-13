@@ -67,3 +67,8 @@
   `(define-constant ,name ,value
      :test 'string=
      ,@(when documentation `((:documentation ,documentation)))))
+
+(defmacro defconstant-bv  (name value &optional documentation)
+  `(define-constant ,name (force-byte-vector ,value)
+     :test 'equalp
+     ,@(when documentation `((:documentation ,documentation)))))

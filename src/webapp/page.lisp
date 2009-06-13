@@ -1,8 +1,10 @@
 (in-package #:tpd2.webapp)
 
 (defvar *webapp-frame*)
-(define-constant +webapp-frame-id-param+ (force-byte-vector ".webapp-frame.")
-  :test 'equalp)
+(defconstant-bv +webapp-frame-id-param+ ".webapp-frame.")
+
+(defun-speedy get-http-param (params name)
+  (alist-get params name :test #'byte-vector=-fold-ascii-case))
 
 (define-constant +web-safe-chars+ 
   (force-byte-vector 
@@ -17,8 +19,7 @@
 	(arg-values (mapcar (lambda(x)(second (force-list x))) defaulting-lambda-list)))
     (flet ((xlate (name)
 	     (case name 
-	       (all-http-params! params-var)
-	       (http-peer-info! `(con-peer-info ,con-var)))))
+	       (all-http-params! params-var))))
      (loop for name in arg-names
 	   for value in arg-values
 	   for xlated = (xlate name)
@@ -26,20 +27,21 @@
 	   if xlated
 	   collect xlated 
 	   else
-	   collect (let ((val-form `(alist-get ,params-var ,(force-byte-vector name) 
-					       :test #'byte-vector=-fold-ascii-case)))
+	   collect (let ((val-form `(get-http-param ,params-var ,(force-byte-vector name))))
 		     (if value
 			 `(or ,val-form
 			      ,value)
 			 val-form))))))
 
-(defmacro with-webapp-frame ((con params &key (create-frame t)) &body body)
-  (check-symbols params con)
+(defmacro with-webapp-frame ((params &key (create-frame t)) &body body)
+  (check-symbols params)
   `(let ((*webapp-frame*
-	  (awhen (alist-get ,params +webapp-frame-id-param+ :test #'byte-vector=-fold-ascii-case)
+	  (awhen (get-http-param ,params +webapp-frame-id-param+)
 		 (find-frame it))))
      (when ,(if create-frame t `(webapp-frame-available-p))
-       (setf (frame-trace-info (webapp-frame :site (current-site))) (con-peer-info con))
+       (setf (frame-trace-info (webapp-frame :site (current-site))) 
+	     (get-http-param
+	      ,params tpd2.http:+http-param-origin+))
        (frame-reset-timeout (webapp-frame)))
      (locally
 	 ,@body)))
@@ -53,7 +55,7 @@
 					 :defaulting-lambda-list defaulting-lambda-list))))
 
 (defmacro apply-page-call ((&key con function create-frame) &rest args)
-  `(with-webapp-frame (,con all-http-params! :create-frame ,create-frame)
+  `(with-webapp-frame (all-http-params! :create-frame ,create-frame)
      (apply-page-call-without-frame ,con ,function ,@args)))
  
 (defmacro defpage-lambda (path function &key defaulting-lambda-list (create-frame t))

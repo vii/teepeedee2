@@ -50,6 +50,7 @@
    #:once-only
    #:define-constant
    #:defconstant-string
+   #:defconstant-bv
 
    #:copy-byte-vector
    #:make-byte-vector
@@ -216,7 +217,11 @@
    #:*default-dispatcher*
    #:dispatcher-add-alias
    #:find-or-make-dispatcher
-   #:http-parse-and-generate-response))
+   #:http-parse-and-generate-response
+   #:+http-param-origin+
+
+   #:http-start-server
+   ))
 
 (defpackage #:teepeedee2.ml
   (:nicknames #:tpd2.ml)
@@ -312,6 +317,7 @@
    #:with-compile-time-site
    #:defsite
    #:current-site
+
    ))
 
 

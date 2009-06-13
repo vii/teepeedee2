@@ -47,7 +47,7 @@
 		 (set-fd-nonblock s)
 		 (make-con 
 		  :socket s
-		  :peer-info (sockaddr-address-string sa))))))))
+		  :peer-info (sockaddr-address-bv sa))))))))
 
 
 (defmethod socket-close ( (fd integer) )

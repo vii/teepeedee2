@@ -467,7 +467,15 @@
   (defun sockaddr-address-string (sa)
     (declare (optimize speed (safety 0)))
     (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
-      #.`(strcat ,@(loop for i below 4 unless (= i 0) collect "." collect `(the simple-string (aref octet-to-string (ldb (byte 8 (* 8 ,i)) addr) )))))))
+      #.`(strcat ,@(loop for i below 4 unless (= i 0) collect "." collect `(the simple-string (aref octet-to-string (ldb (byte 8 (* 8 ,i)) addr))))))))
+  
+(let ((octet-to-bv (make-array 256 :element-type 'simple-byte-vector :initial-contents (loop for i from 0 below 256 collect (force-byte-vector (princ-to-string i))))))
+  (defun sockaddr-address-bv (sa)
+    (declare (optimize speed (safety 0)))
+    (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
+      #.`(byte-vector-cat 
+	  ,@(loop for i below 4 unless (= i 0) collect (force-byte-vector ".") 
+		  collect `(the simple-byte-vector (aref octet-to-bv (ldb (byte 8 (* 8 ,i)) addr))))))))
 
 (defun new-socket-helper (&key 
 			  port 

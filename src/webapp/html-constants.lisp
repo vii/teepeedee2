@@ -12,6 +12,5 @@
 (defconstant-string +html-class-scroll-to-bottom+ "-scroll-to-bottom-")
 (defconstant-string +html-class-collapsed+ "-collapsed-")
 
-(alexandria:define-constant +http-header-html-content-type+
-    (byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+)
-  :test 'equalp)
+(defconstant-bv +http-header-html-content-type+
+    (byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+))

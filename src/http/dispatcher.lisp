@@ -37,7 +37,8 @@
 	   (respond-http con done :code  404 :banner  "Not found"
 			 :body (funcall (my error-responder) me path params))))
       (error (e)
-	(format *error-output* "ERROR ~A~&--- ~A~&" (strcat (my canonical-name) path) (backtrace-description e))
+	(format *error-output* "ERROR ~A~&--- ~A~&" (strcat (my canonical-name) path) 
+		(backtrace-description e))
 	(respond-http con done
 		      :body (with-sendbuf () "<h1>I programmed this thoughtlessly. Sorry for the inconvenience.</h1>")
 		      :code 500

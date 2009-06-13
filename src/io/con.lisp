@@ -2,7 +2,7 @@
 
 (defstruct (con (:constructor %make-con))
   socket
-  peer-info
+  (peer-info nil :type (or null byte-vector))
   (recv (make-recvbuf) :type recvbuf)
   timeout
 
