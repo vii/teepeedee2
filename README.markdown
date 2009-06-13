@@ -48,9 +48,9 @@ Then visit http://localhost:8080/hello
 
 You can now enter new pages at the SBCL REPL
 
-    CL-USER> (in-package #:teepeedee2.quickstart)
+    * (in-package #:teepeedee2.quickstart)
 
-    QUICKSTART> (defpage "/goodbye" ((name "Friend"))
+    * (defpage "/goodbye" ((name "Friend"))
     		(<div (<h1 "Bye bye " name) (<p "The universal time is " (get-universal-time))))
 
 
@@ -98,6 +98,7 @@ generating XML/HTML (tpd2.ml2), for doing fast networking in a
 continuation passing style, i.e. fast event driven userspace
 threading (tpd2.io).
 
+Note that it trusts the last value of X-Forwarded-For.
 
 For an example application, loaded by default, see the src/game directory.
 
