@@ -152,7 +152,7 @@
 		   (return-from read-in-entry))
 	      do (match-bind ((* (space)) header ":" value)
 			     line
-			     (when (equalp (force-string header) "time")
+			     (when (member (force-string header) '("expiry-time" "time") :test 'equalp)
 			       (setf value (parse-time value)))
 			  
 			  (setf (slot-value entry (normally-capitalized-string-to-symbol header))
