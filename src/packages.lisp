@@ -364,6 +364,8 @@
    #:datastore-retrieve-all
    #:datastore-retrieve-indexed
    #:datastore-retrieve-unique
+   #:datastore-record-constructor-form
+   #:datastore-close
    #:defrecord
    #:datastore-use-file))
 

@@ -7,6 +7,16 @@
   (time :initform (get-universal-time))
   trace-details)
 
+(defmethod print-object ((comment comment) stream)
+  (with-shorthand-accessor (my comment)
+    (print-unreadable-object (comment stream :type t)
+      (format stream "~S by ~S/~A at ~A"
+	      (force-string (my text))
+	      (force-string (my author))
+	      (force-string (my trace-details))
+	      (time-string (my time))))))
+
+
 (defun split-into-paragraphs (str)
   (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
 	       str))
@@ -27,6 +37,7 @@
   tags
   (title "Untitled")
   time
+  expiry-time
   paragraphs)
 
 (my-defun entry 'simple-channel-body-ml ()
@@ -46,8 +57,10 @@
 (my-defun entry filename ()
   (strcat (its dir (my blog)) (my name)))
 
-(my-defun entry ready ()
-  (>= (get-universal-time) (my time)))
+(my-defun entry front-page-p ()
+	  (let ((now (get-universal-time)))
+	   (and (>= now (my time))
+		(or (not (my expiry-time)) (>= (my expiry-time) now)))))
 
 (my-defun entry url-path ()
   (byte-vector-cat (its link-base (my blog)) (my name)))

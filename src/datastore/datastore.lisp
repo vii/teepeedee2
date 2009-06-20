@@ -1,25 +1,38 @@
 (in-package #:tpd2.datastore)
 
 (defvar *datastore*)
+(defvar *datastore-id-max* 0)
 
 (defun datastore-load (file)
-  (load file :if-does-not-exist nil))
+  ; SBCL struggles as it tries to compile these large files if a simple load is used
+  (with-open-file (stream file :if-does-not-exist nil)
+    (when stream
+      (loop for form = (read stream nil 'eof)
+	    until (eq form 'eof)
+	    do (eval form)))))
+
+(defun datastore-open-p ()
+  (and (boundp '*datastore*) *datastore*))
 
 (defun datastore-use-file (filename)
-  (unless (and (boundp '*datastore*) *datastore*)
+  (unless (datastore-open-p)
     (datastore-load filename)
     (setf *datastore* (open filename :direction :output :if-exists :append :if-does-not-exist :create))))
 
 (defun datastore-ref-form (object)
   `(datastore-retrieve-unique ',(class-name (class-of object)) 'datastore-id ,(slot-value object 'datastore-id)))
 
+(defun datastore-close ()
+  (when (datastore-open-p)
+    (close *datastore*)
+    (setf *datastore-id-max* 0))
+  (makunbound '*datastore*))
+
 (defun datastore-log (list)
-  (when (and (boundp '*datastore*) *datastore*)
+  (when (datastore-open-p)
     (with-standard-io-syntax
       (format *datastore* "~S~&" list))
     (force-output *datastore*)))
-
-(defvar *datastore-id-max* 0)
 
 (defun datastore-id-next ()
   *datastore-id-max*)
@@ -65,11 +78,19 @@
   (make-load-form object))
 (defmethod datastore-save-form ((string string))
   string)
+(defmethod datastore-save-form ((number number))
+  number)
 
 (defmethod datastore-save-form ((array array))
-  `(make-array ',(array-dimensions array)
-	       :element-type ',(array-element-type array)
-	       :initial-contents (list ,@(map 'list 'datastore-save-form array))))
+  (typecase array
+    (byte-vector
+     `(utf8-encode ,(force-string array)))
+    (t
+     `(make-array ',(array-dimensions array)
+		  :element-type ',(array-element-type array)
+		  :initial-contents (list ,@(map 'list 'datastore-save-form array))))))
+
+(defgeneric datastore-record-constructor-form (object))
 
 (defmacro defrecord (name &rest original-slot-defs)
   (labels ((slot-name (slot-def)
@@ -163,6 +184,15 @@
 		  until (and max-returned (>= i max-returned))
 		  do (incf i (length v))
 		  append v)))
+
+	(defmethod datastore-record-constructor-form ((object ,name))
+	  (list ',(guarded-constructor) 
+		,@(loop for slot-def in slot-defs
+			for slot-name = (slot-name slot-def)
+			unless (eq 'datastore-id slot-name)
+			collect (intern (symbol-name slot-name) :keyword)
+			and
+			collect `(datastore-save-form (,(real-slot-accessor slot-name) object)))))
 
 	
 	,@(loop for slot-def in indexed-slots collect

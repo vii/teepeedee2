@@ -36,7 +36,7 @@
   me)
 
 (my-defun blog ready-entries (&key (start 0))
-	  (subseq (remove-if-not 'entry-ready (my entries)) start))
+	  (subseq (remove-if-not #'entry-front-page-p (my entries)) start))
 
 (my-defun blog atom-feed-url ()
 	  (byte-vector-cat (my link-base) "feed.atom"))
@@ -149,5 +149,5 @@
     
 (my-defun blog last-updated ()
 	  (loop for e in (my entries)
-		when (entry-ready e)
+		when (entry-front-page-p e)
 		maximizing (entry-time e)))

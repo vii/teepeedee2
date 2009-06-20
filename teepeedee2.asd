@@ -19,7 +19,6 @@
   (proclaim '(optimize debug))
   (pushnew :tpd2-debug-assert *features*))
 
-
 (asdf:defsystem :teepeedee2
   :name "teepeedee2"
   :author "John Fremlin <john@fremlin.org>"
