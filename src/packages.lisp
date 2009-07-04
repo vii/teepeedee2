@@ -159,6 +159,7 @@
    #:without-call/cc
 
    #:socket-closed
+   #:socket-shutdown-write
 
    #:with-sendbuf
    #:sendbuf-add
@@ -171,6 +172,7 @@
    #:recv
    #:recvline
    #:recv-until-close
+   #:recv-discard-until-close
    #:send
    #:accept
    #:reset-timeout
@@ -191,6 +193,7 @@
    #:con-when-ready-to-read
    #:con-peek
    #:con-peer-info
+   #:con-socket
    
    #:+newline+
    #:+SOCK_DGRAM+
@@ -307,6 +310,7 @@
    #:message-channel
    #:simple-channel
    #:simple-channel-body-ml
+   #:list-channel
    #:list-channel-add
    #:list-channel-del
    #:make-message-channel
@@ -406,3 +410,6 @@
 	  `(:export ,@syms))))
 
 
+(defpackage #:teepeedee2.user
+  (:nicknames #:tpd2.user)
+  (:use #:tpd2 #:cl #:tpd2.ml.html #:tpd2.ml))
