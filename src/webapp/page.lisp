@@ -15,6 +15,7 @@
   :test 'equalp)
 
 (defun generate-args-for-defpage-from-params (&key params-var con-var defaulting-lambda-list)
+  (declare (ignore con-var))
   (let ((arg-names (mapcar 'force-first defaulting-lambda-list))
 	(arg-values (mapcar (lambda(x)(second (force-list x))) defaulting-lambda-list)))
     (flet ((xlate (name)
