@@ -45,10 +45,22 @@
 	  (return (new (*Active-X-Object "Microsoft.XMLHTTP")))))
     (defvar *active-request*)
 
+    (defun channels-get-param ()
+      (let ((lines (make-array)))
+	(ps:doeach (channel *channels*)
+		   (lines.push (+ (encode-U-R-I-component channel) "|" (aref *channels* channel))))
+	(return (+ ".channels.=" (lines.join ";")))))
+
+    (defun fetch-channels ()
+      (when (and *channels* (not (zerop (length *channels*))))
+       (async-request (+ (unquote (force-string (page-link +channel-page-name+))) "&" (channels-get-param))
+		      nil)))
+
     (defun async-request-done (req url)
       (debug-log "async request received" req)
       (unless (=== req *active-request*)
 	(return))
+      (set-async-status nil)
 
       (let ((success nil))
 	(ignore-errors
@@ -58,12 +70,13 @@
 	      (setf *active-request* nil)
 	      (ignore-errors
 		(eval req.response-text)
-		(debug-log "async request completed okay" req)))
+		(debug-log "async request completed okay" req))
+	      (unless *active-request*
+		(fetch-channels)))
 	    (progn
 	      (debug-log "async request unsuccessful" req)
 	      (ps:do-set-timeout (500)
-		(when (=== req *active-request*)
-		  (async-request url "Retrying")))))))
+		(async-request url "Retrying"))))))
     
     (defun async-request (url initial-status)
       (ps:try
@@ -74,7 +87,8 @@
 	     (ignore-errors
 	       (tmp.abort))))
 	 
-	 
+	 (set-async-status intial-status)
+
 	 (let ((req (make-xml-http-request)))
 	   (setf *active-request* req)
 	   
@@ -91,12 +105,6 @@
 	 (return -1)))
       (return 0))
 
-    (defun channels-get-param ()
-      (let ((lines (make-array)))
-	(ps:doeach (channel *channels*)
-		   (lines.push (+ (encode-U-R-I-component channel) "|" (aref *channels* channel))))
-	(return (+ ".channels.=" (lines.join ";")))))
-
     (defun async-submit-form (form)
       (let ((inputs form.elements)
 	    (params (make-array)))
@@ -111,6 +119,7 @@
 			    (channels-get-param)) "sending")
 	  (return true) ; error occurred so actually submit the form normally
 	  (return false)))
+
     (defun async-submit-link-href (link)
       (when (async-submit-link link)
 	(setf window.location link)))
@@ -120,6 +129,15 @@
    
    (defun channel (name counter)
      (setf (aref *channels* name) (max (if (aref *channels* name) (aref *channels* name) 0) counter)))
+
+   (defun set-async-status (status)
+     (let ((element (ignore-errors (find-element (unquote +html-id-async-status+)))))
+       (when element
+	 (cond ((not status)
+		(setf element.style.display "none"))
+	       (t
+		(setf element.style.display ""
+		      element.inner-h-t-m-l status))))))
 
    (defun toggle-hiding (element)
      (setf element.style.display
@@ -131,9 +149,6 @@
   (js-html-script
     (handle-special-elements document.body)
    
-   (defun fetch-channels ()
-       (async-request (+ (unquote (force-string (page-link +channel-page-name+))) "&" (channels-get-param))
-		      nil))
    (defun trigger-fetch-channels ()
      (ps:do-set-timeout (50) 
        (fetch-channels)))
