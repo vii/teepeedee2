@@ -20,6 +20,7 @@
 (defun split-into-paragraphs (str)
   (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
 	       str))
+
 (defun split-into-paragraphs-by-single-line (str)
   (when str
     (match-split #\Newline 
@@ -114,16 +115,16 @@
 (defun parse-time (str)
   (match-bind 
    (macrolet ((int (name &optional (len 2))
-		 `(progn t (,name (unsigned-byte :max-len ,len) 0))))
-      (int year 4)
-      (int month)
-      (int day)
+		`(progn t (,name (unsigned-byte :max-len ,len) 0))))
+     (int year 4)
+     (int month)
+     (int day)
       (:? 
        (int hour)
        (int minute)
        (:? (int second))))
-      str
-    (encode-universal-time second minute hour day month year)))
+   str
+   (encode-universal-time second minute hour day month year)))
 
 (defun slurp-file (filename)
   (with-open-file (s filename :element-type '(unsigned-byte 8))
