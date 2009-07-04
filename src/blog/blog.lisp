@@ -101,6 +101,7 @@
 	     (when (and 
 		    (zerop (length keep-this-empty))
 		    text
+		    (not (zerop (length text)))
 		    (< (length text) +max-comment-length+)
 		    (not (equalp 
 			  text 
