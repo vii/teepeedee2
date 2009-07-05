@@ -280,6 +280,9 @@
     (("input[type=submit]" <a "[onclick]") 
      :display "inline" 
      :text-decoration "none")
+    (".HEARTS, .DIAMONDS" :color "red")
+    (".HEARTS, .DIAMONDS, .CLUBS, .SPADES" :font-size "4em")
+    (".close-game" :text-align "right")
     ("[onclick],a,input[type=submit]" 
      :background-color "rgb(228,228,228)"
      :cursor "pointer")))
