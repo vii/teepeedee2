@@ -4,8 +4,8 @@
   (declare (type byte-vector encoded))
   (match-replace-all 
    encoded
-   ((progn "%" (word (string 2)))
-    (byte-vector (byte-vector-parse-integer word 16)))
+   ((progn "%" (val (unsigned-byte :max-len 2 :min-len 2 :base 16)))
+    (byte-vector val))
    ("+" " ")))
 
 (defun percent-hexpair-encode (plain)
