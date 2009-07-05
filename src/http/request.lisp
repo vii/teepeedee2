@@ -1,15 +1,20 @@
 (in-package #:tpd2.http)
 
+(defun parse-http-chunk-length-line (line)
+  (match-bind ((len (unsigned-byte :base 16 
+				   :max-len 7 ; maximum chunk size of (expt 16 7) = 268435456
+				   )) (* (space)) (last))  
+	      line 
+	      len))
+
 (defprotocol http-read-chunked (con)
   (let ((body
 	 (loop 
-	       for len = (match-bind ((len (unsigned-byte :base 16 
-							  :max-len 7 ; maximum chunk size of (expt 16 7) = 268435456
-							  )) (* (space)) (last))  
-		   (io 'recvline con) 
-		 len)
+	       for line = (io 'recvline con)
+	       for len = (parse-http-chunk-length-line line)
 	       until (zerop len)
-	       collect (copy-byte-vector (io 'recv con len))
+	       for chunk = (io 'recv con len)
+	       collect (copy-byte-vector chunk)
 	       do
 	       (match-bind ((last)) (io 'recvline con)))))
     

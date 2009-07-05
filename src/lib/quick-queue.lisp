@@ -37,6 +37,7 @@
   (setf (quick-queue-entry-prev (my next)) me))
 
 (my-defun quick-queue-entry del ()
+  (my-declare-fast-inline)
   (setf (quick-queue-entry-next (my prev)) (my next))
   (setf (quick-queue-entry-prev (my next)) (my prev)))
 

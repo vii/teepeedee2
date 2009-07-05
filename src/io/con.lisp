@@ -13,8 +13,10 @@
   (let ((con (apply '%make-con args)))
     (let ((sock (con-socket con)))
       (assert sock)
+      #+tpd2-finalize-sockets  
       (finalize con 
 		(lambda()
+		  (warn "Closing socket in finalizer ~A" sock)
 		  (ignore-errors (socket-close sock)))))
     (con-init con)
     con))
@@ -54,8 +56,7 @@
   (timeout-set (my timeout) delay)
   (values))
 
-(define-constant +newline+ (force-byte-vector #(13 10))
-  :test 'equalp)
+(defconstant-bv +newline+ (force-byte-vector #(13 10)))
 
 (my-defun con set-callback (func)
   (setf (my ready-callback) func))
@@ -124,6 +125,16 @@
 		      (recv-some-or-nil me #'r)))))
       (recv-some-or-nil me #'r))))
 
+(my-defun con 'recv-discard-and-close (done)
+   (labels ((r (buf)
+	      (cond ((not buf)
+		     (my 'hangup)
+		     (funcall done))
+		    (t
+		     (recv-some-or-nil me #'r)))))
+     (socket-shutdown-write (my socket))
+     (r t)))
+
 (my-defun con 'send (done sendbuf)
   (cond
     ((sendbuf-done sendbuf)
@@ -141,10 +152,14 @@
        (my when-ready-to-read #'my-call))))
 
 (my-defun con 'hangup ()
+  (my-declare-fast-inline)	  
   (timeout-cancel (my timeout))
   (when (my socket)
-    (cancel-finalization me)
-    (socket-close (my socket))
+    #+tpd2-finalize-sockets (cancel-finalization me)
+    (handler-case
+	(socket-close (my socket))
+      (error (e)
+	(warn "Error closing socket ~A: ~A" con e)))
     (setf (my socket) nil)))
 
 
@@ -161,11 +176,14 @@
 	       (address "0.0.0.0") 
 	       (socket-family +AF_INET+) 
 	       (socket-type +SOCK_STREAM+))
-  (make-con :socket (make-listen-socket 
-		     :port port 
-		     :address address 
-		     :socket-family socket-family
-		     :socket-type socket-type)))
+  (make-con 
+   :err (lambda (e) (prin1 e) (format t "~A~%" e) (describe e) (break))
+   :socket 
+   (make-listen-socket 
+    :port port 
+    :address address 
+    :socket-family socket-family
+    :socket-type socket-type)))
 
 (defun make-con-bind (&key (port 0)
 	       (address "0.0.0.0") 
@@ -197,3 +215,5 @@
 
 (my-defun con connected? ()
   (not (not (socket-peer (my socket)))))
+
+

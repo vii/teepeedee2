@@ -1,3 +1,15 @@
+*** 0.3.7 ***
+(Thanks to Stephen Compall)
+- Fixed multiple values in non-/cc functions
+
+*** 0.3.6 ***
+(Thanks to Leslie P. Polzer)
+- Fixing inlining of FUNCALL/CC on SBCL
+
+*** 0.3.5 ***
+(Thanks to Stephen Compall)
+- Workaround for Clozure Version 1.2-r10579M-trunk (Linuxx8664)
+
 *** 0.3.4 ***
 (Thanks to John Fremlin)
 - Fixing copy-transformation-context typo

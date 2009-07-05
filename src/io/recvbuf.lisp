@@ -50,20 +50,22 @@
   (values))
 
 (my-defun recvbuf read-some (con &optional retry)
+  (my-declare-fast-inline)
   (debug-assert (not (my full)))
   (let ((s
 	 (socket-read (con-socket con)
-		      (make-displaced-vector (my store) :start (my write-idx)))))
+		      (my store)
+		      (my write-idx))))
     (cond 
-      ((not s)
-       (when retry
-	 (con-when-ready-to-read con retry))
-       nil)
-      (t
-       (locally
-	   (declare (type fixnum s))
-	 (incf (my write-idx) s)
-	 s)))))
+       ((not s)
+	(when retry
+	  (con-when-ready-to-read con retry))
+	nil)
+       (t
+	(locally
+	    (declare (type fixnum s))
+	  (incf (my write-idx) s)
+	  s)))))
 
 (my-defun recvbuf recv (con &optional done)
   (my-declare-fast-inline)

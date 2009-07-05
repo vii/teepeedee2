@@ -15,38 +15,44 @@
    host))
 
 (defprotocol http-serve (con)
-  (reset-timeout con (http-serve-wait-timeout))
+  (without-call/cc
+      (reset-timeout con (http-serve-wait-timeout)))
   (match-bind (method (+ (space)) url (or (last) (+ (space)))
 		      (:? "HTTP/" (version-major (unsigned-byte :max-len 3) 1) "." (version-minor (unsigned-byte :max-len 3) 0)))
       (io 'recvline con)
-    (reset-timeout con (http-serve-timeout))
-    (let ((request-content-length 0)
-	  host
-	  (request-origin (con-peer-info con))
-	  (connection-close (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))))
-	(io 'process-headers con (without-call/cc (lambda(name value)
-						    (unless (zerop (length value))
-						      (case-match-fold-ascii-case name
-										  ("content-length" 
-										   (setf request-content-length (match-int value)))
-										  ("host"
-										   (setf host value))
-										  ("connection"
-										   (match-each-word value
-												    (lambda(word)
-												      (case-match-fold-ascii-case word
-																  ("close" (setf connection-close t))
-																  ("keep-alive" (setf connection-close nil))) )))
-										  ("x-forwarded-for" 
-										   (setf request-origin
-											 (match-x-forwarded-for value))))))))
+      (without-call/cc
+	  (reset-timeout con (http-serve-timeout)))
+      (let ((request-content-length 0)
+	    host
+	    (request-origin (con-peer-info con))
+	    (connection-close       
+	     (without-call/cc (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor)))))))
+	(io 'process-headers con 
+	    (without-call/cc 
+		(lambda(name value)
+		  (unless (zerop (length value))
+		    (case-match-fold-ascii-case name
+						("content-length" 
+						 (setf request-content-length (match-int value)))
+						("host"
+						 (setf host value))
+						("connection"
+						 (match-each-word value
+								  (lambda(word)
+								    (case-match-fold-ascii-case word
+												("close" (setf connection-close t))
+												("keep-alive" (setf connection-close nil))) )))
+						("x-forwarded-for" 
+						 (setf request-origin
+						       (match-x-forwarded-for value))))))))
       (let ((request-body
 	     (unless (zerop request-content-length)
 	       (io 'recv con request-content-length))))
 	(io 'parse-and-dispatch con url :request-body request-body :host host :origin request-origin))
-      (if connection-close
-	  (hangup con)
-	  (io 'http-serve con)))))
+      (cond 
+	(connection-close	 
+	 (io 'recv-discard-and-close con))
+	(t (io 'http-serve con))))))
 
 (defprotocol parse-and-dispatch (con path-and-args &key request-body host origin)
   (let (params tmp)

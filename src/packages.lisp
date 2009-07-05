@@ -137,6 +137,7 @@
    #:timeout-remaining
    #:next-timeout
    #:forget-timeouts
+   #:with-independent-timeouts
 
    #:debug-assert
    #:debug-assert-skip
@@ -172,7 +173,7 @@
    #:recv
    #:recvline
    #:recv-until-close
-   #:recv-discard-until-close
+   #:recv-discard-and-close
    #:send
    #:accept
    #:reset-timeout
@@ -201,6 +202,7 @@
 
    #:event-loop
    #:event-loop-reset
+   #:with-independent-event-loop
 
    #:forward-port))
 

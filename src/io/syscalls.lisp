@@ -58,7 +58,82 @@
   (syscall-error-number +EPIPE+ 32 "Broken pipe")
   (syscall-error-number +EDOM+ 33 "Math argument out of domain of func")
   (syscall-error-number +ERANGE+ 34 "Math result not representable")
-  (syscall-error-number +EINPROGRESS+ 115 "Operation now in progress"))
+
+
+  (syscall-error-number +EBFONT+ 59 "Bad font file format")
+  (syscall-error-number +ENOSTR+ 60 "Device not a stream")
+  (syscall-error-number +ENODATA+ 61 "No data available")
+  (syscall-error-number +ETIME+ 62 "Timer expired")
+  (syscall-error-number +ENOSR+ 63 "Out of streams resources")
+  (syscall-error-number +ENONET+ 64 "Machine is not on the network")
+  (syscall-error-number +ENOPKG+ 65 "Package not installed")
+  (syscall-error-number +EREMOTE+ 66 "Object is remote")
+  (syscall-error-number +ENOLINK+ 67 "Link has been severed")
+  (syscall-error-number +EADV+ 68 "Advertise error")
+  (syscall-error-number +ESRMNT+ 69 "Srmount error")
+  (syscall-error-number +ECOMM+ 70 "Communication error on send")
+  (syscall-error-number +EPROTO+ 71 "Protocol error")
+  (syscall-error-number +EMULTIHOP+ 72 "Multihop attempted")
+  (syscall-error-number +EDOTDOT+ 73 "RFS specific error")
+  (syscall-error-number +EBADMSG+ 74 "Not a data message")
+  (syscall-error-number +EOVERFLOW+ 75 "Value too large for defined data type")
+  (syscall-error-number +ENOTUNIQ+ 76 "Name not unique on network")
+  (syscall-error-number +EBADFD+ 77 "File descriptor in bad state")
+  (syscall-error-number +EREMCHG+ 78 "Remote address changed")
+  (syscall-error-number +ELIBACC+ 79 "Can not access a needed shared library")
+  (syscall-error-number +ELIBBAD+ 80 "Accessing a corrupted shared library")
+  (syscall-error-number +ELIBSCN+ 81 ".lib section in a.out corrupted")
+  (syscall-error-number +ELIBMAX+ 82 "Attempting to link in too many shared libraries")
+  (syscall-error-number +ELIBEXEC+ 83 "Cannot exec a shared library directly")
+  (syscall-error-number +EILSEQ+ 84 "Illegal byte sequence")
+  (syscall-error-number +ERESTART+ 85 "Interrupted system call should be restarted")
+  (syscall-error-number +ESTRPIPE+ 86 "Streams pipe error")
+  (syscall-error-number +EUSERS+ 87 "Too many users")
+  (syscall-error-number +ENOTSOCK+ 88 "Socket operation on non-socket")
+  (syscall-error-number +EDESTADDRREQ+ 89 "Destination address required")
+  (syscall-error-number +EMSGSIZE+ 90 "Message too long")
+  (syscall-error-number +EPROTOTYPE+ 91 "Protocol wrong type for socket")
+  (syscall-error-number +ENOPROTOOPT+ 92 "Protocol not available")
+  (syscall-error-number +EPROTONOSUPPORT+ 93 "Protocol not supported")
+  (syscall-error-number +ESOCKTNOSUPPORT+ 94 "Socket type not supported")
+  (syscall-error-number +EOPNOTSUPP+ 95 "Operation not supported on transport endpoint")
+  (syscall-error-number +EPFNOSUPPORT+ 96 "Protocol family not supported")
+  (syscall-error-number +EAFNOSUPPORT+ 97 "Address family not supported by protocol")
+  (syscall-error-number +EADDRINUSE+ 98 "Address already in use")
+  (syscall-error-number +EADDRNOTAVAIL+ 99 "Cannot assign requested address")
+  (syscall-error-number +ENETDOWN+ 100 "Network is down")
+  (syscall-error-number +ENETUNREACH+ 101 "Network is unreachable")
+  (syscall-error-number +ENETRESET+ 102 "Network dropped connection because of reset")
+  (syscall-error-number +ECONNABORTED+ 103 "Software caused connection abort")
+  (syscall-error-number +ECONNRESET+ 104 "Connection reset by peer")
+  (syscall-error-number +ENOBUFS+ 105 "No buffer space available")
+  (syscall-error-number +EISCONN+ 106 "Transport endpoint is already connected")
+  (syscall-error-number +ENOTCONN+ 107 "Transport endpoint is not connected")
+  (syscall-error-number +ESHUTDOWN+ 108 "Cannot send after transport endpoint shutdown")
+  (syscall-error-number +ETOOMANYREFS+ 109 "Too many references: cannot splice")
+  (syscall-error-number +ETIMEDOUT+ 110 "Connection timed out")
+  (syscall-error-number +ECONNREFUSED+ 111 "Connection refused")
+  (syscall-error-number +EHOSTDOWN+ 112 "Host is down")
+  (syscall-error-number +EHOSTUNREACH+ 113 "No route to host")
+  (syscall-error-number +EALREADY+ 114 "Operation already in progress")
+  (syscall-error-number +EINPROGRESS+ 115 "Operation now in progress")
+  (syscall-error-number +ESTALE+ 116 "Stale NFS file handle")
+  (syscall-error-number +EUCLEAN+ 117 "Structure needs cleaning")
+  (syscall-error-number +ENOTNAM+ 118 "Not a XENIX named type file")
+  (syscall-error-number +ENAVAIL+ 119 "No XENIX semaphores available")
+  (syscall-error-number +EISNAM+ 120 "Is a named type file")
+  (syscall-error-number +EREMOTEIO+ 121 "Remote I/O error")
+  (syscall-error-number +EDQUOT+ 122 "Quota exceeded")
+  (syscall-error-number +ENOMEDIUM+ 123 "No medium found")
+  (syscall-error-number +EMEDIUMTYPE+ 124 "Wrong medium type")
+  (syscall-error-number +ECANCELED+ 125 "Operation Canceled")
+  (syscall-error-number +ENOKEY+ 126 "Required key not available")
+  (syscall-error-number +EKEYEXPIRED+ 127 "Key has expired")
+  (syscall-error-number +EKEYREVOKED+ 128 "Key has been revoked")
+  (syscall-error-number +EKEYREJECTED+ 129 "Key was rejected by service")
+  (syscall-error-number +EOWNERDEAD+ 130 "Owner died")
+  (syscall-error-number +ENOTRECOVERABLE+ 131 "State not recoverable")
+  )
 
 #+tpd2-freebsd
 (progn
@@ -84,7 +159,7 @@
   #+ccl
   (define-symbol-macro errno (- (ccl::int-errno-call -1)))
   #+sbcl
-  (define-symbol-macro errno (sb-alien:get-errno))
+  (define-symbol-macro errno (the (integer 0 5000) (sb-alien:get-errno)))
   #-(or ccl sbcl)
   (progn
     (declaim (inline %var-accessor-errno))
@@ -101,6 +176,7 @@
   (:report (lambda (condition stream)
 	     (with-slots (errno syscall) condition
 	       (format stream "~A failed: ~A (errno ~A)" syscall (strerror errno) errno)))))
+
 (eval-always
  (defun syscall-name (name)
    (string-downcase (force-string name)))
@@ -114,37 +190,51 @@
        :int
      ,@args))
 
-(defmacro def-simple-syscall (name &rest args)
-  (let ((direct-sym (direct-syscall-sym name))
-	(noretry-sym (noretry-syscall-sym name))
-	(syscall-name (syscall-name name))
-	(arg-names (mapcar #'first args))
-	(func (concat-sym-from-sym-package 'def-simple-syscall 'syscall- name)))
-    `(progn
-       (declaim (inline ,func ,direct-sym ,noretry-sym))
-       (declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)) ,noretry-sym)
-		(ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer) ,func ,direct-sym))
-       (def-syscall ,name ,@args)
-       (defun ,noretry-sym ,arg-names
-	 (declare (optimize speed (safety 0)))
-	 (let ((val (,direct-sym ,@arg-names)))
-	   (let ((errno errno))
-	     (cond ((or (/= val -1) (= errno +EAGAIN+) (= errno +EINPROGRESS+))
-		    val)
-		   ((= errno +EINTR+)
-		    nil)
-		   (t
-		    (error 'syscall-failed :errno errno :syscall ,syscall-name))))))
+(defmacro def-simple-syscall (name-and-options &rest args)
+  (destructuring-bind (name &key (would-block '(+EAGAIN+ +EINPROGRESS+)) (error t))
+      (force-list name-and-options)
+   (let ((direct-sym (direct-syscall-sym name))
+	 (noretry-sym (noretry-syscall-sym name))
+	 (syscall-name (syscall-name name))
+	 (arg-names (mapcar #'first args))
+	 (func (concat-sym-from-sym-package 'def-simple-syscall 'syscall- name)))
+     `(progn
+	(declaim (inline ,func ,direct-sym ,noretry-sym))
+	(declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)) ,noretry-sym)
+		 (ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer) ,func ,direct-sym))
+	(def-syscall ,name ,@args)
+	(defun ,noretry-sym ,arg-names
+	  (declare (optimize speed (safety 0)))
+	  (let ((val (,direct-sym ,@arg-names)))
+	    (cond ((/= val -1) val)
+		  (t
+		   (let ((errno errno))
+		     (cond ((or ,@(loop for e in would-block collect `(= errno ,e)))
+			    -1)
+			   ((= errno +EINTR+)
+			    nil)
+			   (t
+			    ,(if error 
+				 `(error 'syscall-failed :errno errno :syscall ,syscall-name)
+				 -1) )))))))
+    
+	(defun ,func ,arg-names
+	  (declare (optimize speed (safety 0)))
+	  (loop
+		(let ((val (,noretry-sym ,@arg-names)))
+		  (when val (return val)))))))))
 
-       (defun ,func ,arg-names
-	 (declare (optimize speed (safety 0)))
-	 (loop
-	       (let ((val (,noretry-sym ,@arg-names)))
-		 (when val (return val))))))))
 
-
-(def-simple-syscall close
+(def-simple-syscall (close :would-block nil)
     (fd :int))
+
+(defconstant +SHUT_RD+ 0)
+(defconstant +SHUT_WR+ 1)  
+(defconstant +SHUT_RDWR+ 2) 
+
+(def-simple-syscall (shutdown :would-block (+ENOTCONN+))
+    (fd :int)
+  (how :int))
 
 (define-constant +SIG_IGN+ (cffi:make-pointer 1) :test 'cffi:pointer-eq)
 (define-constant +SIG_DFL+ (cffi:make-pointer 0)  :test 'cffi:pointer-eq)
@@ -194,7 +284,35 @@
   (offset :pointer)
   (count size_t))
 
-(def-simple-syscall accept
+(defconstant +SOCK_NONBLOCK+ #o04000)
+
+(def-simple-syscall (accept4 :would-block (+EAGAIN+ 
+					  +EMFILE+
+					  +EINPROGRESS+
+					  +ENETDOWN+ 
+					  +EPROTO+ 
+					  +ENOPROTOOPT+
+					  +EHOSTDOWN+    
+					  +ENONET+    
+					  +EHOSTUNREACH+    
+					  +EOPNOTSUPP+
+					  +ENETUNREACH+))
+    (sockfd :int)
+  (addr :pointer)
+  (addrlen :pointer)
+  (flags :int))
+
+(def-simple-syscall (accept :would-block (+EAGAIN+ 
+					  +EMFILE+
+					  +EINPROGRESS+
+					  +ENETDOWN+ 
+					  +EPROTO+ 
+					  +ENOPROTOOPT+
+					  +EHOSTDOWN+    
+					  +ENONET+    
+					  +EHOSTUNREACH+    
+					  +EOPNOTSUPP+
+					  +ENETUNREACH+))
     (sockfd :int)
   (addr :pointer)
   (addrlen :pointer))
@@ -353,6 +471,8 @@
     (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 0)))
 
 
+(defun socket-set-tcp-nodelay (fd)
+  (setsockopt-int fd +IPPROTO_TCP+ +TCP_NODELAY+ 1))
 
 (def-simple-syscall socket
     (domain :int)
@@ -597,3 +717,11 @@
   (fd :int)
   (sockaddr :pointer)
   (socklen :pointer))
+
+#+sbcl ; debug
+(defun check-fd-dead (fd)
+  (assert (not
+	   (ignore-errors
+	     (sb-posix:readlink (format nil "/proc/~A/fd/~A" (sb-posix:getpid) fd))))
+	  (fd)
+	  "FD ~A still alive" fd))

@@ -12,6 +12,7 @@
 	  (every #'not (my fd-to-con))) 
 
 (my-defun mux find-fd (fd)
+  (my-declare-fast-inline)	  
   (when fd
     (when (> (length (my fd-to-con)) fd)
       (aref (my fd-to-con) fd))))
@@ -21,7 +22,9 @@
     (when fd
       (debug-assert (not (my find-fd fd)))
       (when (>= fd (length (my fd-to-con)))
-	(let ((new (make-mux-array  (* 2 (length (my fd-to-con))))))
+	(let ((new (make-mux-array  
+		    (loop for length = (* 2 (length (my fd-to-con))) then (* 2 length)
+			  thereis (when (> length fd) length)))))
 	  (replace new (my fd-to-con))
 	  (setf (my fd-to-con) new))
 	(debug-assert (> (length (my fd-to-con)) fd)))
@@ -29,6 +32,7 @@
 
 (my-defun mux del (fd)
   (when (my find-fd fd)
+    (debug-assert (= (con-socket (aref (my fd-to-con) fd)) fd))
     (setf (aref (my fd-to-con) fd) nil)))
 
 (my-defun mux close-all ()

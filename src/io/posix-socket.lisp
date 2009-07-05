@@ -10,19 +10,23 @@
   call)
 
 
-(defmethod socket-read ((fd integer) buf)
+(defmethod socket-read ((fd integer) buf offset)
+  (declare (type simple-byte-vector buf))
+  (declare (type fixnum offset))
   (debug-assert (not (zerop (length buf))))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
-	   (socket-io-syscall (syscall-read fd ptr (length buf))))))
+	   (socket-io-syscall (syscall-read fd (cffi:inc-pointer ptr offset) (- (length buf) offset))))))
     (case-= s
 	    (-1 nil)
 	    (t s))))
 
-(defmethod socket-write ((fd integer) buf)
+(defmethod socket-write ((fd integer) buf offset)
+  (declare (type simple-byte-vector buf))
+  (declare (type fixnum offset))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
-	   (socket-io-syscall (syscall-write fd ptr (length buf))))))
+	   (socket-io-syscall (syscall-write fd (cffi:inc-pointer ptr offset) (- (length buf) offset))))))
     (case-= s
 	    (-1 nil)
 	    (t s))))
@@ -44,16 +48,19 @@
 	(case-= s
 		(-1 nil)
 		(t
+		 #-tpd2-untransformed-io
 		 (set-fd-nonblock s)
+		 (socket-set-tcp-nodelay s)
 		 (make-con 
 		  :socket s
 		  :peer-info (sockaddr-address-bv sa))))))))
 
 
-(defmethod socket-close ( (fd integer) )
+(defmethod socket-close ((fd integer))
+  (declare (optimize speed))
+  (syscall-close fd)
   (deregister-fd fd)
-  (handler-case (syscall-close fd)
-    (syscall-failed ())))
+  (values))
 
 (defmethod socket-register ((fd integer) events con)
   (debug-assert (eql fd (con-socket con)))
@@ -98,3 +105,5 @@
       (when (zerop (getpeername fd sa len))
 	(sockaddr-address-string sa)))))
 
+(defmethod socket-shutdown-write ((fd integer))
+  (syscall-shutdown fd +SHUT_WR+))

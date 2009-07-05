@@ -90,6 +90,13 @@
     (with-call/cc (list (values)))
   (nil))
 
+(deftest funcall-9-multiple-values-return
+    (flet ((some-vals () (values 42 84)))
+      (let (a b)
+	(with-call/cc (multiple-value-setq (a b) (some-vals)))
+	(values a b)))
+  42 84)
+
 ;; quote
 (deftest quote-1
     (with-call/cc 'a)
@@ -893,3 +900,10 @@
 	2 3 4))
   1)
 
+;;; tests for a bug in Clozure
+(deftest clozure-broken-typep
+    (let ((fun #'with-call/cc-env-test-fn))
+      (values (typep #'with-call/cc-env-test-fn 'cl-cont::funcallable/cc)
+	      (typep fun 'cl-cont::funcallable/cc)
+	      (typep fun (find-class 'cl-cont::funcallable/cc))))
+  t t t)

@@ -1,5 +1,8 @@
 (in-package #:tpd2.lib)
 
+(defvar *timeouts* (make-quick-queue))
+(defvar *timeout-started* nil)
+
 (defstruct (timeout (:include quick-queue-entry) (:constructor %make-timeout-internal))
   (time nil :type (or null integer))
   func)
@@ -10,16 +13,13 @@
     (when delay (timeout-reset timeout delay))
     timeout))
 
-(defvar *timeouts* (make-quick-queue))
-(defvar *timeout-started* nil)
-
 (my-defun timeout 'print-object (stream)
   (print-unreadable-object (me stream :identity t)
     (format stream "~As ~A" (when (my time) (my remaining)) (my func))))
 
 (defun forget-timeouts ()
-  (setf *timeout-started* nil)
-  (setf *timeouts* (make-quick-queue)))
+  (setf *timeout-started* nil
+	*timeouts* (make-quick-queue)))
 
 (my-defun timeout remaining ()
   (max (- (my time) (get-universal-time)) 0))
@@ -83,3 +83,8 @@
 	      (debug-assert (eql (timeout-time timeout) x) (timeout x))
 	      (setf *timeout-started* time)
 	      (- x time))))))
+
+(defmacro with-independent-timeouts (() &body body)
+  `(let (*timeout-started*
+	 (*timeouts* (make-quick-queue)))
+     ,@body))

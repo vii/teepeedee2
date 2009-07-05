@@ -7,8 +7,8 @@
 (define-condition socket-explicitly-hungup (socket-error)
   ())
 
-(defgeneric socket-read (socket buf))
-(defgeneric socket-write (socket buf))
+(defgeneric socket-read (socket buf offset))
+(defgeneric socket-write (socket buf offset))
 (defgeneric socket-accept (socket)) ; returns a CON
 (defgeneric socket-close (socket))
 (defgeneric socket-register (socket events con))
@@ -32,6 +32,10 @@
 (defmethod socket-sendto (socket address buf)
   (declare (ignore address))
   (socket-write socket buf))
+
+(defgeneric socket-shutdown-write (socket)
+  (:method (socket)
+    (declare (ignore socket))))
 
 (defgeneric socket-peer (socket))
 

@@ -1,16 +1,14 @@
 (in-package #:tpd2.game)
 
 (defstruct robot)
+(defstruct (robot-bully (:include robot)))
+(defstruct (robot-sensible (:include robot)))
 
 (my-defun robot 'player-controller-name-to-ml ()
   (<span :class "robot" "Ralph"))
 
-(defstruct (robot-bully (:include robot)))
-
 (my-defun robot-bully 'player-controller-name-to-ml ()
   (<span :class "robot" "Nelson"))
-
-(defstruct (robot-sensible (:include robot)))
 
 (my-defun robot-sensible 'player-controller-name-to-ml ()
   (<span :class "robot" "Martin"))

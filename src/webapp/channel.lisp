@@ -45,9 +45,11 @@
 	     (loop for (channel . state) in channel-states do
 		   (unless (eql state (channel-state channel))
 		     (setf at-least-one t)
-		     (output-raw-ml (js-to-string (channel 
-						   (unquote (force-string (channel-id channel))) 
-						   (unquote (channel-state channel)))))
+		     (output-raw-ml 
+		      (js-to-string 
+		       (channel 
+			(unquote (force-string (channel-id channel))) 
+			(unquote (channel-state channel)))))
 		     (output-raw-ml (channel-update channel state))))
 	     (output-raw-ml (js-to-string (trigger-fetch-channels))))))
       (when (or at-least-one always-body)
@@ -57,13 +59,12 @@
   (let ((channel-states (channel-string-to-states .channels.)))
     (with-preserve-specials (*webapp-frame*) 
       (flet ((finished () 
-	       (when (con-dead? con)
-		 (return-from finished t))
-	       (with-specials-restored
-		   (with-frame-site 
-		     (awhen (channel-respond-body channel-states)
-		       (respond-http con done :headers +http-header-html-content-type+ :body it)
-		       t)))))
+	       (or (con-dead? con)
+		   (with-specials-restored
+		       (with-frame-site 
+			   (awhen (channel-respond-body channel-states)
+				  (respond-http con done :headers +http-header-html-content-type+ :body it)
+				  t))))))
       (unless (finished)
 	(let (func)
 	  (flet ((unsubscribe ()

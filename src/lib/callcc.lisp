@@ -1,5 +1,6 @@
 (in-package #:tpd2.lib)
 
+(declaim (inline convert-continuation-to-normal-function))
 (defun convert-continuation-to-normal-function (k)
   k
   #+use-arnesi-for-continuations (lambda(&optional x) (arnesi:kall k x)))

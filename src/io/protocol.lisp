@@ -40,7 +40,7 @@
 	do (write-string (force-string buf) stream))
   (values))
 
-
+#-tpd2-untransformed-io
 (defmacro defprotocol (name (con-var &rest args) &body body)
   (check-symbols con-var name)
   (with-unique-names (done)
@@ -51,20 +51,33 @@
 	 (with-call/cc 
 	   (funcall ,done (locally ,@body)))))))
 
-(defmacro io (func con-var &rest args)
+#-tpd2-untransformed-io
+(defmacro io (func con-var &rest args &environment env)
   (check-symbols con-var)
-  (with-unique-names (k atmp)
-    `(let ((,atmp (list ,@args)))
-       (call/cc 
-	(lambda(,k)
-	  (apply ,func ,con-var (convert-continuation-to-normal-function ,k) ,atmp))))))
+  (with-unique-names (k)
+    (let* (gensyms
+	   (func (if (and (listp func) (eq 'quote (first func))) `(function ,@(rest func)) func))
+	   (arg-syms (loop for a in args collect 
+			  (cond 
+			    ((constantp a env) 
+			     a)
+			    (t
+			     (let ((g (gensym (force-string a))))
+			      (push `(,g ,a) gensyms)
+			      g))))))
+      `(let ,(reverse gensyms)
+	 (call/cc 
+	  (lambda(,k)
+	    (funcall ,func ,con-var (convert-continuation-to-normal-function ,k) ,@arg-syms)))))))
 
 (defmacro launch-io (func con-var &rest args)
   (once-only (con-var)
     `(progn
        (con-set-callback ,con-var 
 			 (lambda()
-			   (funcall ,func ,con-var (constantly nil) ,@args)))
+			   (funcall ,func ,con-var 
+				    (lambda (&rest args) (declare (ignore args))) 
+				    ,@args)))
        (con-run ,con-var)
        (values))))
 
@@ -75,10 +88,41 @@
 	do (launch-io proto n)))
 ; |#
 
-(defun accept-forever (con done proto)
+
+(defvar *socket-accept-burst* 16)
+(my-defun con 'accept-forever (done proto)
   (declare (ignore done))
-  (accept con 
-	  (lambda(n)
-	    (launch-io 'accept-forever con proto)
-	    (launch-io proto n)))
+  (loop repeat *socket-accept-burst* 
+	for new = (socket-accept (my socket))
+	while new
+	do (launch-io proto new))
+  (my when-ready-to-read #'my-call)
   (values))
+
+#+tpd2-untransformed-io
+(defmacro defprotocol (name (con-var &rest args) &body body)
+  (check-symbols con-var name)
+  (with-unique-names (done)
+    `(progn
+       (defun-simple-io ,name (,con-var ,@args)
+	   ,@body)
+       (defun ,name (,con-var ,done ,@args)
+	   (funcall ,done (locally ,@body))))))
+
+#+tpd2-untransformed-io
+(defmacro io (func con-var &rest args)
+  (check-symbols con-var)
+  (with-unique-names (val)
+    `(let (,val)
+       (funcall ,func ,con-var (lambda (&optional arg &rest args) 
+			 (declare (ignore args))
+			 (setf ,val arg))
+	      ,@args)
+       ,val)))
+
+
+;; These preserve the status quo but are convenient for emacs use
+#+tpd2-untransformed-io
+(pushnew :tpd2-untransformed-io *features*)
+#-tpd2-untransformed-io
+(deletef :tpd2-untransformed-io *features*)
