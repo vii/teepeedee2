@@ -40,6 +40,7 @@
 
 
 (my-defun timeout cancel ()
+  (my-declare-fast-inline)
   (quick-queue-entry-del me))
 
 (my-defun timeout merge ()
@@ -48,8 +49,11 @@
     (quick-queue-entry-add me (my position))))
 
 (my-defun timeout reset (delay)
-  (setf (my time) (time-for-delay delay))
-  (my merge))
+  (cond (delay	  
+	 (setf (my time) (time-for-delay delay))
+	 (my merge))
+	(t 
+	 (my cancel))))
 
 (my-defun timeout set (delay &optional func)
   (when func
