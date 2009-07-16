@@ -161,6 +161,7 @@
 
    #:socket-closed
    #:socket-shutdown-write
+   #:socket-only-accept-if-data-ready
 
    #:with-sendbuf
    #:sendbuf-add

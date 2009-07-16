@@ -75,5 +75,6 @@
 
 (defun http-start-server (port)
   (let ((socket (tpd2.io:make-con-listen :port port)))
+    (tpd2.io:socket-only-accept-if-data-ready socket)
     (tpd2.io:launch-io 'tpd2.io:accept-forever socket 'tpd2.http:http-serve)
     socket))
