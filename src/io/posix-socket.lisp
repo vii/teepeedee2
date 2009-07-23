@@ -108,5 +108,5 @@
 (defmethod socket-shutdown-write ((fd integer))
   (syscall-shutdown fd +SHUT_WR+))
 
-(defmethod socket-only-accept-if-data-ready ((fd integer))
-  (setsockopt-int fd +IPPROTO_TCP+ +TCP_DEFER_ACCEPT+ 1))
+(defmethod socket-only-accept-if-data-ready ((fd integer) timeout)
+  (setsockopt-int fd +IPPROTO_TCP+ +TCP_DEFER_ACCEPT+ (round timeout)))

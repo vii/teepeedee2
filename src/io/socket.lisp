@@ -42,5 +42,5 @@
 (defmethod socket-peer ((socket null))
   (declare (ignore socket)))
 
-(defgeneric socket-only-accept-if-data-ready (socket)
-  (:method (socket) (declare (ignore socket))))
+(defgeneric socket-only-accept-if-data-ready (socket timeout)
+  (:method (socket timeout) (declare (ignore socket timeout))))
