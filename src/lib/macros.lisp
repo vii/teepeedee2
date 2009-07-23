@@ -69,7 +69,7 @@
 		  (lambda(clause) 
 		    (list* (typecase (first clause)
 			     ((member t otherwise) t)
-			     (list `(member ,xkeyform (list ,(mapcar #'apply-transform (first clause))) :test (function ,test)))
+			     (list `(member ,xkeyform (list ,@(mapcar #'apply-transform (first clause))) :test (function ,test)))
 			     (t `(funcall (function ,test) ,xkeyform ,(apply-transform (first clause)))))
 			   (rest clause))) clauses))))))
 
