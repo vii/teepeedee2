@@ -35,8 +35,14 @@
     (my set-page))
   me)
 
-(my-defun blog ready-entries (&key (start 0))
-	  (subseq (remove-if-not #'entry-front-page-p (my entries)) start))
+(defun split-into-list-by-comma (str)
+  (match-split (progn (* (space)) "," (* (space)))
+	       str))
+
+(my-defun blog ready-entries (&key (start 0) tags)
+	  (loop for e in (subseq (my entries) start)
+		when (entry-front-page-p e tags)
+		collect e))
 
 (my-defun blog atom-feed-url ()
 	  (byte-vector-cat (my link-base) "feed.atom"))
@@ -55,8 +61,8 @@
 (my-defun blog set-page ()
   (with-site ((my site))
     (defpage-lambda-blog (my atom-feed-url)
-	(lambda ()
-	  (my atom-feed)))
+	(lambda (tags)
+	  (my atom-feed :tags (split-into-list-by-comma tags))))
     (defpage-lambda-blog (my rss-feed-url)
 	(lambda ()
 	  (my rss-feed)))
@@ -126,7 +132,7 @@
 
 
     (defpage-lambda-blog (my link-base) 
-	(lambda ((n (force-byte-vector 0)))
+	(lambda ((n (force-byte-vector 0)) (tags))
 	  (webapp ((my name) 
 		   :head-contents 
 		   (with-ml-output
@@ -137,7 +143,7 @@
 
 		     ))
 	    (let ((n (byte-vector-parse-integer n)))
-	      (let ((entries (my ready-entries :start n)) (count 10))
+	      (let ((entries (my ready-entries :start n :tags (split-into-list-by-comma tags))) (count 10))
 		(<div :class "blog"
 		      (loop while entries
 			    repeat count
@@ -146,7 +152,7 @@
 			      (<h2 (<a :href (entry-url-path entry) (entry-title entry)))
 			      (output-object-to-ml entry)))
 		      (when entries
-			(<p :class "next-entries" (<a :href (page-link (my link-base) :n (force-byte-vector (+ n count))) "More entries")))))))))))
+			(<p :class "next-entries" (<a :href (page-link (my link-base) :n (force-byte-vector (+ n count)) :tags tags) "More entries")))))))))))
     
 (my-defun blog last-updated ()
 	  (loop for e in (my entries)

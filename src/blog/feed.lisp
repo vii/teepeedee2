@@ -1,6 +1,6 @@
 (in-package #:tpd2.blog)
 
-(my-defun blog atom-feed (&key (count 10))
+(my-defun blog atom-feed (&key (count 10) tags)
 	  (values
 	   (with-ml-output-start 
 	       (output-raw-ml "<?xml version=\"1.0\" encoding=\"utf-8\"?>")
@@ -12,7 +12,7 @@
 	      (tpd2.ml.atom:<updated 
 	       (w3c-timestring (my last-updated)))
 	      (loop repeat count
-		    for entry in (my ready-entries) do
+		    for entry in (my ready-entries :tags tags) do
 		    (tpd2.ml.atom:<entry 
 		     (tpd2.ml.atom:<title (entry-title entry))
 		     (tpd2.ml.atom:<updated (w3c-timestring (entry-time entry)))
@@ -23,7 +23,7 @@
 	   (byte-vector-cat "Content-Type: application/atom+xml" tpd2.io:+newline+)))
 
 
-(my-defun blog rss-feed (&key (count 10))
+(my-defun blog rss-feed (&key (count 10) tags)
 	  (values
 	   (with-ml-output-start 
 	       (output-raw-ml "<?xml version=\"1.0\" encoding=\"utf-8\"?>")
@@ -36,7 +36,7 @@
 	      (tpd2.ml.rss:<link
 	       (my link-base))
 	      (loop repeat count
-		    for entry in (my ready-entries) do
+		    for entry in (my ready-entries :tags tags) do
 		    (tpd2.ml.rss:<item 
 		     (tpd2.ml.rss:<title (entry-title entry))
 		     (tpd2.ml.rss:<link (entry-url-path entry))

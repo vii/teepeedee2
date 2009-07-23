@@ -58,10 +58,13 @@
 (my-defun entry filename ()
   (strcat (its dir (my blog)) (my name)))
 
-(my-defun entry front-page-p ()
+(my-defun entry front-page-p (&optional tags)
 	  (let ((now (get-universal-time)))
 	   (and (>= now (my time))
-		(or (not (my expiry-time)) (>= (my expiry-time) now)))))
+		(or (not (my expiry-time)) (>= (my expiry-time) now))
+		
+		(or (not tags)
+		    (intersection (my tags) tags :test #'equalp)))))
 
 (my-defun entry url-path ()
   (byte-vector-cat (its link-base (my blog)) (my name)))
@@ -153,11 +156,11 @@
 		   (return-from read-in-entry))
 	      do (match-bind ((* (space)) header ":" value)
 			     line
-			     (when (member (force-string header) '("expiry-time" "time") :test 'equalp)
-			       (setf value (parse-time value)))
-			  
-			  (setf (slot-value entry (normally-capitalized-string-to-symbol header))
-				value)))
+			     (case-match-fold-ascii-case header
+							 (("expiry-time" "time")  (setf value (parse-time value)))
+							 ("tags" (setf value (split-into-list-by-comma value))))
+			     (setf (slot-value entry (normally-capitalized-string-to-symbol header))
+				   value)))
 	(my read-paragraphs-from-buffer remaining))
       (my set-page))
     entry))
