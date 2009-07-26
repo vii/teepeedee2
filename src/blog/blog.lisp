@@ -103,7 +103,7 @@
     (defpage-lambda-blog (my post-comment-url)
 	(lambda (text author entry-name keep-this-empty .javascript. http-peer-info! all-http-params!)
 	  (let ((entry-name (force-string entry-name)))
-	    (let ((success 
+	    (let ((success 		   
 		   (when (and 
 			  (zerop (length keep-this-empty))
 			  text
@@ -152,7 +152,7 @@
 			      (<h2 (<a :href (entry-url-path entry) (entry-title entry)))
 			      (output-object-to-ml entry)))
 		      (when entries
-			(<p :class "next-entries" (<a :href (page-link (my link-base) :n (force-byte-vector (+ n count)) :tags tags) "More entries")))))))))))
+			(<p :class "next-entries" (<a :href (page-link (my link-base) :n (force-byte-vector (+ n count)) :tags (force-byte-vector tags)) "More entries")))))))))))
 
 (my-defun blog last-updated ()
   (loop for e in (my entries)

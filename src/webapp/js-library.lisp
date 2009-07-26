@@ -1,5 +1,8 @@
 (in-package #:tpd2.webapp)
 
+#+use-ps-console.log
+(pushnew :use-ps-console.log *features*)
+
 (ps:defpsmacro debug-log (&rest args)
   (declare (ignorable args))
   #+use-ps-console.log `(console.log ,@args))
@@ -52,7 +55,7 @@
 	(return (+ ".channels.=" (lines.join ";")))))
 
     (defun fetch-channels ()
-      (when (and *channels* (not (zerop (length *channels*))))
+      (when (and *channels* (not (= 0 (slot-value *channels* 'size))))
        (async-request (+ (unquote (force-string (page-link +channel-page-name+))) "&" (channels-get-param))
 		      nil)))
 
@@ -79,6 +82,7 @@
 		(async-request url "Retrying"))))))
     
     (defun async-request (url initial-status)
+      (debug-log "requesting" url initial-status)
       (ps:try
        (progn
 	 (let ((tmp *active-request*))
@@ -87,7 +91,7 @@
 	     (ignore-errors
 	       (tmp.abort))))
 	 
-	 (set-async-status intial-status)
+	 (set-async-status initial-status)
 
 	 (let ((req (make-xml-http-request)))
 	   (setf *active-request* req)
