@@ -131,7 +131,8 @@
      (setf (aref *channels* name) (max (if (aref *channels* name) (aref *channels* name) 0) counter)))
 
    (defun set-async-status (status)
-     (let ((element (ignore-errors (find-element (unquote +html-id-async-status+)))))
+     (let ((element))
+       (ignore-errors (setf element (find-element (unquote +html-id-async-status+))))
        (when element
 	 (cond ((not status)
 		(setf element.style.display "none"))
