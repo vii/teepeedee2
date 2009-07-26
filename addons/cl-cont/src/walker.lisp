@@ -1,3 +1,4 @@
+
 (in-package :cont)
 
 (export '(with-call/cc expr->cps))
@@ -33,65 +34,22 @@ passing style."
 			    k-expr nil
 			    env))))))
 
-(defun non-call/cc-form (form env function-position-p)
-  (declare (special *ctx*))
-  (cond 
-    ((and function-position-p (cpstransformer form)) nil)
-    ((constantp form env) t)
-    ((and (listp form) (eq (first form) 'function) 
-	  (symbolp (second form))
-	  (or (not function-position-p) 
-	      (and (not (cpstransformer (second form)))
-		   (not (find form (ctx-local-functions *ctx*)))
-		   (not (find (second form) (ctx-local-functions *ctx*)))
-		   (fboundp (second form)) (not (typep (second form) 'funcallable/cc)))))
-     t)))
-
-(defun tidy-up-multiple-value-call (multiple-value-call func &rest args)
-  (assert (eq multiple-value-call 'multiple-value-call))
-  (cond ((and (member func (list '(function values) (function values) 'values) :test 'equalp) 
-	      (not (rest args)))
-	 (first args))
-	(t
-	 `(,multiple-value-call ,func ,@args))))
-
-(defun tidy-up-application (app-sym func k-expr &rest args)
-  (declare (special *ctx*))
-  (cond ((and (listp func) (eq 'function (first func)) (not (cddr func)) (symbolp (second func))
-	      (not (find func (ctx-local-functions *ctx*)))
-	      (not (find (second func) (ctx-local-functions *ctx*)))
-	      (fboundp (second func)) (not (typep (second func) 'funcallable/cc)))
-	 (apply 'tidy-up-multiple-value-call (ecase app-sym
-				       (funcall/cc `(multiple-value-call ,k-expr (,(second func) ,@args)))
-				       (apply/cc `(multiple-value-call ,k-expr (apply ,func ,@args))))))
-	(t
-	 `(,app-sym ,func ,k-expr ,@args))))
-
-(defun gensym-name-for (form)
-  (let ((name (or (ignore-errors (remove #\Newline (format nil "~A" form))) "unknown")))
-    (subseq name 0 (min (length name) 20))))
-
 (defun application->cps (app-sym cons k-expr args env)
   "Transforms a function application to CPS style."
-  (cond
-    ((and cons (non-call/cc-form (car cons) env (not args)))
-     (application->cps app-sym (cdr cons) k-expr (cons (car cons) args) env))
-    (cons
-     (expr->cps (car cons)
-		(let ((i (gensym (gensym-name-for (car cons))))
-		      (rest-args (gensym "rest")))
-		  `(lambda (&optional ,i &rest ,rest-args)
-		     (declare (ignorable ,i))
-		     (declare (ignore ,rest-args))
-		     ,(application->cps app-sym (cdr cons)
-					k-expr
-					(cons i args)
-					env)))
-		env))
-    (t
-     (let ((r-args (reverse args)))
-       (apply 'tidy-up-application 
-	      `(,app-sym ,(car r-args) ,k-expr ,@(cdr r-args)))))))
+  (if cons
+      (expr->cps (car cons)
+		 (let ((i (gensym))
+		       (rest-args (gensym)))
+		   `(lambda (&optional ,i &rest ,rest-args)
+		      (declare (ignorable ,i))
+		      (declare (ignore ,rest-args))
+		      ,(application->cps app-sym (cdr cons)
+					 k-expr
+					 (cons i args)
+					 env)))
+		 env)
+      (let ((r-args (reverse args)))
+	`(,app-sym ,(car r-args) ,k-expr ,@(cdr r-args)))))
 
 (defun funcall->cps (cons k-expr args env)
   "Transforms FUNCALL to CPS style."

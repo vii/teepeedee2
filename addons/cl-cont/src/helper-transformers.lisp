@@ -25,14 +25,13 @@ uniformly within and without with-call/cc."
 	(args (caddr cons))
 	(body (cdddr cons)))
     `(progn
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-	(setf (fdefinition ',name)
-	      ,(lambda-expr->cps `(lambda ,args
-				    ,@(extract-declarations body)
-				    (block ,name
-				      ,@(remove-declarations body)))
-				 nil
-				 env)))
+       (setf (fdefinition ',name)
+	     ,(lambda-expr->cps `(lambda ,args
+				   ,@(extract-declarations body)
+				   (block ,name
+				     ,@(remove-declarations body)))
+				nil
+				env))
        (funcall ,k-expr ',name))))
 
 (defmacro defun/cc (name arglist &body body)

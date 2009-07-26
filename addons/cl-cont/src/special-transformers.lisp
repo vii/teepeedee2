@@ -4,11 +4,11 @@
 (export '(expr-sequence->cps call/cc let/cc lambda/cc))
 
 ;;; CALL/CC and friends
-(declaim (inline call/cc)) ; for better errors from SBCL
 (defun call/cc (cc)
   "Implements delimited continuations."
   (declare (ignore cc))
-  (error "Please ensure CALL/CC is called from within the WITH-CALL/CC macro."))
+  (error "Please ensure CALL/CC is caled from within WITH-CALL/CC
+  macro."))
 
 (defmacro let/cc (k &body body)
   "A shortcut for CALL/CC."
@@ -219,20 +219,15 @@ list of expressions for the tag."
     (typecase lookup
       (funcallable/cc (f/cc-function lookup))
       (t (lambda(k &rest args)
-	   (declare (optimize speed))
-	   (multiple-value-call k (apply (the function lookup) args)))))))
+	   (multiple-value-call k (apply lookup args)))))))
 
-(declaim (inline funcall/cc))
-(defun funcall/cc (fdesignator k &rest args)
+(defmacro funcall/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
-  (declare (optimize speed))
-  (apply (the function (fdesignator-to-function/cc fdesignator)) k args))
+  `(funcall (fdesignator-to-function/cc ,fdesignator) ,k ,@args))
 
-(declaim (inline apply/cc))
-(defun apply/cc (fdesignator k &rest args)
+(defmacro apply/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
-  (declare (optimize speed))
-  (apply #'apply (the function (fdesignator-to-function/cc fdesignator)) k args))
+  `(apply (fdesignator-to-function/cc ,fdesignator) ,k ,@args))
 
 (defun lambda-expr->cps (cons k-expr env)
   "Converts a LAMBDA expression to CPS style."
@@ -242,7 +237,6 @@ list of expressions for the tag."
     (let ((k (gensym)))
       `(make-funcallable (lambda (,k ,@arg-list)
 			   (declare (ignorable ,k))
-			   (declare (optimize (compilation-speed 2) (debug 0) (space 3)))
 			   ,@(extract-declarations body)
 			   ,(expr-sequence->cps (remove-declarations body) k env))))))
 
