@@ -31,7 +31,7 @@
   (values (socket-read socket buf) nil))
 (defmethod socket-sendto (socket address buf)
   (declare (ignore address))
-  (socket-write socket buf))
+  (socket-write socket buf 0))
 
 (defgeneric socket-shutdown-write (socket)
   (:method (socket)

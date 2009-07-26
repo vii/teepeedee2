@@ -145,9 +145,7 @@
 (my-defun sendbuf send-write (con done)
   (let ((buf (my to-byte-vector)))
     (declare (dynamic-extent buf))
-    (unless (zerop (my offset))
-      (setf buf (make-displaced-vector buf :start (my offset))))
-    (let ((s (socket-write (con-socket con) buf)))
+    (let ((s (socket-write (con-socket con) buf (my offset))))
       (declare (type (or null sendbuf-small-integer) s))
       (when s
 	(my shift-up s))))
