@@ -14,9 +14,9 @@
   static-base-url)
 
 (my-defun blog admin-password ()
-	  (awhen (my admin-password-file)
-	    (with-open-file (stream it)
-	      (read-line stream))))
+  (awhen (my admin-password-file)
+    (with-open-file (stream it)
+      (read-line stream))))
 
 (my-defun blog read-in ()
   (with-site ((my site)) 
@@ -27,8 +27,8 @@
       (iter:iter (iter:for path in (cl-fad:list-directory (my dir)))
 		 (let ((filename (force-string path)))
 		   (unless (or (find #\# filename) (find #\~ filename))
-			  (let ((entry (read-in-entry me (file-namestring filename))))
-			    (iter:collect entry)))))
+		     (let ((entry (read-in-entry me (file-namestring filename))))
+		       (iter:collect entry)))))
       #'> :key #'entry-time))
     (loop for entry in (my entries)
 	  do (setf (gethash (entry-index-name entry) (my entries-table)) entry))
@@ -40,20 +40,20 @@
 	       str))
 
 (my-defun blog ready-entries (&key (start 0) tags)
-	  (loop for e in (subseq (my entries) start)
-		when (entry-front-page-p e tags)
-		collect e))
+  (loop for e in (subseq (my entries) start)
+	when (entry-front-page-p e tags)
+	collect e))
 
 (my-defun blog atom-feed-url ()
-	  (byte-vector-cat (my link-base) "feed.atom"))
+  (byte-vector-cat (my link-base) "feed.atom"))
 (my-defun blog rss-feed-url ()
-	  (byte-vector-cat (my link-base) "feed.rss"))
+  (byte-vector-cat (my link-base) "feed.rss"))
 
 (my-defun blog post-comment-url ()
-	  (byte-vector-cat (my link-base) "comment.form"))
+  (byte-vector-cat (my link-base) "comment.form"))
 
 (my-defun blog admin-url ()
-	  (byte-vector-cat (my link-base) "blog-admin"))
+  (byte-vector-cat (my link-base) "blog-admin"))
 
 (defmacro defpage-lambda-blog (path function &rest args)
   `(defpage-lambda ,path ,function :create-frame nil ,@args))
@@ -70,65 +70,65 @@
     (defpage-lambda-blog (my admin-url) 
 	(lambda (password entry-name)
 	  (webapp "Blog administration"
-		  (<form :method :post
-			 :action (my admin-url)
-			 (<p "Password "
-			  (<input :type :text :name "password" )
-			  (<input :class "plain-submit" :type :submit :value "↵")))
-		  (when (and password (equal (force-string password) (force-string (my admin-password))))
-		    (let ((comments 
-			   (if entry-name
-			       (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)
-			       (remove-if-not (lambda (comment)
-						(and (typecase (comment-entry-index-name comment)
-						       ((or string byte-vector) t))
-						     (if-match-bind ((= (my comment-index-prefix)) ":")
-								    (comment-entry-index-name comment)))) 
-					      (datastore-retrieve-all 'comment)))))
-		      (loop for c in comments
-			    do (<div :class "comment-admin"
+	    (<form :method :post
+		   :action (my admin-url)
+		   (<p "Password "
+		       (<input :type :text :name "password" )
+		       (<input :class "plain-submit" :type :submit :value "↵")))
+	    (when (and password (equal (force-string password) (force-string (my admin-password))))
+	      (let ((comments 
+		     (if entry-name
+			 (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)
+			 (remove-if-not (lambda (comment)
+					  (and (typecase (comment-entry-index-name comment)
+						 ((or string byte-vector) t))
+					       (if-match-bind ((= (my comment-index-prefix)) ":")
+							      (comment-entry-index-name comment)))) 
+					(datastore-retrieve-all 'comment)))))
+		(loop for c in comments
+		      do (<div :class "comment-admin"
+			       (output-object-to-ml c)
+			       (let ((c c))
+				 (html-action-form "Edit comment"
+				     ((text (comment-text c)  :type <textarea)
+				      (author (comment-author c)))
+				   (setf (comment-text c) text
+					 (comment-author c) author)
+				   (webapp "Changed"))
+				 (html-replace-link "Delete"
+				   (webapp "Deleting comment"
 				     (output-object-to-ml c)
-				     (let ((c c))
-				       (html-action-form "Edit comment"
-							 ((text (comment-text c)  :type <textarea)
-							  (author (comment-author c)))
-							 (setf (comment-text c) text
-							       (comment-author c) author)
-							 (webapp "Changed"))
-				       (html-replace-link "Delete"
-							  (webapp "Deleting comment"
-								  (output-object-to-ml c)
-								  (datastore-delete c)))))))))))
+				     (datastore-delete c)))))))))))
 
     (defpage-lambda-blog (my post-comment-url)
 	(lambda (text author entry-name keep-this-empty .javascript. http-peer-info! all-http-params!)
 	  (let ((entry-name (force-string entry-name)))
-	   (let ((success 
-	     (when (and 
-		    (zerop (length keep-this-empty))
-		    text
-		    (not (zerop (length text)))
-		    (< (length text) +max-comment-length+)
-		    (not (equalp 
-			  text 
-			  (ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)))))))
-		   (let ((entry (gethash entry-name (my entries-table))))
-		     (when entry
-		       (make-comment 
-			:author author
-			:text text
-			:trace-details http-peer-info!
-			:entry-index-name entry-name)
-		       (channel-notify entry))
-		     t))))
-	     (cond 
-	       (.javascript.
-		(webapp-respond-ajax-body all-http-params!))
-	       (success
-		(webapp "Comment accepted" (<p "Thank you.")))
-	       (t
-		(webapp "Comment rejected by spam protection"
-			(<p "Sorry for the inconvenience. Please contact the blog owner with a description of the problem."))))))))
+	    (let ((success 
+		   (when (and 
+			  (zerop (length keep-this-empty))
+			  text
+			  (not (zerop (length text)))
+			  (< (length text) +max-comment-length+)
+			  (not (equalp 
+				text 
+				(ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)))))))
+		     (let ((entry (gethash entry-name (my entries-table))))
+		       (when entry
+			 (make-comment 
+			  :author author
+			  :text text
+			  :trace-details http-peer-info!
+			  :entry-index-name entry-name)
+			 (channel-notify entry))
+		       t))))
+	      (cond 
+		(.javascript.
+		 (webapp-respond-ajax-body all-http-params!))
+		(success
+		 (webapp "Comment accepted" (<p "Thank you.")))
+		(t
+		 (webapp "Comment rejected by spam protection"
+		   (<p "Sorry for the inconvenience. Please contact the blog owner with a description of the problem."))))))))
 
 
     (defpage-lambda-blog (my link-base) 
@@ -136,10 +136,10 @@
 	  (webapp ((my name) 
 		   :head-contents 
 		   (with-ml-output
-		       (<link :rel "alternate" :type "application/atom+xml" :href (my atom-feed-url))
+		     (<link :rel "alternate" :type "application/atom+xml" :href (my atom-feed-url))
 
-; disable the RSS feed as RSS wants to have absolute URLs
-;		     (<link :rel "alternate" :type "application/rss+xml" :href (my rss-feed-url)))
+					; disable the RSS feed as RSS wants to have absolute URLs
+					;		     (<link :rel "alternate" :type "application/rss+xml" :href (my rss-feed-url)))
 
 		     ))
 	    (let ((n (byte-vector-parse-integer n)))
@@ -153,8 +153,8 @@
 			      (output-object-to-ml entry)))
 		      (when entries
 			(<p :class "next-entries" (<a :href (page-link (my link-base) :n (force-byte-vector (+ n count)) :tags tags) "More entries")))))))))))
-    
+
 (my-defun blog last-updated ()
-	  (loop for e in (my entries)
-		when (entry-front-page-p e)
-		maximizing (entry-time e)))
+  (loop for e in (my entries)
+	when (entry-front-page-p e)
+	maximizing (entry-time e)))

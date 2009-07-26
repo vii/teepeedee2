@@ -154,7 +154,7 @@
 	      do (when (if-match-bind "XXX" line)
 		   (format *debug-io* "Entry not ready (XXX): ~A~&" name)
 		   (return-from read-in-entry))
-	      do (match-bind ((* (space)) header ":" value)
+	      do (match-bind ((* (space)) header ":" (* (space)) value)
 			     line
 			     (case-match-fold-ascii-case header
 							 (("expiry-time" "time")  (setf value (parse-time value)))
