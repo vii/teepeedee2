@@ -588,14 +588,34 @@
     (declare (optimize speed (safety 0)))
     (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
       #.`(strcat ,@(loop for i below 4 unless (= i 0) collect "." collect `(the simple-string (aref octet-to-string (ldb (byte 8 (* 8 ,i)) addr))))))))
+
+(alexandria:define-constant +octet-to-bv+
+    (make-array 256 :element-type 'simple-byte-vector 
+		:initial-contents (loop for i from 0 below 256 collect (force-byte-vector (format nil "~3,'0D" i))))
+  :test 'equalp)
+
+(defun-speedy bv-from-address (addr)
+  (declare (optimize speed (safety 0)))
+  (declare (type (unsigned-byte 32) addr))
+  (let ((dest (make-byte-vector (1- (* 4 4)))))
+    (declare (type simple-byte-vector dest))
+      (macrolet ((write-one (offset &optional terminate?)
+		   `(let ((str (aref +octet-to-bv+ (logand addr #xff))))
+		      (declare (type simple-byte-vector str))
+		      ,(when terminate? `(setf addr (ash addr -8)))
+		      ,@(loop for i below 3 collect `(setf (aref dest ,(+ i offset)) (aref str ,i)))
+		      ,(when terminate?
+			     `(setf (aref dest ,(+ offset 3)) ,(char-code #\.)))))
+		 (write-all ()
+		   `(progn ,@(loop for i below 4
+				   collect `(write-one ,(* i 4) ,(> 3 i))))))
+	(write-all)
+	dest)))
+
+(defun-speedy sockaddr-address-bv (sa)
+  (declare (optimize speed (safety 0)))
+  (bv-from-address (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
   
-(let ((octet-to-bv (make-array 256 :element-type 'simple-byte-vector :initial-contents (loop for i from 0 below 256 collect (force-byte-vector (princ-to-string i))))))
-  (defun sockaddr-address-bv (sa)
-    (declare (optimize speed (safety 0)))
-    (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
-      #.`(byte-vector-cat 
-	  ,@(loop for i below 4 unless (= i 0) collect (force-byte-vector ".") 
-		  collect `(the simple-byte-vector (aref octet-to-bv (ldb (byte 8 (* 8 ,i)) addr))))))))
 
 (defun new-socket-helper (&key 
 			  port 
