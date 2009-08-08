@@ -8,7 +8,7 @@
 (defun dispatch (con done path &key params host)
   (dispatcher-respond (find-dispatcher host) con done path params))
 
-(defun build-http-response (&key code banner headers body)
+(defun-speedy build-http-response (&key code banner headers body)
   (declare (type sendbuf body))
   (declare (dynamic-extent body))
   (with-sendbuf (response)
