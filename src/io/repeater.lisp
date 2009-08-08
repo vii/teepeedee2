@@ -29,7 +29,7 @@
 (my-defun repeater io ()
   (when (my fd)
     (when (not (recvbuf-empty (my buf-to-send)))
-      (let ((s (socket-write (my fd) (recvbuf-peek (my buf-to-send)))))
+      (let ((s (socket-write (my fd) (recvbuf-peek (my buf-to-send)) 0)))
 	(when s
 	  (recvbuf-eat (my buf-to-send) s))))
 
