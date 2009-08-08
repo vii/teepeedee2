@@ -100,14 +100,17 @@
   (my eat-to-idx (+ (my read-idx) amount)))
 
 (my-defun recvbuf find (delimiter)
+  (my-declare-fast-inline)
   (declare (type simple-byte-vector delimiter))
-  (let ((limit (- (my write-idx) (1- (length delimiter)))))
+  (let ((limit (- (my write-idx) (1- (length delimiter))))
+	(trigger (aref delimiter 0)))
     (loop for i from (my read-idx) below limit
           thereis 
-          (unless
-            (loop for j from 0 below (length delimiter)
-                  thereis (/= (aref delimiter j) (aref (my store) (+ i j))))
-            i))))
+	  (and (= trigger (aref (my store) i))
+	   (unless
+	       (loop for j from 1 below (length delimiter)
+		     thereis (/= (aref delimiter j) (aref (my store) (+ i j))))
+	     i)))))
 
 (my-defun recvbuf eat-to-delimiter (delimiter)
   (my-declare-fast-inline)
