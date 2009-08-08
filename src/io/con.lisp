@@ -106,10 +106,10 @@
 (my-defun con peek ()
   (recvbuf-peek (my recv)))
 
-(my-defun con 'recvline (done)
+(my-defun con 'recvline (done &optional (delimiter +newline+))
   (declare (type function done))
   (acond
-   ((recvbuf-eat-to-delimiter (my recv) +newline+)
+   ((recvbuf-eat-to-delimiter (my recv) delimiter)
     (funcall done it))
    (t 
     (recvbuf-prepare-read (my recv))
@@ -177,7 +177,7 @@
 	       (socket-family +AF_INET+) 
 	       (socket-type +SOCK_STREAM+))
   (make-con 
-   :err (lambda (e) (prin1 e) (format t "~A~%" e) (describe e) (break))
+   :err (lambda (e) (error "Listening connexions cannot have errors: ~A" e))
    :socket 
    (make-listen-socket 
     :port port 
