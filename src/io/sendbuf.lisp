@@ -152,8 +152,10 @@
   (my check-done con done #'my-call))
 
 (my-defun sendbuf send-writev (con done)
+  (my-declare-fast-inline)
   (unless (my done)
     (let ((count (min +max-iovecs+ (my num-bufs))))
+      (declare (type (integer 0 #.+max-iovecs+) count))
       (cffi:with-foreign-object (vecs 'iovec count)
 	(loop for i below count
 		  for buf of-type simple-byte-vector in (my head)

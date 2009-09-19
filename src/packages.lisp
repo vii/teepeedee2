@@ -135,6 +135,7 @@
    #:timeout-set
    #:timeout-cancel
    #:timeout-remaining
+   #:timeout-func
    #:next-timeout
    #:forget-timeouts
    #:with-independent-timeouts
@@ -143,7 +144,9 @@
    #:debug-assert-skip
    #:debug-unreachable
 
+   #:report-error
    #:backtrace-description
+   #:with-ignored-errors
 ))
 
 
@@ -196,6 +199,8 @@
    #:con-peek
    #:con-peer-info
    #:con-socket
+   #:con-default-timeout-function
+   #:con-timeout
    
    #:+newline+
    #:+SOCK_DGRAM+
@@ -205,7 +210,10 @@
    #:event-loop-reset
    #:with-independent-event-loop
 
-   #:forward-port))
+   #:forward-port
+
+   #:report-unless-normal-connection-error
+   ))
 
 (defpackage #:teepeedee2.http
   (:nicknames #:tpd2.http)
@@ -325,6 +333,8 @@
    #:defsite
    #:current-site
 
+
+   #:+html-id-async-status+
    ))
 
 

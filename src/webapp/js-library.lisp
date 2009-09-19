@@ -5,7 +5,9 @@
 
 (ps:defpsmacro debug-log (&rest args)
   (declare (ignorable args))
-  #+use-ps-console.log `(console.log ,@args))
+  #+use-ps-console.log 
+  `(when (and window.console console.log)
+     (console.log ,@args)))
 
 (ps:defpsmacro ignore-errors (&body body)
   `(ps:try (progn 
@@ -15,6 +17,8 @@
 
 (defun js-library ()
   (js-html-script
+    (defvar *alive* nil)
+
     (defun find-element (element-id)
       (return (document.get-element-by-id element-id)))
 
@@ -58,42 +62,55 @@
       (when (and *channels* (not (= 0 (slot-value *channels* 'size))))
        (async-request (+ (unquote (force-string (page-link +channel-page-name+))) "&" (channels-get-param))
 		      nil)))
+    (defun maybe-fetch-channels ()
+      (unless *active-request*
+	(fetch-channels)))
 
     (defun async-request-done (req url)
       (debug-log "async request received" req)
       (unless (=== req *active-request*)
 	(return))
       (set-async-status nil)
+      (setf *active-request* nil)
 
       (let ((success nil))
 	(ignore-errors
 	  (setf success (and (eql 200 req.status) req.response-text)))
-	(if success
-	    (progn
-	      (setf *active-request* nil)
-	      (ignore-errors
-		(eval req.response-text)
-		(debug-log "async request completed okay" req))
-	      (unless *active-request*
-		(fetch-channels)))
-	    (progn
-	      (debug-log "async request unsuccessful" req)
-	      (ps:do-set-timeout (500)
-		(async-request url "Retrying"))))))
-    
+
+	(cond (success
+	       (debug-log "async request completed okay" req)
+	       (ignore-errors
+		 (eval req.response-text)
+		 (debug-log "safely evaluated response" req req.response-text))
+	       (maybe-fetch-channels))
+	      (t
+	       (debug-log "async request unsuccessful" req)
+	       (if req.tpd2-retry
+		   (ps:do-set-timeout (500)
+		     (async-request url "Retrying"))
+		   (maybe-fetch-channels))))))
+
+    (defun now ()
+      (return (ps:new *Date)))
+
     (defun async-request (url initial-status)
+      (setf *alive* (now))
       (debug-log "requesting" url initial-status)
       (ps:try
        (progn
 	 (let ((tmp *active-request*))
 	   (setf *active-request* nil)
 	   (when tmp
+	     (debug-log "to achieve the request, first aborting" tmp)
 	     (ignore-errors
 	       (tmp.abort))))
 	 
 	 (set-async-status initial-status)
 
 	 (let ((req (make-xml-http-request)))
+	   (when initial-status
+	     (setf req.tpd2-retry t))
+
 	   (setf *active-request* req)
 	   
 	   (setf req.onreadystatechange 
@@ -153,10 +170,17 @@
 (defun js-library-footer ()
   (js-html-script
     (handle-special-elements document.body)
-   
-   (defun trigger-fetch-channels ()
-     (ps:do-set-timeout (50) 
-       (fetch-channels)))
 
-   (trigger-fetch-channels)))
+    (defun watchdog ()
+      (debug-log "watchdog" (now) *alive* *active-request*)
+      (unless (and *active-request* (>= *active-request*.ready-state 1) (< *active-request*.ready-state 4))
+	(let ((a *alive*))
+	  (setf *alive* nil)
+	  (debug-log "watchdog reseting" a (if a *active-request*.ready-state))
+	  (unless a
+	   (fetch-channels))))
+      (ps:do-set-timeout (15000) 
+	(watchdog)))
+
+    (watchdog)))
 

@@ -458,17 +458,10 @@
 
 
 (defun socket-cork (fd)
-  (declare (ignore fd)))
-(defun socket-uncork (fd)
-  (declare (ignore fd)))
-
-#+really-do-some-sort-of-socket-corking
-(progn
-  (defun socket-cork (fd)
-    (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 1))
+  (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 1))
   
-  (defun socket-uncork (fd)
-    (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 0)))
+(defun socket-uncork (fd)
+  (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 0))
 
 
 (defun socket-set-tcp-nodelay (fd)
@@ -591,7 +584,7 @@
 
 (alexandria:define-constant +octet-to-bv+
     (make-array 256 :element-type 'simple-byte-vector 
-		:initial-contents (loop for i from 0 below 256 collect (force-byte-vector (format nil "~3,'0D" i))))
+		:initial-contents (mapcar 'force-simple-byte-vector (loop for i from 0 below 256 collect (format nil "~3,'0D" i))))
   :test 'equalp)
 
 (defun-speedy bv-from-address (addr)

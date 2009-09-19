@@ -16,8 +16,8 @@
   (frameless-lambda-callbacks)
   (page-head (lambda(title)
 	       `(with-ml-output
-		  (<title ,title))
-		  (webapp-default-page-head-contents)))
+		  (<title ,title)
+		  (webapp-default-page-head-contents))))
   (page-body-start 
    (lambda(title)
      `(<h1 ,title)))

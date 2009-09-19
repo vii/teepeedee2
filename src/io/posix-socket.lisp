@@ -48,9 +48,10 @@
 	(case-= s
 		(-1 nil)
 		(t
+;		 (socket-set-tcp-nodelay s)
+;		 (socket-cork s)
 		 #-tpd2-untransformed-io
 		 (set-fd-nonblock s)
-		 (socket-set-tcp-nodelay s)
 		 (make-con 
 		  :socket s
 		  :peer-info (sockaddr-address-bv sa))))))))

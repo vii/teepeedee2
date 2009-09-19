@@ -19,25 +19,26 @@
     body))
 
 
-(defun-speedy respond-http (con done &key (code (force-byte-vector 200)) (banner (force-byte-vector "OK"))
-		     headers body)
+(defun-speedy respond-http (con done &key (code #.(force-byte-vector 200)) (banner #.(force-byte-vector "OK"))
+		     (headers #.(byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+)) body)
   (declare (type sendbuf body))
   (declare (dynamic-extent body))
   (send con done (build-http-response :code code :banner banner :headers headers :body body)))
-
 
 (my-defun dispatcher respond (con done path params)
   (let ((f (gethash path (my paths))))
     (handler-case 
 	(cond  
 	  (f
-	   (funcall f me con done path params))
+	   (locally (declare (optimize speed) (type function f))
+	    (funcall f me con done path params)
+	    (values)))
 	  (t
 	   ;(format *error-output* "LOST ~A~&" (strcat (my canonical-name) "/" path))
-	   (respond-http con done :code  404 :banner  "Not found"
+	   (respond-http con done :code  404 :banner "Not found"
 			 :body (funcall (my error-responder) me path params))))
       (error (e)
-	(format *error-output* "ERROR ~A~&--- ~A~&" (strcat (my canonical-name) path) 
+	(format *error-output* "~&PAGE ERROR ~A~&--- ~A~&" (strcat (my canonical-name) path) 
 		(backtrace-description e))
 	(respond-http con done
 		      :body (with-sendbuf () "<h1>I programmed this thoughtlessly. Sorry for the inconvenience.</h1>")
@@ -45,7 +46,7 @@
 		      :banner "Internal error")))))
 
 (my-defun dispatcher register-path (path func)
-  (setf (gethash (force-byte-vector path) (my paths)) func))
+  (setf (gethash (force-byte-vector path) (my paths)) (alexandria:ensure-function func)))
 
 (my-defun dispatcher 'default-http-error-page (path params)
   (declare (ignore params path))
@@ -57,7 +58,7 @@
 (defvar *dispatchers* nil)
 
 (defun find-dispatcher-go (host)
-  (alist-get *dispatchers* host :test 'equalp))
+  (alist-get *dispatchers* host :test #'equalp))
 
 (defun find-dispatcher (host)
   (or (find-dispatcher-go host) *default-dispatcher*))

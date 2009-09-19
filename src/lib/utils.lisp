@@ -48,6 +48,23 @@
 (defun read-safely-from-string (string)
   (with-input-from-string (*standard-input* (force-string string)) (read-safely)))
 
-(defun backtrace-description (err)
-  (format nil "ERROR ~A:~&~A" (with-output-to-string (*standard-output*) (describe err)) 
+(defun report-error (err &key (stream *error-output*))
+  (format stream "~&ERROR ~A, ~A:~%~A~&" 
+	  (ignore-errors (princ-to-string err))
+	  (with-output-to-string (*standard-output*) (describe err)) 
 	  (trivial-backtrace:backtrace-string)))
+
+(defun backtrace-description (err)
+  (report-error err :stream nil))
+
+(defmacro with-ignored-errors ((&optional (report-function ''backtrace-description) ) &body body)
+  (with-unique-names (safe func)
+    `(block ,safe
+       (flet ((,func (e)
+		(,report-function e)
+		(return-from ,safe (values nil e))))
+	 (declare (dynamic-extent #',func))
+	 (handler-bind 
+	     ((error #',func))
+	   ,@body)))))
+

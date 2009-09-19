@@ -3,6 +3,7 @@
 (defvar *timeouts* (make-quick-queue))
 (defvar *timeout-started* nil)
 
+(declaim (inline %make-timeout-internal))
 (defstruct (timeout (:include quick-queue-entry) (:constructor %make-timeout-internal))
   (time nil :type (or null integer))
   func)

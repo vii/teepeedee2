@@ -44,6 +44,7 @@
 					     ("x-forwarded-for" 
 					      (setf request-origin
 						    (match-x-forwarded-for value)))))))
+	(declare (dynamic-extent #'handle-header))
        (match-bind (macrolet ((lws () `(or #\Space #\Tab))) 
 		     (progn
 		       method-tmp (+ (lws))

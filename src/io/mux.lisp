@@ -13,12 +13,14 @@
 
 (my-defun mux find-fd (fd)
   (my-declare-fast-inline)	  
+  (declare (type (or null fixnum) fd))
   (when fd
     (when (> (length (my fd-to-con)) fd)
       (aref (my fd-to-con) fd))))
 
 (my-defun mux add (con)
   (let ((fd (con-socket con)))
+    (declare (type (or null fixnum) fd))
     (when fd
       (debug-assert (not (my find-fd fd)))
       (when (>= fd (length (my fd-to-con)))
@@ -31,6 +33,8 @@
       (setf (aref (my fd-to-con) fd) con))))
 
 (my-defun mux del (fd)
+  (my-declare-fast-inline)
+  (declare (fixnum fd))
   (when (my find-fd fd)
     (debug-assert (= (con-socket (aref (my fd-to-con) fd)) fd))
     (setf (aref (my fd-to-con) fd) nil)))

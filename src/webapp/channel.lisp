@@ -14,8 +14,10 @@
   (let ((subscribers (my subscribers)))
     (setf (my subscribers) nil)
     (incf (my state))
-    (loop for s in subscribers do (funcall s))
-    (values)))
+    (loop for s in subscribers do 
+	  (with-ignored-errors (tpd2.io:report-unless-normal-connection-error) 
+	    (funcall s))))
+  (values))
 
 (my-defun channel subscribe (f)
   (push f (my subscribers)))
@@ -51,7 +53,7 @@
 			(unquote (force-string (channel-id channel))) 
 			(unquote (channel-state channel)))))
 		     (output-raw-ml (channel-update channel state))))
-	     (output-raw-ml (js-to-string (trigger-fetch-channels))))))
+	     (output-raw-ml (js-to-string "OK")))))
       (when (or at-least-one always-body)
 	sendbuf))))
 
@@ -66,12 +68,20 @@
 				  (respond-http con done :headers +http-header-html-content-type+ :body it)
 				  t))))))
       (unless (finished)
-	(let (func)
+	(let (func (original-timeout-handler (timeout-func (tpd2.io:con-timeout con))))
 	  (flet ((unsubscribe ()
+		   (setf (timeout-func (tpd2.io:con-timeout con)) original-timeout-handler)
 		   (loop for (channel ) in channel-states do (channel-unsubscribe channel func))))
 	    (setf func
 		  (lambda() (when (finished) (unsubscribe))))
-	    (loop for (channel ) in channel-states do (channel-subscribe channel func)))))))))
+	    (loop for (channel ) in channel-states do (channel-subscribe channel func))
+
+	    (setf (timeout-func (tpd2.io:con-timeout con))
+		  (lambda ()
+		    (unsubscribe)
+		    (unless (con-dead? con)
+		      (respond-http con done :headers +http-header-html-content-type+ :body (with-sendbuf () (js-to-string "TIMEOUT"))))
+		    )))))))))
 
 (defun register-channel-page ()
   (dispatcher-register-path (site-dispatcher (current-site)) +channel-page-name+ #'channel-respond-page))

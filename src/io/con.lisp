@@ -1,5 +1,6 @@
 (in-package #:tpd2.io)
 
+(declaim (inline %make-con))
 (defstruct (con (:constructor %make-con))
   socket
   (peer-info nil :type (or null byte-vector))
@@ -22,15 +23,19 @@
     con))
 
 (my-defun con init ()
-  (unless (my err)
-    (my clear-failure-callbacks))
   (unless (my timeout)
-    (setf (my timeout) (make-timeout :func (lambda() (my fail 'timeout))))))
+    (setf (my timeout) (make-timeout :func (my default-timeout-function)))))
+
+(my-defun con default-timeout-function ()
+  (lambda() 
+    (my fail 'timeout)))
 
 (my-defun con fail (&optional (e (make-condition 'socket-explicitly-hungup)))
   (let ((c (my err)))
     (my clear-failure-callbacks)
-    (funcall c e))) 
+    (when c
+      (funcall c e)))
+  (my 'hangup))
 
 (defgeneric normal-connection-error (e))
 (defmethod normal-connection-error (e)
@@ -41,6 +46,10 @@
   t)
 (defmethod normal-connection-error ((e syscall-failed))
   t)
+
+(defun report-unless-normal-connection-error (e)
+  (unless (normal-connection-error e)
+    (report-error e)))
 
 (my-defun con run ()
   (restart-case
@@ -66,16 +75,14 @@
     (setf (my err) 
 	  (if old
 	      (lambda(e)
-		(funcall old e)
-		(funcall func e))
+		(funcall func e)
+		(funcall old e))
 	      func))
     (values)))
 
 (my-defun con clear-failure-callbacks ()
   (setf (my err) 
-	(lambda(err)
-	  (declare (ignore err))
-	  (my 'hangup))))
+	nil))
 
 (my-defun con 'recv (done amount)
   (declare (type fixnum amount))
@@ -136,13 +143,14 @@
      (r t)))
 
 (my-defun con 'send (done sendbuf)
+  (my-declare-fast-inline)
   (cond
     ((sendbuf-done sendbuf)
      (funcall done))
     (t
      (if (socket-supports-writev (my socket))
-	 (sendbuf-send-writev sendbuf me #'my-call)
-	 (sendbuf-send-write sendbuf me #'my-call)))))
+	 (sendbuf-send-writev sendbuf me done)
+	 (sendbuf-send-write sendbuf me done)))))
 
 (my-defun con 'accept (done)
   (acond 

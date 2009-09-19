@@ -90,6 +90,7 @@
 	     (my ctl +EPOLL_CTL_ADD+ fd events))))))
 
 (defun deregister-fd (fd)
+  (declare (optimize speed))
   (with-shorthand-accessor (my epoll *epoll*)
     (my 'mux-del fd)))
 

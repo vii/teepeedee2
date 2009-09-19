@@ -195,7 +195,7 @@
 	
 	(<div :class "talk"
 	      (html-action-form "Talk " 
-		  (text)
+		  ((text nil :reset ""))
 		(without-ml-output
 		  (game-talk (my game-state) me text))))))
 
