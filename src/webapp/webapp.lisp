@@ -76,9 +76,9 @@
 			     do (let-current-values (,i)
 				  ,(cond
 				    (action
-				     `(<li (html-action-link (funcall ,display ,i) (funcall ,action ,i))))
+				     `(<li (html-action-link (,display ,i) (,action ,i))))
 				    (replace
-				     `(<li (html-replace-link (funcall ,display ,i) (funcall ,replace ,i))))
+				     `(<li (html-replace-link (,display ,i) (,replace ,i))))
 				    (t (error "Please specify an action or a replacement")))))))))
 
 (defmacro webapp-display (object)

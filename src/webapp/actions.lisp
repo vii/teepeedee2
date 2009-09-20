@@ -20,12 +20,21 @@
   `(page-link +action-page-name+ :.id. (register-action-id (page-action-lambda ,@body))))
 
 (defmacro html-replace-link (text &body body)
-  `(<A :class +replace-link-class+ 
-       :href (page-action-link (setf (frame-current-page (webapp-frame)) (lambda() ,@body))) ,text))
+  (with-unique-names (body-func)
+   `(<A :class +replace-link-class+ 
+	:href 
+	(page-action-link 
+	  (flet ((,body-func () ,@body))
+	    (cond ((webapp-frame-available-p)
+		   (setf (frame-current-page (webapp-frame)) #',body-func)
+		   (values))
+		  (t
+		   (,body-func)))))
+	,text)))
 
 (defmacro html-action-link (text &body body)
   `(<A :class +action-link-class+ 
-       :href (page-action-link ,@body) ,text))
+       :href (page-action-link ,@body (values)) ,text))
 
 (defmacro html-collapser (toggle &body body)
   `(with-ml-output 
@@ -42,12 +51,12 @@
   (destructuring-bind (title 
 		       &key (action-link      
 			     `(page-action-link 
-			       (let ,(loop for p in lambda-list collect
-					   `(,(force-first p) (or (alist-get all-http-params! ,(force-byte-vector (force-first p)) 
-									     :test 'byte-vector=-fold-ascii-case)
-								  ,(second (force-list p)))))
-				 ,@body)))
-		       (after-submit-js))
+				(let ,(loop for p in lambda-list collect
+					    `(,(force-first p) (or (alist-get all-http-params! ,(force-byte-vector (force-first p)) 
+									      :test 'byte-vector=-fold-ascii-case)
+								   ,(second (force-list p)))))
+				  ,@body)))
+		       after-submit-js)
       (force-list title-and-options)
     (let ((body-ml
 	   (loop for nv in lambda-list collect
