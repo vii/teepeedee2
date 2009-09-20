@@ -85,7 +85,7 @@
 					       (if-match-bind ((= (my comment-index-prefix)) ":")
 							      (comment-entry-index-name comment)))) 
 					(datastore-retrieve-all 'comment)))))
-		(loop for c in comments
+		(loop for c in (sort (copy-seq comments) #'> :key #'comment-time)
 		      do (<div :class "comment-admin"
 			       (output-object-to-ml c)
 			       (let ((c c))
@@ -93,12 +93,9 @@
 				     ((text (comment-text c)  :type <textarea)
 				      (author (comment-author c)))
 				   (setf (comment-text c) text
-					 (comment-author c) author)
-				   (webapp "Changed"))
-				 (html-replace-link "Delete"
-				   (webapp "Deleting comment"
-				     (output-object-to-ml c)
-				     (datastore-delete c)))))))))))
+					 (comment-author c) author))
+				 (html-action-link "Delete"
+				   (datastore-delete c))))))))))
 
     (defpage-lambda-blog (my post-comment-url)
 	(lambda (text author entry-name keep-this-empty .javascript. http-peer-info! all-http-params!)
