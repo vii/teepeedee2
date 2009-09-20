@@ -80,7 +80,9 @@
 		  (lambda ()
 		    (unsubscribe)
 		    (unless (con-dead? con)
-		      (respond-http con done :headers +http-header-html-content-type+ :body (with-sendbuf () (js-to-string "TIMEOUT"))))
+		      (with-ignored-errors (tpd2.io:report-unless-normal-connection-error)
+			(respond-http con done :headers +http-header-html-content-type+ 
+				      :body (with-sendbuf () (js-to-string "TIMEOUT")))))
 		    )))))))))
 
 (defun register-channel-page ()

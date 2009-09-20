@@ -8,7 +8,16 @@
      (js-library-footer))))
 
 (defun webapp-default-page-head-contents ()
-  (output-raw-ml (js-library)))
+  (with-ml-output
+    (output-raw-ml (js-library))
+    (js-html-script
+      (setf *channels-url* 
+	    (+ (unquote +channel-page-name+) 
+	       (unquote-splice
+		(when (webapp-frame-available-p)
+		  (list 
+		   (strcat "?" +webapp-frame-id-param+ "=")
+		   (force-string (frame-id (webapp-frame)))))))))))
 
 (defmacro ml-to-byte-vector (ml)
   `(sendbuf-to-byte-vector (with-ml-output-start ,ml)))
