@@ -67,7 +67,7 @@
 	(lambda ()
 	  (my rss-feed)))
 
-    (defpage-lambda-blog (my admin-url) 
+    (defpage-lambda (my admin-url) 
 	(lambda (password entry-name)
 	  (webapp "Blog administration"
 	    (<form :method :post
