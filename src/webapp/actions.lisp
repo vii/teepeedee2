@@ -5,6 +5,7 @@
   (func nil))
 
 (defun register-action-id (function)
+  (check-type function function)
   (let ((action (make-action :func function)))
     (push action
 	  (webapp-frame-var 'actions))
@@ -73,12 +74,13 @@
 	  (<input :class "plain-submit" :type :submit :value "↵"))))))
 
 (defun find-action (id)
-  (and id (find id (webapp-frame-var 'actions) :key 'action-id :test 'equalp)))
+  (when id 
+    (find id (webapp-frame-var 'actions) :key 'action-id :test 'equalp)))
 
 (defun action-respond-body (&key .id. .javascript. all-http-params!)
   (with-frame-site 
     (awhen (find-action .id.)
-	   (funcall (action-func it) all-http-params!))
+      (funcall (action-func it) all-http-params!))
     (if .javascript.
 	(webapp-respond-ajax-body all-http-params!)
 	(funcall (frame-current-page (webapp-frame))))))
