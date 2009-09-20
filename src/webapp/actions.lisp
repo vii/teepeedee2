@@ -79,11 +79,15 @@
 
 (defun action-respond-body (&key .id. .javascript. all-http-params!)
   (with-frame-site 
-    (awhen (find-action .id.)
-      (funcall (action-func it) all-http-params!))
-    (if .javascript.
-	(webapp-respond-ajax-body all-http-params!)
-	(funcall (frame-current-page (webapp-frame))))))
+    (let ((body (awhen (find-action .id.)
+		  (funcall (the function (action-func it)) all-http-params!))))
+    
+      (cond (.javascript.
+	     (webapp-respond-ajax-body all-http-params!))
+	    ((and (not body) (webapp-frame-available-p))	
+	     (funcall (frame-current-page (webapp-frame))))
+	    (t
+	     body)))))
 
 (defun webapp-respond-ajax-body (all-http-params!)
   (let ((channels (channel-string-to-states 
