@@ -12,13 +12,14 @@
 (pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
 (pushnew "../trivial-backtrace/" asdf:*central-registry* :test #'equal)
 
+#.(pushnew :tpd2-debug *features*)
+
 #-tpd2-debug
 (declaim (optimize speed))
 
 #+tpd2-debug
 (progn
   (declaim (optimize debug safety (speed 1)))
-  (pushnew :tpd2-debug *features*)
   (pushnew :tpd2-debug-assert *features*))
 
 (asdf:defsystem :teepeedee2

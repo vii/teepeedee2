@@ -127,6 +127,8 @@
    #:without-call/cc
    #:with-call/cc
    #:call/cc
+   #:spawn/cc
+   #:with-join-spawn/cc
 
    #:read-safely
    #:read-safely-from-string

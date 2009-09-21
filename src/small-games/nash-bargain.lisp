@@ -34,8 +34,10 @@
 	  do (setf (its coins p) 
 		   (setf (player-controller-var p 'coins)
 			 (max-nil-ok (1+ (random *max-penalty*)) (player-controller-var p 'coins)))))
-    (loop for p in (my players)
-	  do (setf (its demand p) (my secret-move :select-demand p `(:integer 0 ,(my pot)))))
+    (with-join-spawn/cc ()
+	(loop for p in (my players)
+	      do (spawn/cc () 
+			   (setf (its demand p) (my secret-move :select-demand p `(:integer 0 ,(my pot)))))))
     (let ((total-demand 
 	   (loop for p in (my players) 
 		 for demand = (its demand p) 
@@ -64,7 +66,7 @@
       (<h3 "Pot: " (my pot) ", penalty: " (my penalty) ".")
       (<p "The pot has " (coins (my pot)) "; you can demand zero or more of them. "
 	  "If the total demanded by the players is less than or equal to " (coins (my pot)) ", then each player receives his or her demand. "
-	      "Otherwise, if the players are too greedy, they lose " (coins (my penalty)) ". ")
+	      "Otherwise, if the players are too greedy, they each forfeit " (coins (my penalty)) ". ")
       (<p
 	"Your real demand is secret, but you can talk to the other player.")
       (<p "Read more at "

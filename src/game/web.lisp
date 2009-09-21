@@ -310,7 +310,7 @@
     ('(strcat ".messages-and-talk > ." tpd2.webapp:+html-class-scroll-to-bottom+) 
       :overflow "auto"      
       :padding-right "0.5em"
-      :height "10em" )
+      :height "20em" )
     (".game-header"  :float "left")
     (".close-game:before" :content "\"+ \"")
     (".players"        
