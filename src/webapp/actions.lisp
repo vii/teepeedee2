@@ -90,13 +90,14 @@
   (with-frame-site 
     (let ((body (awhen (find-action .id.)
 		  (funcall (the function (action-func it)) all-http-params!))))
-    
+      (check-type body (or null sendbuf))
       (cond (.javascript.
 	     (webapp-respond-ajax-body all-http-params!))
-	    ((and (not body) (webapp-frame-available-p))	
+	    ((and (not body) (webapp-frame-available-p) (frame-current-page (webapp-frame)))	
 	     (funcall (frame-current-page (webapp-frame))))
+	    (body)
 	    (t
-	     body)))))
+	     (with-sendbuf ()))))))
 
 (defun webapp-respond-ajax-body (all-http-params!)
   (let ((channels (channel-string-to-states 
