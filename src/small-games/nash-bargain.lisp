@@ -36,8 +36,9 @@
 			 (max-nil-ok (1+ (random *max-penalty*)) (player-controller-var p 'coins)))))
     (with-join-spawn/cc ()
 	(loop for p in (my players)
-	      do (spawn/cc () 
-			   (setf (its demand p) (my secret-move :select-demand p `(:integer 0 ,(my pot)))))))
+	      do (let-current-values (p) 
+		   (spawn/cc () 
+			     (setf (its demand p) (my secret-move :select-demand p `(:integer 0 ,(my pot))))))))
     (let ((total-demand 
 	   (loop for p in (my players) 
 		 for demand = (its demand p) 
