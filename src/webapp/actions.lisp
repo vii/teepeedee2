@@ -95,9 +95,12 @@
 	     (webapp-respond-ajax-body all-http-params!))
 	    ((and (not body) (webapp-frame-available-p) (frame-current-page (webapp-frame)))	
 	     (funcall (frame-current-page (webapp-frame))))
-	    (body)
 	    (t
-	     (with-sendbuf ()))))))
+	     (values 
+	      (or body
+		  (with-sendbuf ()
+		    "<h1>Sorry, nothing to see here. Please go back.</h1>")) 
+	      +http-header-html-content-type+))))))
 
 (defun webapp-respond-ajax-body (all-http-params!)
   (let ((channels (channel-string-to-states 
