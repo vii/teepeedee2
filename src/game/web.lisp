@@ -266,6 +266,7 @@
 	      (html-action-form "Talk " 
 		  ((text nil :reset ""))
 		(without-ml-output
+		  (my timeout-reset)
 		  (game-talk (my game-state) me text))))))
 
 (my-defun game play-again-ml ()
