@@ -80,7 +80,7 @@
   (my add-announcement 
       (<p :class "game-message"
 	  (player-controller-name-to-ml player)
-	  " demanded " demand ".")))
+	  " demanded " amount ".")))
 
 (my-defun web-state 'inform (game-state (message (eql :profit)) &key player amount &allow-other-keys)
   (my add-announcement 
@@ -180,6 +180,12 @@
 			   (t
 			    (with-ml-output (format nil " ~{~A ~}" (my args)) " from " (format nil "~A" (my choices) ))))
 		     
+		     (loop for c in (choices-list (my choices)) do 
+			   (let-current-values (c)
+			     (with-ml-output " "
+					     (html-action-link c
+					       (my queue-choice c)))))
+
 		     (html-action-form 		     
 			 ""
 			 ((choice (first (choices-list (my choices)))))
