@@ -335,6 +335,7 @@
 
 
    #:+html-id-async-status+
+   #:+html-class-scroll-to-bottom+
    ))
 
 
@@ -368,6 +369,7 @@
    #:+cards-per-suit+
 
    #:player-controller-name-to-ml
+   #:player-controller-var
    #:web-state-queue-choice 
    #:current-web-controller
    #:player-controller))
@@ -397,6 +399,11 @@
 (defpackage #:teepeedee2.game.truc
   (:nicknames #:tpd2.game.truc)
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
+(defpackage #:teepeedee2.game.nash-bargain
+  (:nicknames #:tpd2.game.nash-bargain)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
 
 (defpackage #:teepeedee2.game.cheat
   (:nicknames #:tpd2.game.cheat)

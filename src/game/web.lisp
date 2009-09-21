@@ -22,6 +22,8 @@
   (appendf (my announcements) (list a))
   (my notify))
 
+;;;; XXXX refactor this repetitive nonsense
+
 (my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
   (declare (ignore game-state))
   (let ((sender (getf args :sender)) (msg (getf args :text)))
@@ -64,9 +66,35 @@
 	    (with-ml-output " " it " chips"))
 	  ".")))
 
-(my-defun web-state 'inform (game-state (message (eql :game-over)) &rest args)
+(my-defun web-state 'inform (game-state (message (eql :game-over)) &key winner result &allow-other-keys)
   (declare (ignore game-state))
-  (my add-announcement (<h2 :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " won the game.")))
+  (cond (winner
+	 (my add-announcement (<h2 :class "game-message" (player-controller-name-to-ml (player-controller winner)) " won the game.")))
+	(t
+	 (my add-announcement (<h2 :class "game-message" 
+				   (when result
+				     (string-capitalize (format nil "~A. " result))) 
+				   "Game over.")))))
+
+(my-defun web-state 'inform (game-state (message (eql :demand)) &key player amount &allow-other-keys)
+  (my add-announcement 
+      (<p :class "game-message"
+	  (player-controller-name-to-ml player)
+	  " demanded " demand ".")))
+
+(my-defun web-state 'inform (game-state (message (eql :profit)) &key player amount &allow-other-keys)
+  (my add-announcement 
+      (<p :class "game-message"
+	  (player-controller-name-to-ml player)
+	  (if (minusp amount) " lost " " gained ")
+	  (abs amount) ".")))
+
+(my-defun web-state 'inform (game-state (message (eql :bankrupt)) &key player &allow-other-keys)
+  (my add-announcement
+      (<p :class "game-message"
+	  (player-controller-name-to-ml player)
+	  " went bankrupt.")))
+
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
   (declare (ignore game-state))
@@ -83,7 +111,7 @@
 	  (output-object-to-ml args))))
 
 (defmethod move-continuation (k (controller web-state) player-state move-type choices &rest args)
-  (its add-move-state controller
+  (web-state-add-move-state controller
        (make-move-state :cc k
 			:move-type move-type
 			:player-state player-state
@@ -115,13 +143,14 @@
 (my-defun web-state try-to-move ()
   (loop for waiting in (my waiting-for-input) do
 	(loop for qc in (my queued-choices)
-	      do (when (eql (its move-type qc) (its move-type waiting))
-		   (deletef qc (my queued-choices))
-		   (unless (eq 'invalid-choice (validate-choice (its choices waiting) (its choice qc)))
-		     (deletef waiting (my waiting-for-input))
-		     (funcall (its cc waiting) (its choice qc))
-		     (my notify)
-		     (return-from web-state-try-to-move))))))
+	      do 
+	      (when (eql (queued-choice-move-type qc) (move-state-move-type waiting))
+		(deletef qc (my queued-choices))
+		(unless (eq 'invalid-choice (validate-choice (move-state-choices waiting) (queued-choice-choice qc)))
+		  (deletef waiting (my waiting-for-input))
+		  (funcall (move-state-cc waiting) (queued-choice-choice qc))
+		  (my notify)
+		  (return-from web-state-try-to-move))))))
 
 
 (defun keyword-to-friendly-string (keyword)
@@ -146,8 +175,8 @@
 		(t
 		 (<p friendly-move-type
 		     (cond ((eql (force-first (my choices)) :integer)
-			    (with-ml-output " from " (apply 'min (choices-list (my choices))) " to " 
-					    (apply 'max (choices-list (my choices))) ". "))
+			    (with-ml-output " from " (reduce #'min (choices-list (my choices))) " to " 
+					    (reduce #'max (choices-list (my choices))) ". "))
 			   (t
 			    (with-ml-output (format nil " ~{~A ~}" (my args)) " from " (format nil "~A" (my choices) ))))
 		     
@@ -170,7 +199,7 @@
 
 (my-defun game 'object-to-ml :around ()
 	  (if (my game-over)
-	      (<p "Game over.")
+	      (<h2 "Game over." (my play-again-ml) "?")
 	      (call-next-method)))
 
 (defun current-web-controller (controller)
@@ -185,11 +214,22 @@
 (my-defun web-state 'player-controller-name-to-ml ()
   (<span :class "username" (frame-username (my frame))))
 
+(my-defun web-state 'player-controller-var ( var)
+  (frame-var (my frame) var))
+
+(my-defun web-state (setf 'player-controller-var) (new-value var)
+  (setf (frame-var (my frame) var) new-value))
+
+(defgeneric game-title-ml (game)
+  (:method (game)
+    (<h2 :class "game-title"
+	 (string-capitalize (force-string (game-name game))))))
+
 (my-defun web-state 'object-to-ml ()
+  (assert (my game-state) () "No game started; please use game-new-state")
   (<div :class "game-state" 
 	(<div :class "game-header"
-	      (<h2 :class "game-title"
-		   (string-capitalize (force-string (game-name (my game-state))))))
+	      (game-title-ml (my game-state)))
 	
 	(call-next-method)
 	
@@ -199,19 +239,27 @@
 		(without-ml-output
 		  (game-talk (my game-state) me text))))))
 
+(my-defun game play-again-ml ()
+  (html-replace-link "Play again"
+    (web-game-start (my generator))))
+
+(my-defun web-state play-again-ml ()
+  (game-play-again-ml (my game-state)))
+
+
+
 (my-defun web-state 'simple-channel-body-ml ()
   (<div :class "game-state" 
 	(<div :class "game-state-body" 
 	      (<p :class "close-game"		
-		  (cond ((its game-over (my game-state))
-			 (html-replace-link "Play again"
-			   (web-game-start (game-generator (my game-state)))))
+		  (cond ((game-game-over (my game-state))
+			 (my play-again-ml))
 			(t
 			 (html-action-link "Resign"
 			   (my resign))))))
 	
 	(<div :class "messages-and-talk"
-	      (<div :class tpd2.webapp::+html-class-scroll-to-bottom+
+	      (<div :class tpd2.webapp:+html-class-scroll-to-bottom+
 		    (output-object-to-ml (my announcements))))
 	
 	(cond ((my resigned)
@@ -253,7 +301,7 @@
      :margin-left "5em"
      :text-align "right")
     (".robot" :font-style "italic")
-    ('(strcat ".messages-and-talk > ." tpd2.webapp::+html-class-scroll-to-bottom+) 
+    ('(strcat ".messages-and-talk > ." tpd2.webapp:+html-class-scroll-to-bottom+) 
       :overflow "auto"      
       :padding-right "0.5em"
       :height "10em" )

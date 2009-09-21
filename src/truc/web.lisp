@@ -1,7 +1,5 @@
 (in-package #:tpd2.game.truc)
 
-#.(progn (use-package '#:tpd2.ml.html) nil)
-
 (my-defun truc-player 'object-to-ml ()
   (<div :class "truc-player"
 	(call-next-method)

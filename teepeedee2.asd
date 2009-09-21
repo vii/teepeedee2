@@ -99,11 +99,17 @@
 							   (:file "message-channel" :depends-on ("channel"))))
 				     (:module :game
 					      :depends-on (:webapp :ml )
-					      :components ((:file "framework") 
+					      :components (
+							   (:file "generic")
+							   (:file "framework" :depends-on ("generic")) 
 							   (:file "controllers" :depends-on ("framework"))
 							   (:file "card")
 							   (:file "unassigned-controller" :depends-on ("controllers"))
-							   (:file "web" :depends-on ("card" "controllers" "unassigned-controller"))))
+							   (:file "web" :depends-on ("card" "controllers" "unassigned-controller"))
+							   ))
+				     (:module :small-games
+					      :depends-on (:game)
+					      :components ((:file "nash-bargain")))
 				     (:module :blog
 					      :depends-on (:webapp :ml :datastore)
 					      :components ((:file "entry")

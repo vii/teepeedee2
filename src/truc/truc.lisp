@@ -78,7 +78,7 @@
 	do
 	(when (> +truc-winning-stack+ (+ (its stack player) (my stake)))
 	  (let ((new-stake 
-		 (my move :select-new-stake player `(:integer ,(my stake) ,(1+ (min (* 2 (my stake)) +truc-winning-stack+))))))
+		 (my move :select-new-stake player `(:integer ,(my stake) ,(min (* 2 (my stake)) +truc-winning-stack+)))))
 	    (when (> new-stake (my stake))
 	      (loop for p in (my players)
 		    do (unless 
@@ -133,6 +133,6 @@
   (with-game
     (loop until (loop for p in (my players) until 
 		      (when (<= +truc-winning-stack+ (its stack p)) 
-			(my finished p)
+			(my finished :winner p)
 			t))
 	  do (my play-rubber))))
