@@ -12,7 +12,7 @@
 (pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
 (pushnew "../trivial-backtrace/" asdf:*central-registry* :test #'equal)
 
-#.(pushnew :tpd2-debug *features*)
+#.(progn (pushnew :tpd2-debug *features*) nil)
 
 #-tpd2-debug
 (declaim (optimize speed))
