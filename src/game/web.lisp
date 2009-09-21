@@ -1,5 +1,7 @@
 (in-package #:tpd2.game)
 
+(defvar *web-state-move-timeout* 30)
+
 (defstruct queued-choice
   move-type
   choice)
@@ -9,14 +11,21 @@
   (announcements nil)
   (waiting-for-input nil)
   (queued-choices nil)
-  game-state)
+  game-state
+  (timeout (make-timeout)))
 
 (my-defun web-state resigned ()
   (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
 
 (my-defun web-state 'inform :before (game-state message &rest args)
 	  (declare (ignore args message))
-	  (setf (my game-state) game-state))
+	  
+	  (setf (my game-state) game-state
+
+		(timeout-func (my timeout)) 
+		(lambda ()
+		  (unless (game-game-over (my game-state))
+		    (my resign :reason :timedout)))))
 
 (my-defun web-state add-announcement (a)
   (appendf (my announcements) (list a))
@@ -36,6 +45,10 @@
 (my-defun web-state 'inform (game-state (message (eql :resigned)) &rest args)
   (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has resigned.")))
+
+(my-defun web-state 'inform (game-state (message (eql :timedout)) &rest args)
+  (declare (ignore game-state))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has timed out.")))
 
 (my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
   (declare (ignore game-state))
@@ -125,7 +138,14 @@
   (declare (ignore args player-state choices))
   (funcall k t))
 
+(my-defun web-state timeout-reset ()
+  (timeout-set (my timeout) *web-state-move-timeout*))
+
+(my-defun web-state timeout-cancel ()
+  (timeout-cancel (my timeout)))
+
 (my-defun web-state add-move-state (move-state)
+  (my timeout-reset)
   (appendf (my waiting-for-input)
 	   (list move-state))
   (my try-to-move)
@@ -148,6 +168,9 @@
 		(deletef qc (my queued-choices))
 		(unless (eq 'invalid-choice (validate-choice (move-state-choices waiting) (queued-choice-choice qc)))
 		  (deletef waiting (my waiting-for-input))
+		  (if (my waiting-for-input)
+		      (my timeout-reset)
+		      (my timeout-cancel))
 		  (funcall (move-state-cc waiting) (queued-choice-choice qc))
 		  (my notify)
 		  (return-from web-state-try-to-move))))))
@@ -212,9 +235,9 @@
   (and (web-state-p controller)
        (eql *webapp-frame* (web-state-frame controller))))
 
-(my-defun web-state resign ()
+(my-defun web-state resign (&rest args)
   (without-ml-output
-    (game-resign (my game-state) me)
+    (apply 'game-resign (my game-state) me args)
     (my notify)))
 
 (my-defun web-state 'player-controller-name-to-ml ()

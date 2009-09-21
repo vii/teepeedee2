@@ -131,10 +131,10 @@
   (unless (cdr (my players))
     (my finished :winner (first (my players)))))
 
-(my-defun game resign (player-controller)
+(my-defun game resign (player-controller &key (reason :resigned) )
   (let ((p (find player-controller (my players) :key 'player-controller)))
-    (when p
-      (my announce :resigned player-controller)
+    (when (and p (not (my game-over)))
+      (my announce reason player-controller)
       (my drop-player p))))
 
 (defrules game new-state ()
