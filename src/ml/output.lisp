@@ -44,7 +44,7 @@
 	       (null nil)
 	       (list
 		(case (first form) 
-		  (with-ml-output (mapcan #'r (rest form)))
+		  (with-ml-output (loop for x in (rest form) appending (r x)))
 		  (output-raw-ml (copy-list (rest form)))
 		  ((without-ml-output escape-data) (list form))
 		  (t 
@@ -60,7 +60,7 @@
   `(macrolet	      
        ((with-ml-output (&body body &environment env)
 			`(with-sendbuf-continue (ml-sendbuf)
-			   ,@(mapcan (lambda (x) (copy-list (ml-output-form-to-list x env))) body))))
+			   ,@(loop for x in body appending (ml-output-form-to-list x env)))))
      (let ((ml-sendbuf (make-raw-ml-sendbuf)))
        (with-ml-output ,@body)
        ml-sendbuf)))
