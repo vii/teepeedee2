@@ -68,7 +68,7 @@
 	 (<h3 ,@(force-list title))
 	 ,@body))
 
-(defmacro webapp-select-one (title list-generation-form &key action replace display)
+(defmacro webapp-select-one (title list-generation-form &key action replace display (describe '(lambda (x) (declare (ignore x)))))
   (with-unique-names (i)
     `(webapp-section ,title
 		     (<ul
@@ -76,9 +76,12 @@
 			     do (let-current-values (,i)
 				  ,(cond
 				    (action
-				     `(<li (html-action-link (,display ,i) (,action ,i))))
+				     `(<li (html-action-link (,display ,i) 
+					     (,action ,i))
+					   (,describe ,i)
+					   ))
 				    (replace
-				     `(<li (html-replace-link (,display ,i) (,replace ,i))))
+				     `(<li (html-replace-link (,display ,i) (,replace ,i)) (,describe ,i)))
 				    (t (error "Please specify an action or a replacement")))))))))
 
 (defmacro webapp-display (object)
