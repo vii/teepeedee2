@@ -32,6 +32,9 @@
 
 (defgeneric my-auto-prefices (instance))
 
+(defmethod my-auto-prefices ((seq list))
+  (loop for x in seq appending (my-auto-prefices x)))
+
 (defmethod my-auto-prefices (instance)
   (my-auto-prefices (class-of instance)))
 
@@ -49,7 +52,9 @@
 (defun parse-defstruct (name-and-options)
   (values
    (force-first name-and-options)
-   (mapcan (lambda(x) (when (eq (first x) :include) (rest x))) (force-rest name-and-options))))
+   (loop for x in (force-rest name-and-options) 
+	 if (and (listp x) (eq (first x) :include))
+	 collect (second x))))
 
 (defun generate-defmyclass-defstruct (&key name superclasses slots conc-name predicate-sym)
   `(eval-always
@@ -95,7 +100,7 @@
 		    `((call-next-method)))
 	   copy)
 	  (defmethod my-auto-prefices ((class (eql (find-class ',name))))
-	    (cons ',name (mapcan 'my-auto-prefices ',superclasses)))
+	    (cons ',name (my-auto-prefices ',superclasses)))
 	  (find-class ',(force-first name-and-options))))))
 
 (defmacro defmystruct (name-and-options &rest slots)
@@ -114,24 +119,55 @@
   (let ((possibilities (mapcar (lambda(prefix) (concat-sym prefix '- func)) prefices)))
     (or (find-if 'fboundp possibilities) (first possibilities))))
 
-(defmacro its (func instance &rest args)
-  (check-type func symbol)
-  (once-only (instance)
-    `(funcall (my-function ',func (my-auto-prefices ,instance)) ,instance ,@args)))
+(defun its-type-sym (instance)
+  (when (symbolp instance)
+    (concat-sym-from-sym-package instance '%tpd2-its-known-type- instance)))
 
-(defun set-its (new-value func instance &rest args)
+(defmacro with-its-type ((instance type) &body body)
+  (check-type instance symbol)
+  (check-type type symbol)
+  `(symbol-macrolet ((,(its-type-sym instance) ,type))
+     ,@body))
+
+(defun its-known-type (instance env)
+  (let ((sym (its-type-sym instance)))
+    (when sym
+      (multiple-value-bind
+	   (type valid)
+	  (macroexpand-1 sym env) 
+	(when valid type)))))
+
+(defmacro its (func instance &rest args &environment env)
+  (check-type func symbol)
+  (let ((its-known-type (its-known-type instance env)))
+    (cond (its-known-type
+	   `(,(my-function func (my-auto-prefices its-known-type)) ,instance ,@args))
+	  (t
+	   (once-only (instance)
+	     `(funcall (my-function ',func (my-auto-prefices ,instance)) ,instance ,@args))))))
+
+(defmacro set-its (new-value func instance &rest args &environment env)
+  (let ((its-known-type (its-known-type instance env)))
+    (cond (its-known-type
+	   `(setf (,(my-function func (my-auto-prefices its-known-type)) ,instance ,@args) ,new-value))
+	  (t
+	   `(set-its-dynamic ,new-value ',func ,instance ,@args)))))
+
+(defun set-its-dynamic (new-value func instance &rest args)
   (check-type func symbol)
   (eval `(setf (,(my-function func (my-auto-prefices instance)) ,instance ,@args) ',new-value)))
 
-(define-setf-expander its (func instance &rest args) ; cannot use defsetf because need to control evaluation of func argument
+(define-setf-expander its (func instance &rest args) 
+					; cannot use defsetf because need to control evaluation of func argument
+  ; XXX maybe evaluates thing too many times . . .
   (check-type func symbol)
-  (let ((new-value (gensym)))
-    (values 
-     nil
-     nil
-     (list new-value)
-     `(set-its ,new-value ',func ,instance ,@args)
-     `(its ,func ,instance ,@args))))
+  (with-unique-names (new-value)
+   (values 
+    nil
+    nil
+    (list new-value)
+    `(set-its ,new-value ,func ,instance ,@args)
+    `(its ,func ,instance ,@args))))
 
 (defun my-func-name-to-symbol (class func)
   (etypecase func
