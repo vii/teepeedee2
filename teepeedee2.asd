@@ -111,7 +111,7 @@
 							   ))
 				     (:module :small-games
 					      :depends-on (:game)
-					      :components ((:file "nash-bargain")))
+					      :components ((:file "nash-bargain") (:file "prisoners-dilemma")))
 				     (:module :blog
 					      :depends-on (:webapp :ml :datastore)
 					      :components ((:file "entry")
