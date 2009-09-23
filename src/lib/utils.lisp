@@ -25,10 +25,16 @@
 	(when (and (cffi:pointer-eq p0 p1) (cffi:pointer-eq p0 q))
 	  (pushnew :tpd2-byte-vectors-do-not-move-arbitrarily *features*))))))
 
+(defun max-nil-ok (&rest args)
+  (let (one)
+    (let ((result (loop for a in args when a do (setf one t) and maximizing a)))
+      (when one result))))
 
+(defun random-between (min max)
+  (+ min (random (1+ (- max min)))))
 
 (defun random-shuffle (sequence)
-  (loop while (not (zerop (length sequence)))
+  (loop while (plusp (length sequence))
 	collect
 	(let ((i (random (length sequence))))
 	  (prog1
@@ -67,4 +73,29 @@
 	 (handler-bind 
 	     ((error #',func))
 	   ,@body)))))
+
+(defun safely-load-system (&key (system 'teepeedee2))
+  (let* ((out (make-string-output-stream))
+	 (in (make-string-input-stream ""))
+	 (both (make-two-way-stream in out)))
+    (let ((*standard-output* out)
+	  (*error-output* out)
+	  (*trace-output* out)
+	  (*standard-input* in)
+	  (*query-io* both)
+	  (*debug-io* both)
+	  (*terminal-io* both))
+      (multiple-value-call #'values 
+	(ignore-errors
+	  (handler-bind 
+	      ((error 
+		(lambda(c) 
+		  (report-error c)
+		 (loop for restart in '(asdf:accept continue)
+		       for found = (find-restart restart)
+		       do (when found
+			    (format *error-output* "~&Using restart ~A~%" restart)
+			    (invoke-restart found))))))
+	    (values (asdf:oos 'asdf:load-op system) nil)))
+	(get-output-stream-string out)))))
 
