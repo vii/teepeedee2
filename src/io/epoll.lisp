@@ -70,10 +70,10 @@
 		  (con-fail it)))))))
 
     (debug-assert (my postpone-registration))
-    (setf (my postpone-registration) nil))
-  (my handle-postponed-registrations)
-  
-  (values))
+    (setf (my postpone-registration) nil)
+
+    (my handle-postponed-registrations)
+    (not (zerop nevents))))
 
 (defvar *epoll* (make-epoll))
 
@@ -103,23 +103,15 @@
   (with-shorthand-accessor (my epoll *epoll*)
     (my wait timeout)))
 
-#+tpd2-io-wait-for-next-event-check-timeout
-(defun wait-for-next-event (&optional timeout)
-  (with-shorthand-accessor (my epoll *epoll*)
-    (let ((time (get-universal-time)))
-      (my wait timeout)
-      (when (and timeout (> (get-universal-time) (+ timeout time 2)))
-	(warn "Timeout took too long: waited ~As for ~As" (- (get-universal-time) time) timeout )))))
-
 (defun event-loop ()
   (setf (epoll-postpone-registration *epoll*) nil)
   (epoll-handle-postponed-registrations *epoll*)
   (loop for timeout = (next-timeout)
 	while (or timeout (events-pending-p)) do
 	(wait-for-next-event timeout)
-	(let ((start-time (get-universal-time)))
-	 (loop do (wait-for-next-event 1)
-	       thereis (/= start-time (get-universal-time))))))
+	(let ((start-time (get-timeout-time)))
+	  (loop do (wait-for-next-event 1)
+		thereis (/= start-time (get-timeout-time))))))
 
 (defun event-loop-reset ()
   (setf (epoll-postpone-registration *epoll*) nil)

@@ -8,6 +8,9 @@
   (time nil :type (or null integer))
   func)
 
+(defun-speedy get-timeout-time () ;; much smaller than get-time-of-day so less likely to be a bignum
+  (floor (get-internal-real-time) internal-time-units-per-second))
+
 (defun make-timeout (&key func delay)
   (let ((timeout (%make-timeout-internal :func func)))
     (quick-queue-entry-init timeout)
@@ -23,7 +26,7 @@
 	*timeouts* (make-quick-queue)))
 
 (my-defun timeout remaining ()
-  (max (- (my time) (get-universal-time)) 0))
+  (max (- (my time) (get-timeout-time)) 0))
 
 (my-defun timeout due (time)
   (>= time (my time)))
@@ -36,7 +39,7 @@
   (declare (optimize speed))
   (let ((delay (floor delay)))
     (debug-assert (> (length (quick-queue-entries *timeouts*)) (* delay 2)))
-    (+ (get-universal-time) delay)))
+    (+ (get-timeout-time) delay)))
 
 
 
@@ -68,14 +71,14 @@
   (when (my func)
     (funcall (my func))))
 
-(defun next-timeout (&optional (time (get-universal-time)))
+(defun next-timeout (&optional (time (get-timeout-time)))
   (when *timeout-started*
     (loop for x from *timeout-started* upto time do
 	  (let ((base (quick-queue-get *timeouts* x)))
 	    (loop for cur = (quick-queue-entry-next base)
 		  while (not (eq cur base))
 		  do 
-		  (debug-assert (eql (timeout-time cur) x) (cur x))
+		  (debug-assert (= (timeout-time cur) x) (cur x))
 		  (timeout-run cur))))
     (setf *timeout-started* nil))
   (loop for x from time below (+ time (quick-queue-len *timeouts*))
@@ -83,7 +86,7 @@
 	(let ((base (quick-queue-get *timeouts* x)))
 	  (let ((timeout (quick-queue-entry-next base)))
 	    (when (not (eq base timeout))
-	      (debug-assert (eql (timeout-time timeout) x) (timeout x))
+	      (debug-assert (= (timeout-time timeout) x) (timeout x))
 	      (setf *timeout-started* time)
 	      (- x time))))))
 
