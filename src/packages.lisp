@@ -104,6 +104,7 @@
    #:copy
    #:assign
    #:its
+   #:with-its-type
    #:with-shorthand-accessor
    #:my-defun
    #:my-declare-fast-inline
@@ -117,7 +118,10 @@
    #:signal-protect
    #:strcat
    #:random-shuffle
+
    #:random-elt
+   #:random-between
+   #:max-nil-ok
 
    #:alist-get
 
@@ -141,6 +145,7 @@
    #:next-timeout
    #:forget-timeouts
    #:with-independent-timeouts
+   #:get-timeout-time
 
    #:debug-assert
    #:debug-assert-skip
@@ -149,6 +154,7 @@
    #:report-error
    #:backtrace-description
    #:with-ignored-errors
+   #:safely-load-system
 ))
 
 
@@ -374,7 +380,11 @@
    #:player-controller-var
    #:web-state-queue-choice 
    #:current-web-controller
-   #:player-controller))
+   #:player-controller
+
+   #:coins
+   #:coin-game
+   #:coin-game-player))
 
 (defpackage #:teepeedee2.datastore
   (:nicknames #:tpd2.datastore)
@@ -404,7 +414,12 @@
 
 (defpackage #:teepeedee2.game.nash-bargain
   (:nicknames #:tpd2.game.nash-bargain)
-  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html)
+  (:export #:nash-bargain))
+
+(defpackage #:teepeedee2.game.prisoners-dilemma
+  (:nicknames #:tpd2.game.prisoners-dilemma)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html #:tpd2.game.nash-bargain))
 
 
 (defpackage #:teepeedee2.game.cheat
