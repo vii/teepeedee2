@@ -303,9 +303,10 @@
 	(cond
 	       ((my timed-out)
 		(<p (load-time-value (format nil "Timed out; sorry, you took longer than ~R second~:P to respond."
-					     *web-state-move-timeout*))))
+					     *web-state-move-timeout*))
+		    (my play-again-ml)))
 	       ((my resigned)
-	       (<p "Resigned."))
+		(<p "Resigned." (my play-again-ml)))
 	      (t
 	       (output-object-to-ml (my game-state))
 	       
@@ -347,8 +348,9 @@
       :overflow "auto"      
       :padding-right "0.5em"
       :height "20em" )
-    (".play-game-description"
+    (".play-game-description,.about"
      :padding-left "3em"
+     :padding-right "3em"
      :padding-bottom "1em")
 
     (".game-header"  :float "left")
@@ -414,7 +416,7 @@
       (game-generator-join-or-start game-generator c)
       (webapp ()
 	(webapp-display c))))
-
+  
   (defpage "/" ()
     (webapp ""
       (webapp-select-one ""
@@ -428,6 +430,24 @@
 					  (output-raw-ml d)))))
 			 :replace
 			 (lambda(g)
-			   (web-game-start g))))))
+			   (web-game-start g)))
 
-
+      (html-collapser (<h3 "About mopoko.com")
+	(<div :class "about"
+	      
+	      (<p (<a :href (page-link "/") "mopoko.com") " is a place to play
+      games. I hope you have as much fun from playing the games as I
+      did making them, and maybe learn a little about co-operating
+      with other people and dealing with risks.")
+	      
+	      (<p "When you choose to play a game, we wait a few seconds for
+      someone else to join in. If nobody does, then a robot will join
+      the game, and give you a chance to prove that mind is greater
+      than machine.")
+	      
+	      (<p "Please " (<a :href "mailto:john@fremlin.org" "email") " me
+      with your comments, advice and suggestions for a new game.")
+	      
+	      (<p "Thanks for coming " (output-raw-ml "&mdash;") " John Fremlin " (<a :href "mailto:john@fremlin.org" "<john@fremlin.org>") ", 24 September 2009")
+	      
+	      (<p "PS. Look at the " (<a :href "http://www.github.com/vii/teepeedee2" "source code for this website") "."))))))
