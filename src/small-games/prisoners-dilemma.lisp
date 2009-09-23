@@ -21,9 +21,8 @@
    (with-ml-output
      "If the players cooperate, they all receive an equal number of
      coins. However, if one player decides to betray the others, then
-     he or she receives more coins, and the others are fined
-     fined. But if multiple players cheat, then all players are
-     fined." (<br)
+     he or she receives more coins, and the others are fined. But if
+     multiple players cheat, then all players are fined." (<br)
 
      "This version of the Prisoner's Dilemma varies the punishments and rewards. Read more at "
      (<a :href "http://en.wikipedia.org/wiki/Prisoner's_dilemma" "Wikipedia") "."
