@@ -681,13 +681,13 @@
   (timeout :int))
 
 (defun syscall-retry-epoll_wait (epfd events maxevents timeout-ms)
-  (let ((start (get-universal-us)))
+  (let ((start (get-internal-real-time)))
     (loop
 	  (let ((retval (syscall-noretry-epoll_wait epfd events maxevents timeout-ms)))
 	    (when retval (return retval))
 	    (unless (>= 0 timeout-ms)
 	      (setf timeout-ms
-		    (max (- timeout-ms (floor (- (get-universal-us) start) 1000)) 0)))))))
+		    (max (- timeout-ms (floor (- (get-internal-real-time) start) (ceiling internal-time-units-per-second 1000))) 0)))))))
 
 (def-simple-syscall epoll_ctl
     (epfd :int)
