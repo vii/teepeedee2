@@ -105,6 +105,7 @@
 							   (:file "framework" :depends-on ("generic")) 
 							   (:file "controllers" :depends-on ("framework"))
 							   (:file "card")
+							   (:file "coins" :depends-on ("framework"))
 							   (:file "unassigned-controller" :depends-on ("controllers"))
 							   (:file "web" :depends-on ("card" "controllers" "unassigned-controller"))
 							   ))
