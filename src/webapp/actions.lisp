@@ -94,7 +94,8 @@
       (cond (.javascript.
 	     (webapp-respond-ajax-body all-http-params!))
 	    ((and (not body) (webapp-frame-available-p) (frame-current-page (webapp-frame)))	
-	     (funcall (frame-current-page (webapp-frame))))
+	     (values (funcall (frame-current-page (webapp-frame)))
+		     +http-header-html-content-type+))
 	    (t
 	     (values 
 	      (or body
