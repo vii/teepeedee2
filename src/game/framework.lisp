@@ -1,6 +1,5 @@
 (in-package #:tpd2.game)
 
-
 (defmyclass game
     game-over
   players
@@ -38,6 +37,9 @@
   game
   waiting-for-input)
 
+(my-defun player announce (message &rest args)
+  (apply 'game-announce (my game) message args))
+
 (my-defun game listeners ()
   (append (mapcar 'player-controller (my players)) (my other-listeners)))
 
@@ -47,46 +49,64 @@
 
 (defstruct game-generator
   make-game
-  unassigned-controllers-waiting)
+  unassigned-controllers-waiting
+  name
+  description)
+
+(my-defun game-generator 'game-name ()
+  (my name))
 
 (eval-always (defvar *games* (make-hash-table :test 'equalp)))
   
 (defmacro defgame (name superclasses slots defplayer &rest options)
-  (let* ((options (copy-list options))
-	 (game-name-string (force-byte-vector (or (second (assoc :game-name options)) (string-capitalize (symbol-name name))))))
-    (deletef :game-name options :key 'car)
-    (flet ((defgameclass-form (name superclasses options slots)
-	     `(defmyclass (,name 
-			   ,@(mapcar (lambda(c) `(:include ,c)) 
-				     superclasses)
-			   ,@options)
-		  ,@slots)))
-    (destructuring-bind
-	  (defplayer-sym df-superclasses df-slots &rest df-options)
-	defplayer
-      (assert (eq 'defplayer defplayer-sym))
-      `(eval-always
-	 (setf (gethash ,game-name-string *games*) 
-	       (make-game-generator
-		:make-game (lambda(controllers)
-						  (let ((game (,(concat-sym-from-sym-package name 'make- name))))
-						    (let ((players 
-							   (mapcar (lambda(c) 
-								     (,(concat-sym-from-sym-package name 'make- name '-player)
-								       :game game 
-								       :controller c)) controllers)))
-						      (setf (game-players game) players))
-						    game))))
-	 ,(defgameclass-form (concat-sym name '-player)
-			     (or df-superclasses (list 'player))
-			     df-options
-			     df-slots)
-	 ,(defgameclass-form name
-			     (or superclasses (list 'game))
-			     options
-			     slots)
-	 (defmethod game-name ((,name ,name))
-	   ,game-name-string))))))
+  (let ((options (copy-list options)))
+    (flet ((opt (name)
+	     (prog1 (second (assoc name options))
+	       (deletef name options :key 'car))))
+     (let (
+	    (game-name-string (force-byte-vector (or (opt :game-name) (string-capitalize (symbol-name name)))))
+	    (game-description (opt :game-description))
+	    (playable (not (opt :unplayable))))
+    
+
+       (flet ((defgameclass-form (name superclasses options slots)
+		`(defmyclass (,name 
+			      ,@(mapcar (lambda(c) `(:include ,c)) 
+					superclasses)
+			      ,@options)
+		     ,@slots)))
+	 (destructuring-bind
+	       (defplayer-sym df-superclasses df-slots &rest df-options)
+	     defplayer
+	   (assert (eq 'defplayer defplayer-sym))
+	   `(eval-always
+	      ,(when playable 
+		`(setf (gethash ,game-name-string *games*) 
+		       (make-game-generator
+			:name ,game-name-string
+			:description ,(when game-description `(tpd2.io:sendbuf-to-byte-vector (with-ml-output ,game-description)))
+			:make-game (lambda(controllers)
+				     (let ((game (,(concat-sym-from-sym-package name 'make- name))))
+				       (let ((players 
+					      (mapcar (lambda(c) 
+						      (,(concat-sym-from-sym-package name 'make- name '-player)
+							:game game 
+							:controller c)) controllers)))
+					 (setf (game-players game) players))
+				       game)))))
+	      ,(defgameclass-form (concat-sym name '-player)
+				  `(,@df-superclasses 
+				    ,@(loop for s in superclasses collect 
+					    (concat-sym s '-player)) 
+				    player)
+				  df-options
+				  df-slots)
+	      ,(defgameclass-form name
+				  (or superclasses (list 'game))
+				  options
+				  slots)
+	      (defmethod game-name ((,name ,name))
+		,game-name-string))))))))
 
 (my-defun game generator ()
   (gethash (my name) *games*))
@@ -139,7 +159,8 @@
 
 (defrules game new-state ()
   (my announce :new-state)
-  (loop for p in (my players) do (my secret-move :ready-to-play p '(:one t))))
+  (loop for p in (my players) do (my secret-move :ready-to-play p '(:one t)))
+  (my players-ready))
 
 (defmethod player-controller-var ((player player) var)
   (player-controller-var (player-controller player) var))
