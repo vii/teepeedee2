@@ -42,3 +42,7 @@
   (:method (new-value controller var)
     (declare (ignorable controller var))
     new-value))
+
+(defgeneric game-players-ready (game)
+  (:method (game)
+    (declare (ignorable game))))
