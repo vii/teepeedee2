@@ -23,13 +23,17 @@
      coins. However, if one player decides to betray the others, then
      he or she receives more coins, and the others are fined
      fined. But if multiple players cheat, then all players are
-     fined.")))
+     fined." (<br)
+
+     "This version of the Prisoner's Dilemma varies the punishments and rewards. Read more at "
+     (<a :href "http://en.wikipedia.org/wiki/Prisoner's_dilemma" "Wikipedia") "."
+     )))
 
 (my-defun prisoners-dilemma 'object-to-ml ()
   (flet ((coins (c) (format nil "~R coin~:P" c)))
     (with-ml-output
       (call-next-method)
-      (<h3 "Sharing: " (my share) ", grab: " (my grab) ", penalty: " (my penalty) ", betrayal " (my big-penalty) ".")
+      (<h3 "Reward: " (my share) ", temptation: " (my grab) ", sucker's punishment: " (my penalty) ", penalty: " (my big-penalty) ".")
       (<p "If all players co-operate, they each receive " (coins (my share)) ". "
 	  "If one player does not co-operate, then he or she can take " (coins (my grab)) " and the other players lose " (coins (my penalty)) ". "
 	  "But if more than one player decides not to co-operate, they all lose " (coins (my big-penalty)) "."))))
