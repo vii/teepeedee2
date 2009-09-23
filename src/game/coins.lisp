@@ -17,7 +17,9 @@
 	(call-next-method)
 	(let ((coins (or (my coins) (my 'player-controller-var 'coins))))
 	  (when coins
-	    (<p (format nil "~D coin~:P" coins))))))
+	    (if (plusp coins)
+		(<p (format nil "~D coin~:P" coins))
+		(<p :class "bankrupt" "No coins"))))))
 
 (my-defun coin-game 'object-to-ml :around ()
   (<div :class "coin-game"
