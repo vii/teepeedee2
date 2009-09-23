@@ -442,12 +442,11 @@
 	      
 	      (<p "When you choose to play a game, we wait a few seconds for
       someone else to join in. If nobody does, then a robot will join
-      the game, and give you a chance to prove that mind is greater
-      than machine.")
+      the game. Each robot has a different style of play.")
 	      
 	      (<p "Please " (<a :href "mailto:john@fremlin.org" "email") " me
       with your comments, advice and suggestions for a new game.")
 	      
-	      (<p "Thanks for coming " (output-raw-ml "&mdash;") " John Fremlin " (<a :href "mailto:john@fremlin.org" "<john@fremlin.org>") ", 24 September 2009")
+	      (<p "Thanks for visiting " (output-raw-ml "&mdash;") " John Fremlin " (<a :href "mailto:john@fremlin.org" "<john@fremlin.org>") ", 24 September 2009")
 	      
 	      (<p "PS. Look at the " (<a :href "http://www.github.com/vii/teepeedee2" "source code for this website") "."))))))
