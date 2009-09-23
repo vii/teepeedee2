@@ -315,6 +315,7 @@
    #:html-replace-link
    #:html-action-form-collapsed
    #:action-script-helper
+   #:html-collapser
 
    #:channel
    #:channel-notify
