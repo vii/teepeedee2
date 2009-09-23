@@ -350,8 +350,7 @@
       :height "20em" )
     (".play-game-description,.about"
      :padding-left "3em"
-     :padding-right "3em"
-     :padding-bottom "1em")
+     :padding-right "3em")
 
     (".game-header"  :float "left")
     (".close-game:before" :content "\"+ \"")
@@ -368,6 +367,7 @@
      )
     ("h1.mopoko" :font-size "4em" :text-align "right" :color "rgb(188,188,188)" :margin-bottom "0.333em")
     (<h2 :font-size "2.5em")
+    (".webapp-section > ul > li" :padding-bottom "1em")
     (".webapp-section > ul > li a.-replace-link-" :font-size "2em")
     (".separate" 
      :height "4em"
