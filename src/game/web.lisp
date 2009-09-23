@@ -1,6 +1,6 @@
 (in-package #:tpd2.game)
 
-(defvar *web-state-move-timeout* 30)
+(defvar *web-state-move-timeout* 60)
 
 (defstruct queued-choice
   move-type
@@ -12,6 +12,7 @@
   (waiting-for-input nil)
   (queued-choices nil)
   game-state
+  timed-out
   (timeout (make-timeout)))
 
 (my-defun web-state resigned ()
@@ -25,7 +26,8 @@
 		(timeout-func (my timeout)) 
 		(lambda ()
 		  (unless (game-game-over (my game-state))
-		    (my resign :reason :timedout)))))
+		    (setf (my timed-out) t)
+		    (my resign :reason :timed-out)))))
 
 (my-defun web-state add-announcement (a)
   (appendf (my announcements) (list a))
@@ -46,7 +48,7 @@
   (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has resigned.")))
 
-(my-defun web-state 'inform (game-state (message (eql :timedout)) &rest args)
+(my-defun web-state 'inform (game-state (message (eql :timed-out)) &rest args)
   (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has timed out.")))
 
@@ -107,6 +109,12 @@
       (<p :class "game-message"
 	  (player-controller-name-to-ml player)
 	  " went bankrupt.")))
+
+(my-defun web-state 'inform (game-state (message (eql :betrayal)) &key player &allow-other-keys)
+  (my add-announcement
+      (<p :class "game-message"
+	  (player-controller-name-to-ml player)
+	  " betrayed everybody else.")))
 
 
 (my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
@@ -252,7 +260,7 @@
 (defgeneric game-title-ml (game)
   (:method (game)
     (<h2 :class "game-title"
-	 (string-capitalize (force-string (game-name game))))))
+	 (game-name game))))
 
 (my-defun web-state 'object-to-ml ()
   (assert (my game-state) () "No game started; please use game-new-state")
@@ -292,7 +300,11 @@
 	      (<div :class tpd2.webapp:+html-class-scroll-to-bottom+
 		    (output-object-to-ml (my announcements))))
 	
-	(cond ((my resigned)
+	(cond
+	       ((my timed-out)
+		(<p (load-time-value (format nil "Timed out; sorry, you took longer than ~R second~:P to respond."
+					     *web-state-move-timeout*))))
+	       ((my resigned)
 	       (<p "Resigned."))
 	      (t
 	       (output-object-to-ml (my game-state))
@@ -328,13 +340,17 @@
     (".change-name" :font-size "75%" :text-align "right")
     (".messages-and-talk"
      :margin-top "2em" 
-     :margin-left "5em"
-     :text-align "right")
+     :margin-left "1em"
+     :text-align "left")
     (".robot" :font-style "italic")
     ('(strcat ".messages-and-talk > ." tpd2.webapp:+html-class-scroll-to-bottom+) 
       :overflow "auto"      
       :padding-right "0.5em"
       :height "20em" )
+    (".play-game-description"
+     :padding-left "3em"
+     :padding-bottom "1em")
+
     (".game-header"  :float "left")
     (".close-game:before" :content "\"+ \"")
     (".players"        
@@ -350,7 +366,7 @@
      )
     ("h1.mopoko" :font-size "4em" :text-align "right" :color "rgb(188,188,188)" :margin-bottom "0.333em")
     (<h2 :font-size "2.5em")
-    (".webapp-section > ul > li" :font-size "2em")
+    (".webapp-section > ul > li a.-replace-link-" :font-size "2em")
     (".separate" 
      :height "4em"
      :border-right "2px solid black")
@@ -402,11 +418,16 @@
   (defpage "/" ()
     (webapp ""
       (webapp-select-one ""
-			 (loop for game-name being the hash-keys of *games* collect game-name)
+			 (loop for g being the hash-values of *games* collect g)
 			 :display (lambda(g) (output-raw-ml 
-					 "Play " g))
+					 "Play " (game-generator-name g)))
+			 :describe (lambda (g)
+				     (let ((d (game-generator-description g)))
+				       (when d
+					 (<div :class "play-game-description"
+					  (output-raw-ml d)))))
 			 :replace
-			 (lambda(game-name)
-			   (web-game-start (find-game-generator game-name)))))))
+			 (lambda(g)
+			   (web-game-start g))))))
 
 
