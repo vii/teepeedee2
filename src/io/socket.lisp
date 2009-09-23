@@ -27,8 +27,6 @@
 (defgeneric socket-recvfrom (socket buf)) ; returns (values length/nil address)
 (defgeneric socket-sendto (socket address buf))
 
-(defmethod socket-recvfrom (socket buf)
-  (values (socket-read socket buf) nil))
 (defmethod socket-sendto (socket address buf)
   (declare (ignore address))
   (socket-write socket buf 0))
