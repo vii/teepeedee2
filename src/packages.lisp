@@ -149,6 +149,7 @@
 
    #:debug-assert
    #:debug-assert-skip
+   #:debug-assert-retry
    #:debug-unreachable
 
    #:report-error
