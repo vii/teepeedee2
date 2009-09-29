@@ -419,6 +419,14 @@
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html)
   (:export #:nash-bargain))
 
+(defpackage #:teepeedee2.game.ultimatum
+  (:nicknames #:tpd2.game.ultimatum)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
+(defpackage #:teepeedee2.game.roshambo
+  (:nicknames #:tpd2.game.roshambo)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
 (defpackage #:teepeedee2.game.prisoners-dilemma
   (:nicknames #:tpd2.game.prisoners-dilemma)
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html #:tpd2.game.nash-bargain))

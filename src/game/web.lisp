@@ -56,6 +56,14 @@
   (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
 
+(my-defun web-state 'inform (game-state (message (eql :select-demand)) &key player choice &allow-other-keys)
+  (declare (ignore game-state))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller player)) " demanded " choice ".")))
+
+(my-defun web-state 'inform (game-state (message (eql :select)) &key player selection &allow-other-keys)
+  (declare (ignore game-state))
+  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller player)) " chose " (friendly-string selection) ".")))
+
 (my-defun web-state 'inform (game-state (message (eql :reject-cards)) &rest args)
   (declare (ignore game-state))
   (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
@@ -187,6 +195,13 @@
 (defun keyword-to-friendly-string (keyword)
   (string-capitalize (string-downcase (match-replace-all (force-string keyword) ("-" " "))) :end 1))
 
+(defun friendly-string (object)
+  (typecase object
+    (symbol
+     (keyword-to-friendly-string object))
+    (t
+     object)))
+
 (my-defun move-state 'object-to-ml ()
   (<div :class "move-state"
 	(let ((friendly-move-type (keyword-to-friendly-string (my move-type))))
@@ -209,17 +224,17 @@
 			    (with-ml-output " from " (reduce #'min (choices-list (my choices))) " to " 
 					    (reduce #'max (choices-list (my choices))) ". "))
 			   (t
-			    (with-ml-output (format nil " ~{~A ~}" (my args)) " from " (format nil "~A" (my choices) ))))
+			    (with-ml-output (format nil " ~{~A ~}" (my args)) " from ")))
 		     
 		     (loop for c in (choices-list (my choices)) do 
 			   (let-current-values (c)
 			     (with-ml-output " "
-					     (html-action-link c
+					     (html-action-link (friendly-string c)
 					       (my queue-choice c)))))
 
 		     (html-action-form 		     
 			 ""
-			 ((choice (first (choices-list (my choices)))))
+			 (choice)
 		       (my queue-choice (read-safely-from-string choice))
 		       (values))))))))
 

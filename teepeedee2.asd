@@ -111,7 +111,11 @@
 							   ))
 				     (:module :small-games
 					      :depends-on (:game)
-					      :components ((:file "nash-bargain") (:file "prisoners-dilemma")))
+					      :components (
+							   (:file "nash-bargain") 
+							   (:file "prisoners-dilemma") 
+							   (:file "ultimatum")
+							   (:file "roshambo")))
 				     (:module :blog
 					      :depends-on (:webapp :ml :datastore)
 					      :components ((:file "entry")
