@@ -109,7 +109,7 @@
 		(debug-assert (= (timeout-time cur) x) (cur x now (timeout-time cur) *timeout-started*))
 		(timeout-run cur))))
   (setf *timeout-started* nil)
-  (describe-timeouts)
+;  (describe-timeouts)
   (loop for x from now below (+ now (max-timeout-period))
 	thereis 
 	(let ((base (quick-queue-get *timeouts* x)))
