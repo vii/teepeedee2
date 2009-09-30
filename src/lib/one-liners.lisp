@@ -11,8 +11,6 @@
       val
       (list val)))
 
-
-
 (defun-speedy force-first (form)
   (typecase form
     (list (first form))
@@ -50,6 +48,10 @@
 	(format *error-output* "~&~S = ~S of type ~A: ~A~&" place value (type-of value)
 		(with-output-to-string (*standard-output*) (describe value)))))
 
+(defun query-new-value ()
+  (format *query-io* "~&Enter a new value:~%")
+  (list (eval (read *query-io*))))
+
 (defmacro debug-assert (test-form &optional places datum &rest arguments)
   `(progn
      ,test-form
@@ -61,31 +63,33 @@
       `(without-call/cc
 	 (unless ,test-form
 	   (loop do
-		 (flet ((,block () ;; use flet to get better debug on SBCL
-			  (declare (optimize debug safety (speed 0)))
-			  (let ,(loop for p in places for g in gensyms collect `(,g ,p))
-			    (restart-case (error ,(or datum (format nil "The debug assertion ~S failed." test-form)) ,@arguments)
-			      (continue ()
-				:report "Print a description of the debug assertion and continue."
-				(debug-assert-report
-				 ',test-form
-				 (list
-				  ,@(loop for place in places 
-					  for g in gensyms collect
-					  `(list ',place ,g))))
-				(return 'debug-assert-skip))
-			      ,@(loop for place in places 
-				      for g in gensyms collect
-				      `(store-value (,val)
-						    :report (lambda (stream) (format stream "The current value of ~S is ~S; supply a new value for it." ',place ,g))
-						    (setf ,place ,val)))
-			      (debug-assert-retry ()
-				:report "Retry the assertion."
-				(return-from ,block))
-			      (debug-assert-skip ()
-				:report "Accept that the assertion will fail this time and continue without printing anything."
-				(return 'debug-assert-skip))))))
-		   (,block))
+		 (locally
+		     (declare (optimize debug safety (speed 0)))
+		   (flet ((,block () ;; use flet to get better debug on SBCL
+			    (let ,(loop for p in places for g in gensyms collect `(,g ,p))
+			      (restart-case (error ,(or datum (format nil "The debug assertion ~S failed." test-form)) ,@arguments)
+			       (continue ()
+				 :report "Print a description of the debug assertion and continue."
+				 (debug-assert-report
+				  ',test-form
+				  (list
+				   ,@(loop for place in places 
+					   for g in gensyms collect
+					   `(list ',place ,g))))
+				 (return 'debug-assert-skip))
+			       ,@(loop for place in places 
+				       for g in gensyms collect
+				       `(store-value (,val)
+						     :interactive query-new-value
+						     :report (lambda (stream) (format stream "The current value of ~S is ~S; supply a new value for it." ',place ,g))
+						     (setf ,place ,val)))
+			       (debug-assert-retry ()
+				 :report "Retry the assertion."
+				 (return-from ,block))
+			       (debug-assert-skip ()
+				 :report "Accept that the assertion will fail this time and continue without printing anything."
+				 (return 'debug-assert-skip))))))
+		    (,block)))
 		 until ,test-form))
 	 (values)))))
 
