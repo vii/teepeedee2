@@ -118,7 +118,7 @@
 (defun parse-time (str)
   (match-bind 
    (macrolet ((int (name &optional (len 2))
-		`(progn t (,name (unsigned-byte :max-len ,len) 0))))
+		`(progn t (,name (unsigned-byte :max-length ,len) 0))))
      (int year 4)
      (int month)
      (int day)
