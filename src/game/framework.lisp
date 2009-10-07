@@ -49,6 +49,7 @@
 
 (defstruct game-generator
   make-game
+  advertised
   unassigned-controllers-waiting
   name
   description)
@@ -60,15 +61,14 @@
   
 (defmacro defgame (name superclasses slots defplayer &rest options)
   (let ((options (copy-list options)))
-    (flet ((opt (name)
-	     (prog1 (second (assoc name options))
+    (flet ((opt (name &optional default)
+	     (prog1 (second (or (assoc name options) (list nil default)))
 	       (deletef name options :key 'car))))
-     (let (
+     (let* (
 	    (game-name-string (force-byte-vector (or (opt :game-name) (string-capitalize (symbol-name name)))))
 	    (game-description (opt :game-description))
-	    (playable (not (opt :unplayable))))
-    
-
+	    (playable (not (opt :unplayable))) ; for abstract base classes
+	    (advertised (opt :advertised playable)))
        (flet ((defgameclass-form (name superclasses options slots)
 		`(defmyclass (,name 
 			      ,@(mapcar (lambda(c) `(:include ,c)) 
@@ -85,6 +85,7 @@
 		       (make-game-generator
 			:name ,game-name-string
 			:description ,(when game-description `(tpd2.io:sendbuf-to-byte-vector (with-ml-output ,game-description)))
+			:advertised ,advertised
 			:make-game (lambda(controllers)
 				     (let ((game (,(concat-sym-from-sym-package name 'make- name))))
 				       (let ((players 
@@ -106,7 +107,11 @@
 				  options
 				  slots)
 	      (defmethod game-name ((,name ,name))
-		,game-name-string))))))))
+		,game-name-string)
+
+	      ,@(when playable 
+		      `((eval-when (:load-toplevel)
+			  (web-add-game (find-game-generator ,game-name-string))))))))))))
 
 (my-defun game generator ()
   (gethash (my name) *games*))
@@ -131,11 +136,11 @@
       vc)))
 
 (defrules game move (type player choices &rest args)
-  (debug-assert (not (player-waiting-for-input player)))
+  (debug-assert (not (player-waiting-for-input player)) (me player))
   (setf (player-waiting-for-input player) t)
   (let ((ret (apply 'game-secret-move me type player choices args)))
     (my announce type :choice ret :player player)
-    (debug-assert (player-waiting-for-input player))
+    (debug-assert (player-waiting-for-input player) (me player))
     (setf (player-waiting-for-input player) nil)
     ret))
 

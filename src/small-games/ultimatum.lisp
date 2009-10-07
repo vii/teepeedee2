@@ -15,7 +15,8 @@
    (with-ml-output
      "There is a pot of coins to be shared. The first player decides how to share them. The second player can accept the choice, and receive the allotment, or reject it, in which case the players will both be fined." (<br)
      "Read more at "
-     (<a :href "http://en.wikipedia.org/wiki/Ultimatum_game" "Wikipedia") ".")))
+     (<a :href "http://en.wikipedia.org/wiki/Ultimatum_game" "Wikipedia") "."))
+  (:advertised nil))
 
 (my-defun ultimatum 'play ()
   (with-game

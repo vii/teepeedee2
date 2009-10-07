@@ -418,6 +418,10 @@
 					     (webapp-default-page-head-contents))))
 
 (with-compile-time-site (*site*)
+  (defun web-add-game (game-generator)
+    (defpage-lambda (byte-vector-cat "/" (game-name game-generator))
+	(lambda ()
+	  (web-game-start game-generator))))
 
   (defun webapp-play-bot (game-name bot)
     (let ((game-state
@@ -435,7 +439,9 @@
   (defpage "/" ()
     (webapp ""
       (webapp-select-one ""
-			 (loop for g being the hash-values of *games* collect g)
+			 (loop for g being the hash-values of *games*
+			       when (game-generator-advertised g) 
+			       collect g)
 			 :display (lambda(g) (output-raw-ml 
 					 "Play " (game-generator-name g)))
 			 :describe (lambda (g)

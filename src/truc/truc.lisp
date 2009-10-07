@@ -14,9 +14,8 @@
        (wins 0)
        (stack 0)
        chosen-card
-       (folded nil))))
-
-
+       (folded nil)))
+  (:advertised nil))
 
 (my-defun truc-player shuffle-init ()
   (setf (my cards) nil)
@@ -67,7 +66,9 @@
 
 
 (my-defun truc too-few-players ()
-  (let ((active-players (filter (lambda(p)(not (its folded p))) (my players)))) 
+  (let ((active-players 
+	 (remove-if #'truc-player-folded 
+		    (my players)))) 
     (>= 1 (length active-players))))
 
 (defrules truc play-round ()

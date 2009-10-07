@@ -26,7 +26,8 @@
 
      "This version of the Prisoner's Dilemma varies the punishments and rewards. Read more at "
      (<a :href "http://en.wikipedia.org/wiki/Prisoner's_dilemma" "Wikipedia") "."
-     )))
+     ))
+  (:advertised nil))
 
 (my-defun prisoners-dilemma 'object-to-ml ()
   (flet ((coins (c) (format nil "~R coin~:P" c)))
