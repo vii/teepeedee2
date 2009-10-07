@@ -3,7 +3,7 @@
 (defgame coin-game ()
   ()
   (defplayer ()
-      ((coins 0)))
+      ((coins)))
   (:unplayable t))
 
 (my-defun coin-game finished :before (&rest args)
@@ -35,7 +35,7 @@
   (loop for p in (my players)
 	do (setf (its coins p) 
 		 (setf (player-controller-var p 'coins)
-		       (max-nil-ok (its coins p) (player-controller-var p 'coins))))))
+		       (max-nil-ok 0 (its coins p) (player-controller-var p 'coins))))))
 
 (my-defun coin-game players-ready :after ()
 	  (my setup-coins))
