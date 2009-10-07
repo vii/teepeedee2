@@ -319,7 +319,7 @@
 	       ((my timed-out)
 		(<p (load-time-value (format nil "Timed out; sorry, you took longer than ~R second~:P to respond."
 					     *web-state-move-timeout*))
-		    (my play-again-ml)))
+		    (my play-again-ml) "?"))
 	       ((my resigned)
 		(<p "Resigned." (my play-again-ml)))
 	      (t
@@ -418,8 +418,8 @@
 					     (webapp-default-page-head-contents))))
 
 (with-compile-time-site (*site*)
-  (defun web-add-game (game-generator)
-    (defpage-lambda (byte-vector-cat "/" (game-name game-generator))
+  (defun web-add-game (game-generator name)
+    (defpage-lambda (byte-vector-cat "/" name)
 	(lambda ()
 	  (web-game-start game-generator))))
 

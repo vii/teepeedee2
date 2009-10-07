@@ -110,8 +110,9 @@
 		,game-name-string)
 
 	      ,@(when playable 
-		      `((eval-when (:load-toplevel)
-			  (web-add-game (find-game-generator ,game-name-string))))))))))))
+		      `((eval-when (:load-toplevel :execute)
+			  (web-add-game (find-game-generator ,game-name-string) 
+					,(force-byte-vector (string-downcase (force-string name))))))))))))))
 
 (my-defun game generator ()
   (gethash (my name) *games*))
