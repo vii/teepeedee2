@@ -13,7 +13,8 @@
    'iterate
    'cffi
    'cl-irregsexp
-   'trivial-backtrace))
+   'trivial-backtrace
+   'parenscript))
 
 ;;; Load tpd2
 
