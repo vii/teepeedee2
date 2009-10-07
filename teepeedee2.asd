@@ -9,10 +9,8 @@
       do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
-(pushnew "../cl-irregsexp/" asdf:*central-registry* :test #'equal)
-(pushnew "../trivial-backtrace/" asdf:*central-registry* :test #'equal)
-
-#.(progn (pushnew :tpd2-debug *features*) nil)
+#.(progn 
+    (pushnew :tpd2-debug *features*) nil)
 
 #-tpd2-debug
 (declaim (optimize speed))
@@ -134,4 +132,3 @@
 	       :cl-irregsexp
 	       :trivial-backtrace
 	       :parenscript))
-
