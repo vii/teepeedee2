@@ -45,23 +45,25 @@
 					      (setf request-origin
 						    (match-x-forwarded-for value)))))))
 	(declare (dynamic-extent #'handle-header))
-       (match-bind (macrolet ((lws () `(or #\Space #\Tab))) 
-		     (progn
-		       method-tmp (+ (lws))
-		       url-tmp 
-		       (or (progn (+ (lws)) (:? "HTTP/" (version-major (unsigned-byte :max-len 3) 1) "." (version-minor (unsigned-byte :max-len 3) 0) (* (lws))) +newline+)
-			   +newline+)
-		       '(setf connection-close (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))
-			 url url-tmp
-			 method method-tmp)
-		       (+ 
-			header-name ":" (* (lws)) value (or +newline+ (last))
-				     '(handle-header header-name value)
-				     (* (+ (lws)) extra-value (or +newline+ (last))
-					'(handle-header header-name extra-value))
-				     )
-		       (last)))
-	   headers)))
+       (match-bind 
+	(macrolet ((lws () `(or #\Space #\Tab))) 
+	  (progn
+	    method-tmp (+ (lws))
+	    url-tmp 
+	    (or (progn (+ (lws)) (:? "HTTP/" (version-major (unsigned-byte :max-length 3) 1) "." 
+				     (version-minor (unsigned-byte :max-length 3) 0) (* (lws))) +newline+)
+		+newline+)
+	    '(setf connection-close (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))
+	      url url-tmp
+	      method method-tmp)
+	    (+ 
+	     header-name ":" (* (lws)) value (or +newline+ (last))
+	     '(handle-header header-name value)
+	     (* (+ (lws)) extra-value (or +newline+ (last))
+		'(handle-header header-name extra-value))
+	     )
+	    (last)))
+	headers)))
     
     
     (io 'parse-and-dispatch con url 
