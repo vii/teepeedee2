@@ -4,7 +4,7 @@
   (declare (type byte-vector encoded))
   (match-replace-all 
    encoded
-   ((progn "%" (val (unsigned-byte :max-len 2 :min-len 2 :base 16)))
+   ((progn "%" (val (unsigned-byte :length 2 :base 16)))
     (byte-vector val))
    ("+" " ")))
 
