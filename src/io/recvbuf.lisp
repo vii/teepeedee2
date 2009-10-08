@@ -46,12 +46,12 @@
 	 (decf (my write-idx) (my read-idx))
 	 (setf (my read-idx) 0)
 	 (setf (my store) new-store)))))
-  (debug-assert (>= (- (my len) (my read-idx)) size))
+  (debug-assert (>= (- (my len) (my read-idx)) size) (me size))
   (values))
 
 (my-defun recvbuf read-some (con &optional retry)
   (my-declare-fast-inline)
-  (debug-assert (not (my full)))
+  (assert (not (my full)) () 'connection-buffer-overflow-error :con con :len (my len))
   (let ((s
 	 (socket-read (con-socket con)
 		      (my store)

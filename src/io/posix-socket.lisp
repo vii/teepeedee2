@@ -13,7 +13,7 @@
 (defmethod socket-read ((fd integer) buf offset)
   (declare (type simple-byte-vector buf))
   (declare (type fixnum offset))
-  (debug-assert (not (zerop (length buf))))
+  (debug-assert (not (zerop (length buf))) (me buf offset))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
 	   (socket-io-syscall (syscall-read fd (cffi:inc-pointer ptr offset) (- (length buf) offset))))))
@@ -64,7 +64,7 @@
   (values))
 
 (defmethod socket-register ((fd integer) events con)
-  (debug-assert (eql fd (con-socket con)))
+  (debug-assert (eql fd (con-socket con)) (fd con))
   (register-fd events con))
 
 (defmethod socket-supports-writev ( (fd integer))

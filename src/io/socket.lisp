@@ -21,7 +21,7 @@
 
 (defmethod socket-register (socket events con)
   (declare (ignore events))
-  (debug-assert (eql socket (con-socket con)))
+  (debug-assert (eql socket (con-socket con)) (socket con))
   (values))
 
 (defgeneric socket-recvfrom (socket buf)) ; returns (values length/nil address)

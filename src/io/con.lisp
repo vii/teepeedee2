@@ -86,6 +86,7 @@
 
 (my-defun con 'recv (done amount)
   (declare (type fixnum amount))
+  (debug-assert (>= (recvbuf-len (my recv)) amount) (me amount (my recv)))
   (cond
     ((>= (recvbuf-available-to-eat (my recv)) amount)
      (funcall done (recvbuf-eat (my recv) amount)))
@@ -104,7 +105,7 @@
 	   (funcall done nil)
 	   (return-from my-call))
 	  (t
-	   (debug-assert (not (zerop (recvbuf-available-to-eat (my recv)))))
+	   (debug-assert (not (zerop (recvbuf-available-to-eat (my recv)))) (me (my recv)))
 	   (my-call)))))
       (t
        (funcall done (recvbuf-eat (my recv) available)))))

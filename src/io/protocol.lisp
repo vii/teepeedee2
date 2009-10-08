@@ -1,8 +1,12 @@
 (in-package #:tpd2.io)
 
-(define-condition protocol-error
-    (socket-error)
+(define-condition protocol-error (socket-error)
   ())
+(define-condition connection-buffer-overflow-error (protocol-error)
+  ((con :initarg :con) (len :initarg :len))
+  (:report (lambda (err stream)
+	     (with-slots (con len)
+		 (format stream "~A overflowed a buffer of length ~A" con len)))))
 
 (defmacro simple-io-function (sym)
   `(get ,sym 'simple-io-function))

@@ -111,7 +111,7 @@
   (setf (my offset) 0)
   (loop until (zerop s)
 	do
-	(debug-assert (my head))
+	(debug-assert (my head) (me s))
 	(let ((buf (car (my head))))
 	  (declare (type simple-byte-vector buf))
 	  (cond ((>= s (length buf))

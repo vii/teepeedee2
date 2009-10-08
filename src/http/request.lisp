@@ -2,7 +2,7 @@
 
 (defun parse-http-chunk-length-line (line)
   (match-bind ((len (unsigned-byte :base 16 
-				   :max-len 7 ; maximum chunk size of (expt 16 7) = 268435456
+				   :max-length 7 ; maximum chunk size of (expt 16 7) = 268435456
 				   )) (* (space)) (last))  
 	      line 
 	      len))
@@ -84,7 +84,7 @@
     (con-add-failure-callback con 
 			      (lambda(&rest args)
 				(declare (ignore args))
-				(debug-assert (member con (gethash key *connection-cache*)))
+				(debug-assert (member con (gethash key *connection-cache*)) (con key))
 				(deletef con (gethash key *connection-cache*))))
     (reset-timeout con (http-connection-cache-timeout))
     (push con (gethash key *connection-cache*))))
@@ -100,7 +100,7 @@
     (cond (con
 	   (con-clear-failure-callbacks con)
 	   (reset-timeout con)
-	   (debug-assert (not (con-dead? con)))
+	   (debug-assert (not (con-dead? con)) (address port con))
 	   (cond ((con-connected? con)
 		  con)
 		 (t

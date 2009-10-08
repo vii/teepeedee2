@@ -48,14 +48,14 @@
     (setf (my postponed-registrations) nil))
 
 (my-defun epoll wait (timeout)
-  (debug-assert (not (my postponed-registrations)))
+  (debug-assert (not (my postponed-registrations)) (me (my postponed-registrations) (my postpone-registration)))
   (setf (my postpone-registration) t)
   (let ((nevents
 	 (syscall-retry-epoll_wait (my fd) (my events) (my max-events) 
 			     (if timeout 
 				 (floor (* 1000 timeout))
 				 -1))))
-    (debug-assert (>= (my max-events) nevents))
+    (debug-assert (>= (my max-events) nevents) (me nevents))
 
     (dotimes (i nevents)
       (let ((event (cffi:mem-aref (my events) 'epoll-event i)))
@@ -81,7 +81,7 @@
   (with-shorthand-accessor (my epoll *epoll*)
     (let ((fd (con-socket con)))
       (cond ((my 'mux-find-fd fd) 
-	     (debug-assert (eq con (my 'mux-find-fd fd))) 
+	     (debug-assert (eq con (my 'mux-find-fd fd)) (me con fd)) 
 	     (my ctl +EPOLL_CTL_MOD+ fd events))
 	    (t
 	     (if (my postpone-registration)
