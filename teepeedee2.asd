@@ -56,7 +56,7 @@
 							    (:file "mux" :depends-on ("con"))
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
-							    (:file "protocol" :depends-on ("socket"))
+							    (:file "protocol" :depends-on ("socket" "con"))
 							    (:file "repeater" :depends-on ("con" "protocol"))))
 
 				     (:module :http

@@ -13,7 +13,7 @@
 (defmethod socket-read ((fd integer) buf offset)
   (declare (type simple-byte-vector buf))
   (declare (type fixnum offset))
-  (debug-assert (not (zerop (length buf))) (me buf offset))
+  (debug-assert (not (zerop (length buf))) (fd buf offset))
   (let ((s
 	 (with-pointer-to-vector-data (ptr buf)
 	   (socket-io-syscall (syscall-read fd (cffi:inc-pointer ptr offset) (- (length buf) offset))))))

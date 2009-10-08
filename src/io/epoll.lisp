@@ -81,7 +81,7 @@
   (with-shorthand-accessor (my epoll *epoll*)
     (let ((fd (con-socket con)))
       (cond ((my 'mux-find-fd fd) 
-	     (debug-assert (eq con (my 'mux-find-fd fd)) (me con fd)) 
+	     (debug-assert (eq con (my 'mux-find-fd fd)) (*epoll* con fd)) 
 	     (my ctl +EPOLL_CTL_MOD+ fd events))
 	    (t
 	     (if (my postpone-registration)
