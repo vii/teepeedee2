@@ -38,14 +38,14 @@
 
 (defmacro html-collapser (toggle &body body)
   `(with-ml-output 
-       (<div :onclick (js-attrib (toggle-hiding this.next-sibling))
+       (<div :onclick (js-attrib (toggle-hiding (~ this next-sibling)))
 	     ,toggle)
        (<div :class +html-class-collapsed+
 	     ,@body)))
 
 (defmacro html-action-form-collapsed (title lambda-list &body body)
   `(html-collapser (<p ,(force-first title))
-		   (html-action-form (nil ,@(force-rest title) :after-submit-js ((toggle-hiding this.parent-node))) ,lambda-list ,@body)))
+		   (html-action-form (nil ,@(force-rest title) :after-submit-js ((toggle-hiding (~ this parent-node)))) ,lambda-list ,@body)))
 
 (defmacro html-action-form (title-and-options lambda-list &body body)
   (destructuring-bind (title 
@@ -64,7 +64,7 @@
 		     (force-list nv)
 		    (let ((name (force-byte-vector name)))
 		      (when reset
-			(appendf after-submit-js `((setf (slot-value (this.elements.named-item ,(force-string name)) 'value) ,(if (eq reset t) nil reset)))))
+			(appendf after-submit-js `((setf (slot-value (! (this elements named-item) ,(force-string name)) 'value) ,(if (eq reset t) nil reset)))))
 		      (ecase type
 			(<input
 			 `(<input :type :text :name ,name
