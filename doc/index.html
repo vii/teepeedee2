@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>teepeedee2 (tpd2)</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+  </head>
+  
+  <body>
+    <div class="header">
+      <h1>teepeedee2 (tpd2)</h1>
+      <h2>A web-application framework for dynamic webpages.</h2>
+    </div>
+    
+    <h3>Introduction</h3>
+    
+    <p>tpd2 is a fast web-application framework for dynamic
+    pages. Like <a
+href="http://github.com/stefanocasazza/ULib/tree/master">ULib</a> and
+    <a href="http://www.koanlogic.com/klone/">the Klone webserver</a>
+    it is efficient.</p>
+
+    <p>There are many other Lisp web-frameworks and webservers. The
+    most popular webserver is
+    probably <a href="http://weitz.de/hunchentoot/">Hunchentoot</a>.
+    Lisp webservers that might be reasonably efficient
+    are <a href="http://dwim.hu/">dwim.hu</a> and, for static
+    pages, <a href="http://hoytech.com/antiweb/">Antiweb</a>.</p>
+
+    <h3>Why?</h3>
+
+    <p>Common Lisp is a language that encourages users to write
+    inefficient programs. Yet some people claim that it is possible to
+    write reasonably efficient programs using a subset of it. Is that
+    true? I thought most web frameworks were horribly inefficient, so
+    as an experiment I decided to try to make a faster web-framework
+    in a less efficient language: thus teepeedee2.</p>
+
+    <p>It was possible, but it took a lot of effort. Common Lisp is
+    certainly not well suited to the project.</p>
+
+    <h3>Licence</h3>
+
+<p><a href="http://opensource.franz.com/preamble.html">Lisp
+LGPL</a>. See addons/* for the licences of those libraries.</p>
+
+    <p>I hope that anybody using teepeedee2 for a website will take
+    the time to publicly release their source code (for example, all
+    the code for mopoko.com is included in the tpd2 tarball) &mdash;
+    though this is not enforced by the licence, I think it is very
+    slimy of web <q>developers</q> to greedily take for free huge
+    amounts of work like the Linux kernel and MySQL, but then keep
+    their horrible little scripts a closely guarded secret.  Don't be
+    like them.</p>
+
+    <h3>Development priorities</h3>
+
+    <p>teepeedee2
+    has <a href="http://john.freml.in/teepeedee2-c10k">achieved its
+    performance goal</a> (to be much faster than most web
+    frameworks).</p>
+
+    <p>However, I don't feel it is as correct as it should be. It
+    needs stress testing and an HTTP fuzzing torture test.</p>
+
+    <p> At the same time it is missing several features: comprehensive
+    request routing to allow REST-ful interfaces, cookie handling,
+    multipart form uploads, static file serving, logging, SSL, gzip
+    encoding, etc. Patches to implement these will be gratefully
+      accepted!</p>
+
+    <h3>TODO</h3>
+
+    <ul>
+      <li>Rewrite the sendbuf stuff to use more correct buffer pinning
+      and change the data representation (perhaps arrays with a fill
+      pointer instead of list heads and tails).</li>
+
+      <li>Tidy up the HTTP client and make it much higher
+      performance.</li>
+
+      <li>Rewrite the dispatcher mechanism to use a prefix trie
+      instead of a standard hash-table.</li>
+    </ul>
+
+    <p> Patches welcomed! Write to the
+      <a href="http://www.common-lisp.net/mailman/listinfo/teepeedee2-devel">teepeedee2-devel</a> mailing list.</p>
+
+    <h3>Download</h3>
+
+    <p><a href="http://github.com/vii/teepeedee2/tarball/master">Tarball of the the latest git commit</a>.</p>
+
+    <p>To check out the tree locally:</p>
+<pre>
+git clone git://github.com/vii/teepeedee2.git
+</pre>
+
+    <h3>Project members</h3>
+    <pre><!--#include virtual="../../pprinted-project-members/teepeedee2" --></pre>
+
+    <div class="check">
+      <a href="http://validator.w3.org/check/referer">
+	Valid XHTML 1.0 Strict</a>
+    </div>
+  </body>
+</html>

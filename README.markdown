@@ -1,6 +1,10 @@
 teepeedee2 
 ================================
 
+Homepage
+--------
+See http://common-lisp.net/projects/teepeedee2.
+
 What's this?
 --------
 
