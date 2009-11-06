@@ -28,6 +28,7 @@
 	connection-close)
     (without-call/cc
       (flet ((handle-header (name value)
+	       (declare (type simple-byte-vector name value))
 	       (unless (zerop (length value))
 		 (case-match-fold-ascii-case name
 					     ("content-length" 
@@ -37,7 +38,7 @@
 					     ("connection"
 					      (match-bind (  
 							   (+ word (or (+ (space)) (last))
-							      '(case-match-fold-ascii-case word
+							      '(case-match-fold-ascii-case (the simple-byte-vector word)
 								("close" (setf connection-close t))
 								("keep-alive" (setf connection-close nil)))))
 						  value))

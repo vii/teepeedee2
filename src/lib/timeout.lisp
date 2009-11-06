@@ -37,9 +37,7 @@
 (defun-speedy max-timeout-period ()
   (length (quick-queue-entries *timeouts*)))
 
-(declaim (inline time-for-delay))
-(defun time-for-delay (delay)
-  (declare (optimize speed))
+(defun-speedy time-for-delay (delay)
   (let ((delay (floor delay)))
     (debug-assert (> (max-timeout-period) (* delay 2)) (delay))
     (+ (get-timeout-time) delay)))
