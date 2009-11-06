@@ -8,22 +8,21 @@
 (defun dispatch (con done path &key params host)
   (dispatcher-respond (find-dispatcher host) con done path params))
 
-(defun-speedy build-http-response (&key code banner headers body)
+(defun-speedy build-http-response (&key banner headers body)
   (declare (type sendbuf body))
   (declare (dynamic-extent body))
-  (with-sendbuf (response)
-    "HTTP/1.1 " code " " banner +newline+
+  (with-sendbuf ()
+    "HTTP/1.1 " banner +newline+
     "Content-Length: " (sendbuf-len body) +newline+
     headers
     +newline+
     body))
 
-
-(defun-speedy respond-http (con done &key (code #.(force-byte-vector 200)) (banner #.(force-byte-vector "OK"))
+(defun-speedy respond-http (con done &key (banner (force-byte-vector "200 OK"))
 		     (headers #.(byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+)) body)
   (declare (type sendbuf body))
   (declare (dynamic-extent body))
-  (send con done (build-http-response :code code :banner banner :headers headers :body body)))
+  (send con done (build-http-response :banner banner :headers headers :body body)))
 
 (my-defun dispatcher respond (con done path params)
   (let ((f (gethash path (my paths))))
@@ -31,11 +30,11 @@
 	(cond  
 	  (f
 	   (locally (declare (optimize speed) (type function f))
-	    (funcall f me con done path params)
-	    (values)))
+	     (funcall f me con done path params)
+	     (values)))
 	  (t
 	   ;(format *error-output* "LOST ~A~&" (strcat (my canonical-name) "/" path))
-	   (respond-http con done :code  404 :banner "Not found"
+	   (respond-http con done :banner (force-byte-vector "404 Not found")
 			 :body (funcall (my error-responder) me path params))))
       (error (e)
 	(format *error-output* "~&PAGE ERROR ~A~&--- ~A~&-AGAIN PAGE ERROR ~A~&" (strcat (my canonical-name) path) 
@@ -43,8 +42,7 @@
 		e)
 	(respond-http con done
 		      :body (with-sendbuf () "<h1>I programmed this thoughtlessly. Sorry for the inconvenience.</h1>")
-		      :code 500
-		      :banner "Internal error")))))
+		      :banner (force-byte-vector "500 Internal error"))))))
 
 (my-defun dispatcher register-path (path func)
   (setf (gethash (force-byte-vector path) (my paths)) (alexandria:ensure-function func)))
