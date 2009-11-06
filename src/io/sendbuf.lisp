@@ -25,17 +25,17 @@
 	  result))))
 
 (my-defun sendbuf add-simple (buf)
-	  (my-declare-fast-inline)
-	  (declare (type simple-byte-vector buf))
-	  (unless (zerop (length buf))
-	    (incf (my num-bufs))
-	    (incf (my len) (the sendbuf-small-integer (length buf)))
-	    (let ((n (cons buf nil)))
-	      (cond ((my head)
-		     (setf (cdr (my tail)) n
-			   (my tail) n))
-		    (t (setf (my head) n
-			     (my tail) n))))))
+  (my-declare-fast-inline)
+  (declare (type simple-byte-vector buf))
+  (unless (zerop (length buf))
+    (incf (my num-bufs))
+    (incf (my len) (the sendbuf-small-integer (length buf)))
+    (let ((n (cons buf nil)))
+      (cond ((my head)
+	     (setf (cdr (my tail)) n
+		   (my tail) n))
+	    (t (setf (my head) n
+		     (my tail) n))))))
 
 (my-defun sendbuf add (x)
   (my-declare-fast-inline)
@@ -90,6 +90,7 @@
 
 (my-defun sendbuf done ()
   (my-declare-fast-inline)
+  (debug-assert (eq (not (my head)) (zerop (my len))) (me))
   (not (my head)))
 
 (my-defun sendbuf check-done (con finished my-call)
@@ -105,23 +106,24 @@
 (my-defun sendbuf shift-up (s)
   (my-declare-fast-inline)
   (declare (type sendbuf-small-integer s))
+  (debug-assert (>= (my len) s) (me s))
   (decf (my len) s)
   (incf s (my offset))
-  (incf (my len) (my offset))
   (setf (my offset) 0)
   (loop until (zerop s)
 	do
 	(debug-assert (my head) (me s))
 	(let ((buf (car (my head))))
 	  (declare (type simple-byte-vector buf))
-	  (cond ((>= s (length buf))
-		 (decf s (length buf))
-		 (decf (my num-bufs))
-		 (setf (my head) 
-		       (cdr (my head))))
-		(t
-		 (setf (my offset) s)
-		 (setf s 0))))))
+	  (cond 
+	    ((>= s (length buf))
+	     (decf s (length buf))
+	     (decf (my num-bufs))
+	     (setf (my head) 
+		   (cdr (my head))))
+	    (t
+	     (setf (my offset) s)
+	     (return))))))
 
 #- (and) ;; broken
 (my-defun sendbuf send-write-piece-by-piece (con done)
@@ -158,13 +160,13 @@
       (declare (type (integer 0 #.+max-iovecs+) count))
       (cffi:with-foreign-object (vecs 'iovec count)
 	(loop for i below count
-		  for buf of-type simple-byte-vector in (my head)
+	      for buf of-type simple-byte-vector in (my head)
 	      for offset fixnum = (my offset) then 0
 	      do 
 	      (with-pointer-to-vector-data (ptr buf)
 		(cffi:with-foreign-slots ((base len) (cffi:mem-aref vecs 'iovec i) iovec)
 		  (setf base (cffi:inc-pointer ptr offset))
-		  (setf len (length buf)))))
+		  (setf len (- (length buf) offset)))))
 	(let ((s (socket-writev (con-socket con) vecs count)))
 	  (declare (type (or null sendbuf-small-integer) s))
 	  (when s
