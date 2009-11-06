@@ -62,6 +62,7 @@
       (my fail err))))
 
 (my-defun con 'reset-timeout (&optional delay)
+  (my-declare-fast-inline)
   (timeout-set (my timeout) delay)
   (values))
 
