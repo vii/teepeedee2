@@ -1,5 +1,9 @@
 (in-package #:tpd2.lib)
 
+(defvar *my-fast-inline-declaration* 
+  (progn '(declare (optimize speed))
+	 #+tpd2-debug '(declare)))
+
 (defgeneric copy (original))
 (defgeneric assign (original copy))
 
@@ -208,7 +212,7 @@
 	    (values nil lambda-list body))
       (multiple-value-bind (declarations-and-body inline)
 	  (if (equalp '(my-declare-fast-inline) (first declarations-and-body))
-	      (values (cons '(declare (optimize speed)) (rest declarations-and-body)) t)
+	      (values (cons *my-fast-inline-declaration* (rest declarations-and-body)) t)
 	      (values declarations-and-body nil))
 	(multiple-value-bind (declarations body)
 	    (separate-declarations declarations-and-body)
@@ -217,14 +221,16 @@
 	      (my-make-def class func args)
 	    `(progn 
 	       ,(when inline `(declaim (inline ,name)))
+	       #+tpd2-debug (declaim (notinline ,name))
 	       (,def ,name ,@(force-list combination-type) ,lambda-list
 			  ,@declarations
 			  (labels ((my-call ()
 				     (let ((me ,class))
 				       (with-shorthand-accessor (my ,class me)
 					 ,@body))))
-			    (my-call))))))))))
+			    (my-call)))
+	       )))))))
 
-(defun my-call ()
+(defmacro my-call ()
   "Inside a my-defun, #'my-call is the function call again"
   (error "not inside a my-defun"))
