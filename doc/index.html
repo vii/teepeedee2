@@ -50,9 +50,9 @@ LGPL</a>. See addons/* for the licences of those libraries.</p>
     the code for mopoko.com is included in the tpd2 tarball) &mdash;
     though this is not enforced by the licence, I think it is very
     slimy of web <q>developers</q> to greedily take for free huge
-    amounts of work like the Linux kernel and MySQL, but then keep
-    their horrible little scripts a closely guarded secret.  Don't be
-    like them.</p>
+    amounts of work like the Linux kernel, GNU toolchain and MySQL,
+    but then keep their horrible little scripts a closely guarded
+    secret.  Don't be like them.</p>
 
     <h3>Development priorities</h3>
 
@@ -65,9 +65,9 @@ LGPL</a>. See addons/* for the licences of those libraries.</p>
     needs stress testing and an HTTP fuzzing torture test.</p>
 
     <p> At the same time it is missing several features: comprehensive
-    request routing to allow REST-ful interfaces, cookie handling,
-    multipart form uploads, static file serving, logging, SSL, gzip
-    encoding, etc. Patches to implement these will be gratefully
+      request routing to allow REST-ful interfaces, cookie handling,
+      multipart form uploads, static file serving, logging, SSL, gzip
+      encoding, etc. Patches to implement these will be gratefully
       accepted!</p>
 
     <h3>TODO</h3>
@@ -75,12 +75,14 @@ LGPL</a>. See addons/* for the licences of those libraries.</p>
     <ul>
       <li>Rewrite the sendbuf stuff to use more correct buffer pinning
       and change the data representation (perhaps arrays with a fill
-      pointer instead of list heads and tails).</li>
+      pointer instead of list heads and tails). Also separate
+      sendbufs and cords, so that tpd2.ml need not depend on tpd2.io
+      (and thereby CFFI).</li>
 
       <li>Tidy up the HTTP client and make it much higher
       performance.</li>
 
-      <li>Rewrite the dispatcher mechanism to use a prefix trie
+      <li>Rewrite the dispatcher mechanism to use a perfect hash
       instead of a standard hash-table.</li>
     </ul>
 
