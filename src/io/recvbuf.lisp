@@ -3,14 +3,32 @@
 (deftype recvbuf-small-integer ()
   `(integer 0 #x10000000))
 
+(defconstant +recvbuf-default-size+ 4096)
+(defconstant +recvbuf-oversize+ 10000)
+
 (defstruct recvbuf
-  (store (make-byte-vector 1024) :type simple-byte-vector)
+  (store (make-byte-vector +recvbuf-default-size+) :type simple-byte-vector)
   (read-idx 0 :type recvbuf-small-integer)
   (write-idx 0 :type recvbuf-small-integer))
+
+(defvar *recvbufs* nil)
 
 (my-defun recvbuf len ()
   (my-declare-fast-inline)
   (the recvbuf-small-integer (length (my store))))
+
+(my-defun recvbuf reset ()
+  (my-declare-fast-inline)
+  (setf (my write-idx) 0
+	(my read-idx) 0))
+
+(declaim (ftype (function () recvbuf) get-recvbuf))
+(defun-speedy get-recvbuf ()
+  (or (pop *recvbufs*) (make-recvbuf)))
+
+(my-defun recvbuf 'put-recvbuf ()
+  (unless (> (my len) +recvbuf-oversize+)
+    (push me *recvbufs*)))
 
 (my-defun recvbuf half-full-or-more ()
   (my-declare-fast-inline)

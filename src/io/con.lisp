@@ -4,7 +4,7 @@
 (defstruct (con (:constructor %make-con))
   socket
   (peer-info nil :type (or null byte-vector))
-  (recv (make-recvbuf) :type recvbuf)
+  (recv (get-recvbuf) :type recvbuf)
   timeout
 
   ready-callback
@@ -170,7 +170,8 @@
 	(socket-close (my socket))
       (error (e)
 	(warn "Error closing socket ~A: ~A" con e)))
-    (setf (my socket) nil)))
+    (setf (my socket) nil)
+    (put-recvbuf (my recv))))
 
 
 (defun make-con-connect (&key address port 	       
