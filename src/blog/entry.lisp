@@ -16,7 +16,6 @@
 	      (force-string (my trace-details))
 	      (time-string (my time))))))
 
-
 (defun split-into-paragraphs (str)
   (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
 	       str))
@@ -59,12 +58,12 @@
   (strcat (its dir (my blog)) (my name)))
 
 (my-defun entry front-page-p (&optional tags)
-	  (let ((now (get-universal-time)))
-	   (and (>= now (my time))
-		(or (not (my expiry-time)) (>= (my expiry-time) now))
+  (let ((now (get-universal-time)))
+    (and (>= now (my time))
+	 (or (not (my expiry-time)) (>= (my expiry-time) now))
 		
-		(or (not tags)
-		    (intersection (my tags) tags :test #'equalp)))))
+	 (or (not tags)
+	     (intersection (my tags) tags :test #'equalp)))))
 
 (my-defun entry url-path ()
   (byte-vector-cat (its link-base (my blog)) (my name)))
@@ -86,15 +85,16 @@
 (my-defun entry comment-ml ()
   (<div :class "blog-entry-post-comment"
 	(html-action-form-collapsed ("Post a comment" :action-link (blog-post-comment-url (my blog)))
-				    ((text nil :type <textarea :reset "")
-				     (author "Anonymous")
-				     (entry-name (my index-name) :type :hidden)
-				     (keep-this-empty nil :type :hidden)))))
+	    ((text nil :type <textarea :reset "")
+	     (author "Anonymous")
+	     (entry-name (my index-name) :type :hidden)
+	     (keep-this-empty nil :type :hidden)))))
 
 (my-defun entry 'object-to-ml ()
   (<div :class "blog-entry"
 	(my story-ml)
 	(<p :class "time" "Posted " (time-string (my time)))
+	(<p :class "viewers" (length (my subscribers)) " watching live")
 	(call-next-method)
 	(my comment-ml)))
 
