@@ -53,6 +53,7 @@
   (list (eval (read *query-io*))))
 
 (defmacro debug-assert (test-form &optional places datum &rest arguments)
+  (declare (ignorable places datum arguments))
   `(progn
      ,test-form
      (values))
