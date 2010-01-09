@@ -4,11 +4,13 @@
 
 (declaim (ftype (function (t) simple-byte-vector) really-escape-string))
 (defun really-escape-string (value)
-  (match-replace-all (force-simple-byte-vector value)
-		     (#\< "&lt;")
-		     (#\> "&gt;")
-		     (#\& "&amp;")
-		     (#\' "&#39;"))) ; &apos; is *not* HTML but only XML
+  (let ((value (force-simple-byte-vector value)))
+    (declare (optimize speed))
+    (match-replace-all value
+      (#\< "&lt;")
+      (#\> "&gt;")
+      (#\& "&amp;")
+      (#\' "&#39;"))))		   ; &apos; is *not* HTML but only XML
 
 (declaim (ftype (function (t) (or raw-ml-sendbuf simple-byte-vector)) escape-data-consistent-internal))
 (defun-consistent escape-data (value)
