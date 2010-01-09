@@ -39,9 +39,9 @@
   (match-split (progn (* (space)) "," (* (space)))
 	       str))
 
-(my-defun blog ready-entries (&key (start 0) tags)
-  (loop for e in (subseq (my entries) start)
-	when (entry-front-page-p e tags)
+(my-defun blog ready-entries (&key age tags)
+  (loop for e in (my entries)
+	when (and (entry-front-page-p e tags) (<= (entry-time e) age))
 	collect e))
 
 (my-defun blog atom-feed-url ()
@@ -106,6 +106,7 @@
 			  text
 			  (not (zerop (length text)))
 			  (< (length text) +max-comment-length+)
+			  (not (if-match-bind (t (or "[url=" "[URL=")) text))
 			  (not (equalp 
 				text 
 				(ignore-errors (comment-text (first (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)))))))
@@ -120,7 +121,10 @@
 		       t))))
 	      (cond 
 		(.javascript.
-		 (webapp-respond-ajax-body all-http-params!))
+		 (if success
+		     (webapp-respond-ajax-body all-http-params!)
+		     (tpd2.io:with-sendbuf ()
+		       (js-to-bv (alert "Comment rejected.")))))
 		(success
 		 (webapp "Comment accepted" (<p "Thank you.")))
 		(t
@@ -129,7 +133,7 @@
 
 
     (defpage-lambda-blog (my link-base) 
-	(lambda ((n (force-byte-vector 0)) (tags))
+	(lambda ((age (force-byte-vector (get-universal-time))) (tags))
 	  (webapp ((my name) 
 		   :head-contents 
 		   (with-ml-output
@@ -139,8 +143,8 @@
 					;		     (<link :rel "alternate" :type "application/rss+xml" :href (my rss-feed-url)))
 
 		     ))
-	    (let ((n (byte-vector-parse-integer n)))
-	      (let ((entries (my ready-entries :start n :tags (split-into-list-by-comma tags))) (count 10))
+	    (let ((age (byte-vector-parse-integer age)))
+	      (let ((entries (my ready-entries :age age :tags (split-into-list-by-comma tags))) (count 10))
 		(<div :class "blog"
 		      (loop while entries
 			    repeat count
@@ -149,7 +153,7 @@
 			      (<h2 (<a :href (entry-url-path entry) (entry-title entry)))
 			      (output-object-to-ml entry)))
 		      (when entries
-			(<p :class "next-entries" (<a :href (page-link (my link-base) :n (force-byte-vector (+ n count)) :tags (force-byte-vector tags)) "More entries")))))))))))
+			(<h3 :class "next-entries" (<a :href (page-link (my link-base) :age (force-byte-vector (entry-time (first entries))) :tags (force-byte-vector tags)) "More entries")))))))))))
 
 (my-defun blog last-updated ()
   (loop for e in (my entries)
