@@ -123,6 +123,6 @@
 
 (defmacro with-independent-event-loop (() &body body)
   `(with-independent-timeouts ()
-     (let ((*epoll* (make-epoll)))
+     (let ((*epoll* (make-epoll)) (*recvbufs* nil))
        ,@body)))
 
