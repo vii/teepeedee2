@@ -210,6 +210,7 @@
    #:con-socket
    #:con-default-timeout-function
    #:con-timeout
+   #:con-hangup-hook
    
    #:+newline+
    #:+SOCK_DGRAM+
@@ -267,6 +268,9 @@
    #:js-html-script
    #:js-attrib
    #:js-to-string
+
+   #:js-to-bv
+   #:js-html-script-as-bv
 
    #:w3c-timestring
 ))
@@ -337,12 +341,15 @@
    #:make-message-channel
    #:message-channel-broadcast
    #:channel-script-helper
+
    #:js-library
    #:with-site
    #:with-compile-time-site
    #:defsite
    #:current-site
 
+   #:js-library-animate
+   #:html-jiggle-text
 
    #:+html-id-async-status+
    #:+html-class-scroll-to-bottom+
@@ -412,6 +419,10 @@
 
 (defpackage #:teepeedee2.game.truc
   (:nicknames #:tpd2.game.truc)
+  (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
+
+(defpackage #:teepeedee2.game.blackjack
+  (:nicknames #:tpd2.game.blackjack)
   (:use #:tpd2.game #:tpd2.ml #:tpd2.lib #:teepeedee2.webapp #:common-lisp #:tpd2.ml.html))
 
 (defpackage #:teepeedee2.game.nash-bargain
