@@ -7,14 +7,14 @@
 
 
 ;;; WARNING -- SIGNATURES NOT CHECKED!
-(handler-bind (((or asdf-install::key-not-found asdf-install::download-error asdf-install::no-signature) 
-		(lambda(c) (declare (ignore c)) (invoke-restart 'asdf-install::skip-gpg-check))))
-  (asdf-install:install 		   
-   'iterate
-   'cffi
-   'cl-irregsexp
-   'trivial-backtrace
-   'parenscript))
+
+(let ((pkgs  
+       (remove-if (lambda (p) (asdf:find-system p nil))
+		  '(iterate cffi cl-irregsexp trivial-backtrace parenscript))))
+ (handler-bind (((or asdf-install::key-not-found asdf-install::download-error asdf-install::no-signature) 
+		 (lambda(c) (declare (ignore c)) (invoke-restart 'asdf-install::skip-gpg-check))))
+   (when pkgs
+     (apply 'asdf-install:install pkgs))))
 
 ;;; Load tpd2
 
@@ -29,14 +29,26 @@
 
 ;;; Define a /hello page
 
-(defpage "/hello" ((name "Friend"))
-  (<h1 "Hello " name))
+(defsite *hello*)
+(with-site (*hello*)
+ (defpage "/hello" (name) :create-frame nil
+   (<h1 "Hello " name)))
 
 ;;; Start tpd2 listening
 
 (http-start-server 8080)
 
 ;;; Enter the event-loop
+
+(format t "
+
+
+Finished everything.
+
+Launching server!
+
+Please visit http://localhost:8080/hello?name=New+TPD2er
+")
 
 #+sbcl
 (sb-thread:make-thread #'event-loop :name "tpd2")
