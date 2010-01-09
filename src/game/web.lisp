@@ -78,7 +78,7 @@
 
 (my-defun web-state 'inform (game-state (message (eql :select-new-stake)) &rest args)
   (let ((choice (getf args :choice)))
-    (unless (eql choice (its stake game-state))
+    (unless (eql choice (ignore-errors (its stake game-state)))
       (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " raised to " choice " chips.")))))
 
 (my-defun web-state 'inform (game-state (message (eql :winner)) &rest args)
@@ -343,7 +343,8 @@
      :text-decoration "inherit" :color "inherit" :background-color "inherit" :font-size "inherit" :font-weight "inherit"
      :font-family "inherit" 
      :border "none" :padding "0 0 0 0" :margin "0 0 0 0")
-    (<body :font-family "georgia, serif" :word-spacing "0.075em" :letter-spacing "0.025em" :margin-left "5%" :margin-right "5%")
+    (<body :font-family "georgia, serif" :word-spacing "0.075em" :letter-spacing "0.025em" :margin-left "5%" :margin-right "5%"
+	   :background-color "white")
     ((<h1 <h2 <h3 <h4 <h5 <h6) :letter-spacing "0.05em" :font-weight "normal" :margin "0 0 0 0" :padding "0 0 0 0")
     ((<span <div <h1 <h2 <h3 <h4 <h5 <h6 <p <a <input) :direction "ltr" :unicode-bidi "bidi-override")
     ("input[type=text]" 
@@ -405,7 +406,7 @@
 				      (<h1 :class "mopoko" 
 					   (<A :href (page-link "/") 
 					       :class "inherit" 
-					       (<span :style (css-attrib :color "black") "mopoko") ".com prerelease" ))
+					       (html-jiggle-text "mopoko") " prerelease" ))
 				      (output-object-to-ml (webapp-frame))))
     :page-head (lambda(title)
 		 `(with-ml-output
@@ -415,7 +416,15 @@
 						(output-raw-ml 
 						 (<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
 					     (css)
-					     (webapp-default-page-head-contents))))
+					     (webapp-default-page-head-contents)
+					     (output-raw-ml
+					      (js-library-animate))))
+    :page-body-footer 
+    (lambda(title)
+      (declare (ignore title))
+      `(with-ml-output 
+	 (webapp-default-page-footer)
+	 (js-html-script (start-animation)))))
 
 (with-compile-time-site (*site*)
   (defun web-add-game (game-generator name)
