@@ -70,4 +70,17 @@
 	  it))))
 
 (defun dispatcher-add-alias (dispatcher alias)
+  (check-type dispatcher dispatcher)
   (setf (alist-get *dispatchers* (force-byte-vector alias)) dispatcher))
+
+(my-defun dispatcher 'print-object (stream)
+  (print-unreadable-object (me stream :type t :identity t)
+    (format stream "~S" (force-string (my canonical-name)))
+    (loop for p being the hash-keys of (my paths)
+	  do (format stream " ~A" (force-string p)))))
+
+(defun describe-dispatchers (&optional (*standard-output* *standard-output*))
+  ;; TODO print a list of hostnames for each dispatcher
+  (loop for (path . dispatcher) in *dispatchers*
+	do (format t "~&~S -> ~A~&" (force-string path) dispatcher))
+  (format t "~&DEFAULT -> ~A~&" *default-dispatcher*))
