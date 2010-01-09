@@ -68,9 +68,14 @@
 				  (respond-http con done :headers +http-header-html-content-type+ :body it)
 				  t))))))
       (unless (finished)
-	(let (func (original-timeout-handler (timeout-func (tpd2.io:con-timeout con))))
+	(let (func 
+	      (original-timeout-handler 
+	       (timeout-func (tpd2.io:con-timeout con)))
+	      (original-hangup-handler
+	       (tpd2.io:con-hangup-hook con)))
 	  (flet ((unsubscribe ()
-		   (setf (timeout-func (tpd2.io:con-timeout con)) original-timeout-handler)
+		   (setf (timeout-func (tpd2.io:con-timeout con)) original-timeout-handler
+			 (tpd2.io:con-hangup-hook con) original-hangup-handler)
 		   (loop for (channel ) in channel-states do (channel-unsubscribe channel func))))
 	    (setf func
 		  (lambda() (when (finished) (unsubscribe))))
@@ -83,7 +88,12 @@
 		      (with-ignored-errors (tpd2.io:report-unless-normal-connection-error)
 			(respond-http con done :headers +http-header-html-content-type+ 
 				      :body (with-sendbuf () (js-to-string "TIMEOUT")))))
-		    )))))))))
+		    ))
+	    (setf (tpd2.io:con-hangup-hook con)
+		  (lambda (&rest args)
+		    (unsubscribe)
+		    (when original-hangup-handler
+		      (apply original-hangup-handler args)))))))))))
 
 (defun register-channel-page ()
   (dispatcher-register-path (site-dispatcher (current-site)) +channel-page-name+ #'channel-respond-page))
