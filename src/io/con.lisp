@@ -8,7 +8,8 @@
   timeout
 
   ready-callback
-  err)
+  err
+  hangup-hook)
 
 (defun make-con (&rest args)
   (let ((con (apply '%make-con args)))
@@ -171,7 +172,9 @@
       (error (e)
 	(warn "Error closing socket ~A: ~A" con e)))
     (setf (my socket) nil)
-    (put-recvbuf (my recv))))
+    (put-recvbuf (my recv))
+    (when (my hangup-hook)
+      (funcall (my hangup-hook)))))
 
 
 (defun make-con-connect (&key address port 	       
