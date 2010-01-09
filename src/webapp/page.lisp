@@ -14,50 +14,55 @@
 	   (mapcar 'char-code '(#\- #\_))))
   :test 'equalp)
 
-(defun generate-args-for-defpage-from-params (&key params-var con-var defaulting-lambda-list)
-  (declare (ignore con-var))
-  (let ((arg-names (mapcar 'force-first defaulting-lambda-list))
-	(arg-values (mapcar (lambda(x)(second (force-list x))) defaulting-lambda-list)))
-    (flet ((xlate (name)
-	     (case name 
-	       (all-http-params! params-var))))
-     (loop for name in arg-names
-	   for value in arg-values
-	   for xlated = (xlate name)
-	   collect (intern (force-string name) :keyword)
-	   if xlated
-	   collect xlated 
-	   else
-	   collect (let ((val-form `(get-http-param ,params-var ,(force-byte-vector name))))
-		     (if value
-			 `(or ,val-form
-			      ,value)
-			 val-form))))))
+(defun generate-args-for-defpage-from-params (&key params-var defaulting-lambda-list 
+					      basic-call create-frame)
+  (let (page-params
+	form-vars
+	gensyms)
+    (loop for arg in defaulting-lambda-list
+	  for arg-as-list = (force-list arg)
+	  for name = (first arg-as-list)
+	  for val = (second arg-as-list)
+	  do (case name
+	       (all-http-params!
+		(appendf page-params `(:all-http-params! ,params-var)))
+	       (t
+		(let ((gs (gensym (force-string name))))
+		  (push gs gensyms)
+		   (push name form-vars)
+		   (appendf page-params 
+			    `(,(intern (force-string name) :keyword) 
+			       ,(if val
+				    `(or ,gs ,val)
+				    `,gs)))))))
+    (with-unique-names (name value)
+      `(let (*webapp-frame* ,@gensyms)
+	 (loop for (,name . ,value) in ,params-var
+	       do 
+	       (case-match-fold-ascii-case ,name
+					   (,+webapp-frame-id-param+ 
+					    (setf *webapp-frame* (find-frame ,value)))
+					   ,@(loop for var in form-vars
+						    for gs in gensyms
+						   collect `(,(force-byte-vector var)
+							      (setf ,gs ,value)))))
+	 (when ,(if create-frame t `*webapp-frame*)
+	   (setf (frame-trace-info (webapp-frame :site (current-site))) 
+		 (get-http-param
+		  ,params-var tpd2.http:+http-param-origin+))
+	   (frame-reset-timeout (webapp-frame)))
 
-(defmacro with-webapp-frame ((params &key (create-frame t)) &body body)
-  (check-symbols params)
-  `(let ((*webapp-frame*
-	  (awhen (get-http-param ,params +webapp-frame-id-param+)
-		 (find-frame it))))
-     (when ,(if create-frame t `(webapp-frame-available-p))
-       (setf (frame-trace-info (webapp-frame :site (current-site))) 
-	     (get-http-param
-	      ,params tpd2.http:+http-param-origin+))
-       (frame-reset-timeout (webapp-frame)))
-     (locally
-	 ,@body)))
-
-(defmacro apply-page-call-without-frame (con function &rest args)
-  (let* ((defaulting-lambda-list (car (last args)))
-	 (normal-args (butlast args)))
-    `(funcall ,function ,@normal-args ,@(generate-args-for-defpage-from-params 
-					 :con-var con
-					 :params-var 'all-http-params! 
-					 :defaulting-lambda-list defaulting-lambda-list))))
+	 (,@basic-call ,@page-params)))))
 
 (defmacro apply-page-call ((&key con function create-frame) &rest args)
-  `(with-webapp-frame (all-http-params! :create-frame ,create-frame)
-     (apply-page-call-without-frame ,con ,function ,@args)))
+  (declare (ignore con))
+  (let* ((defaulting-lambda-list (car (last args)))
+	 (normal-args (butlast args)))
+    (generate-args-for-defpage-from-params 
+     :params-var 'all-http-params! 
+     :defaulting-lambda-list defaulting-lambda-list
+     :basic-call `(funcall ,function ,@normal-args)
+     :create-frame create-frame)))
  
 (defmacro defpage-lambda (path function &key defaulting-lambda-list (create-frame t))
   (multiple-value-bind (function defaulting-lambda-list)
@@ -97,10 +102,10 @@
   `(sendbuf-to-byte-vector
     (with-sendbuf (sendbuf)
       ,page
-      "?.unique.="
-      (random-web-sparse-key 4)
+      "?.=" ; sometimes a unique string to stop overeager caches
       (when (webapp-frame-available-p)
 	     (with-sendbuf-continue (sendbuf)
+	       (random-web-sparse-key 4)
 	       "&"
 	       +webapp-frame-id-param+
 	       "="
