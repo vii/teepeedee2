@@ -14,3 +14,5 @@
 
 (defconstant-bv +http-header-html-content-type+
     (byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+))
+
+(defconstant-string +html-jiggle-class+ "-jiggle-")
