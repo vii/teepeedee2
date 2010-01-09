@@ -1,12 +1,13 @@
 (in-package #:tpd2.http)
 
 (defun url-encoding-decode (encoded)
-  (declare (type byte-vector encoded))
+  (declare (type simple-byte-vector encoded)
+	   (optimize speed))
   (match-replace-all 
-   encoded
-   ((progn "%" (val (unsigned-byte :length 2 :base 16)))
-    (byte-vector val))
-   ("+" " ")))
+      encoded
+    ((progn "%" (val (unsigned-byte :length 2 :base 16)))
+     (byte-vector val))
+    ("+" " ")))
 
 (defun percent-hexpair-encode (plain)
   (declare (type byte-vector plain))
