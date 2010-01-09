@@ -39,7 +39,7 @@
   (match-split (progn (* (space)) "," (* (space)))
 	       str))
 
-(my-defun blog ready-entries (&key age tags)
+(my-defun blog ready-entries (&key (age (get-universal-time)) tags)
   (loop for e in (my entries)
 	when (and (entry-front-page-p e tags) (<= (entry-time e) age))
 	collect e))
