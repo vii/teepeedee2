@@ -29,8 +29,8 @@
 
 (defgeneric channel-update (channel subscriber-state))
 
-(defun channel-respond-page (dispatcher con done path all-http-params!)
-  (declare (ignore dispatcher path))
+(defun channel-respond-page (dispatcher con done)
+  (declare (ignore dispatcher))
   (apply-page-call (:con con :function 'channel-respond :create-frame nil) con done (.channels.)))
 
 (defun channel-string-to-states (channels)
@@ -59,14 +59,15 @@
 
 (defun channel-respond (con done &key .channels.)
   (let ((channel-states (channel-string-to-states .channels.)))
-    (with-preserve-specials (*webapp-frame*) 
+    (start-http-response)
+    (with-preserve-specials (*webapp-frame* *servestate*) 
       (flet ((finished () 
 	       (or (con-dead? con)
 		   (with-specials-restored
 		       (with-frame-site 
 			   (awhen (channel-respond-body channel-states)
-				  (respond-http con done :headers +http-header-html-content-type+ :body it)
-				  t))))))
+			     (send-http-response con done it)
+			     t))))))
       (unless (finished)
 	(let (func 
 	      (original-timeout-handler 
@@ -85,9 +86,10 @@
 		  (lambda ()
 		    (unsubscribe)
 		    (unless (con-dead? con)
-		      (with-ignored-errors (tpd2.io:report-unless-normal-connection-error)
-			(respond-http con done :headers +http-header-html-content-type+ 
-				      :body (with-sendbuf () (js-to-string "TIMEOUT")))))
+		      (with-specials-restored
+			  (with-ignored-errors (tpd2.io:report-unless-normal-connection-error)
+			    (send-http-response con done 
+						(with-sendbuf () (js-to-string "TIMEOUT"))))))
 		    ))
 	    (setf (tpd2.io:con-hangup-hook con)
 		  (lambda (&rest args)

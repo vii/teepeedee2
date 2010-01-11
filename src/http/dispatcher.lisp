@@ -5,39 +5,89 @@
   (paths (make-hash-table :test 'equalp))
   (error-responder 'default-http-error-page))
 
-(defun dispatch (con done path &key params host)
-  (dispatcher-respond (find-dispatcher host) con done path params))
+(defun dispatch-servestate (con done *servestate*)
+  (dispatcher-respond (find-dispatcher (servestate-host*)) 
+		      con done))
 
-(defun-speedy build-http-response (&key banner headers body)
+(defun-speedy start-http-response (&key (banner (force-byte-vector "200 OK"))
+					(content-type #.(byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+)))
+  (setf (servestate-response*)
+	(with-sendbuf ()
+	  "HTTP/1.1 " banner +newline+
+	  content-type)))
+
+(defun-speedy map-http-params (func)
+  (declare (dynamic-extent func) (type (function (simple-byte-vector simple-byte-vector) t) func))
+  (flet ((parse-params (str)
+	   (when str
+	     (match-bind ( (*  name "=" value (or (last) "&")
+			       '(funcall func name value)))
+		 str)))
+	 (parse-cookie-params (str)
+	   (when str
+	     (match-bind ( (*  name "=" value (or (last) "," ";")
+			       '(funcall func name value)))
+		 str))))
+    (declare (inline parse-cookie-params parse-params)
+	     (dynamic-extent #'parse-params #'parse-cookie-params))
+    (parse-params (servestate-query-string*))
+    (parse-params (servestate-post-parameters*))
+    (parse-cookie-params (servestate-cookie*))))
+
+(defmacro with-http-params (bindings &body body)
+  (with-unique-names (f pname pvalue)
+    `(let ,(loop for b in bindings for (n default) = (force-list b)
+		 collect `(,n ,default))
+       (flet ((,f (,pname ,pvalue)
+		(declare (type simple-byte-vector ,pname ,pvalue))
+		(case-match-fold-ascii-case ,pname
+					    ,@(loop for b in bindings
+						    collect 
+						    (destructuring-bind
+							  (var &optional default &key conv (name (force-byte-vector var)))
+							(force-list b)
+						      (declare (ignore default))
+						      `(,(force-byte-vector name)
+							 (setf ,var ,(if conv
+									 `(,conv ,pvalue)
+									 pvalue)))
+						      )))))
+	 (declare (inline ,f) (dynamic-extent #',f))
+	 (map-http-params #',f)
+	 (locally ,@body)))))
+
+(defmacro with-http-headers (() &body body)
+  `(with-sendbuf-continue ((servestate-response*))
+     ,@body))
+
+(defun-speedy send-http-response (con done body)
   (declare (type sendbuf body))
-  (declare (dynamic-extent body))
-  (with-sendbuf ()
-    "HTTP/1.1 " banner +newline+
-    "Content-Length: " (sendbuf-len body) +newline+
-    headers
-    +newline+
-    body))
+  (with-http-headers ()
+     "Content-Length: " (sendbuf-len body) +newline+
+     +newline+
+     body)
+  (send
+   con done
+   (servestate-response*)))
 
-(defun-speedy respond-http (con done &key (banner (force-byte-vector "200 OK"))
-		     (headers #.(byte-vector-cat "Content-Type: text/html;charset=utf-8" tpd2.io:+newline+)) body)
-  (declare (type sendbuf body))
-  (declare (dynamic-extent body))
-  (send con done (build-http-response :banner banner :headers headers :body body)))
+(defun-speedy respond-http (con done &key banner body)
+  (start-http-response :banner banner)
+  (send-http-response con done body))
 
-(my-defun dispatcher respond (con done path params)
-  (let ((f (gethash path (my paths))))
+(my-defun dispatcher respond (con done)
+  (let ((f (gethash (servestate-path*) (my paths))))
     (handler-case 
 	(cond  
 	  (f
 	   (locally (declare (optimize speed) (type function f))
-	     (funcall f me con done path params)
+	     (funcall f me con done)
 	     (values)))
 	  (t
 	   ;(format *error-output* "LOST ~A~&" (strcat (my canonical-name) "/" path))
 	   (respond-http con done :banner (force-byte-vector "404 Not found")
-			 :body (funcall (my error-responder) me path params))))
+			 :body (funcall (my error-responder) me))))
       (error (e)
-	(format *error-output* "~&PAGE ERROR ~A~&--- ~A~&-AGAIN PAGE ERROR ~A~&" (strcat (my canonical-name) path) 
+	(format *error-output* "~&PAGE ERROR ~A~&--- ~A~&-AGAIN PAGE ERROR ~A~&" (strcat (my canonical-name) (servestate-path*)) 
 		(backtrace-description e)
 		e)
 	(respond-http con done
@@ -47,8 +97,7 @@
 (my-defun dispatcher register-path (path func)
   (setf (gethash (force-byte-vector path) (my paths)) (alexandria:ensure-function func)))
 
-(my-defun dispatcher 'default-http-error-page (path params)
-  (declare (ignore params path))
+(my-defun dispatcher 'default-http-error-page ()
   (with-sendbuf () 
     "<h1>I made a mistake. Sorry for the inconvenience.</h1>"))
 

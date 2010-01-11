@@ -12,8 +12,7 @@
     (action-id action)))
 
 (defmacro page-action-lambda (&body body)
-  `(lambda(all-http-params!)
-     (declare (ignorable all-http-params!))
+  `(lambda()
      ,@body))
 
 (defmacro page-action-link (&body body)
@@ -50,11 +49,15 @@
 (defmacro html-action-form (title-and-options lambda-list &body body)
   (destructuring-bind (title 
 		       &key (action-link      
-			     `(page-action-link 
-				(let ,(loop for p in lambda-list collect
-					    `(,(force-first p) (or (alist-get all-http-params! ,(force-byte-vector (force-first p)) 
-									      :test 'byte-vector=-fold-ascii-case)
-								   ,(second (force-list p)))))
+			     `(page-action-link
+				(with-http-params 
+				    ,(mapcar (lambda (lambda-arg) 
+					       (destructuring-bind (name &optional default &rest keys)
+						   (force-list lambda-arg)
+						 (let ((keys (copy-list keys)))
+						   (alexandria:delete-from-plistf keys :type :reset)
+						   (list* name default keys))))
+					     lambda-list)
 				  ,@body)))
 		       after-submit-js)
       (force-list title-and-options)
@@ -86,31 +89,26 @@
   (when id 
     (find id (webapp-frame-var 'actions) :key 'action-id :test 'equalp)))
 
-(defun action-respond-body (&key .id. .javascript. all-http-params!)
+(defun action-respond-body (&key .id. .javascript.)
   (with-frame-site 
     (let ((body (awhen (find-action .id.)
-		  (funcall (the function (action-func it)) all-http-params!))))
+		  (funcall (the function (action-func it))))))
       (check-type body (or null sendbuf))
       (cond (.javascript.
-	     (webapp-respond-ajax-body all-http-params!))
+	     (webapp-respond-ajax-body))
 	    ((and (not body) (webapp-frame-available-p) (frame-current-page (webapp-frame)))	
-	     (values (funcall (frame-current-page (webapp-frame)))
-		     +http-header-html-content-type+))
+	     (funcall (frame-current-page (webapp-frame))))
 	    (t
-	     (values 
 	      (or body
 		  (with-sendbuf ()
-		    "<h1>Sorry, nothing to see here. Please go back.</h1>")) 
-	      +http-header-html-content-type+))))))
+		    "<h1>Sorry, nothing to see here. Please go back.</h1>"))))))) 
 
-(defun webapp-respond-ajax-body (all-http-params!)
-  (let ((channels (channel-string-to-states 
-		   (alist-get all-http-params! (force-byte-vector '.channels.) 
-			      :test 'byte-vector=-fold-ascii-case))))
-   (channel-respond-body channels :always-body t)))
+(defun webapp-respond-ajax-body ()
+  (with-http-params ((channels nil :conv channel-string-to-states))
+    (channel-respond-body channels :always-body t)))
   
 (defun register-action-page ()
-  (defpage-lambda +action-page-name+ #'action-respond-body :defaulting-lambda-list (.id. .javascript. all-http-params!)))
+  (defpage-lambda +action-page-name+ #'action-respond-body :defaulting-lambda-list (.id. .javascript.)))
 
 
 (my-defun frame 'simple-channel-body-ml ()

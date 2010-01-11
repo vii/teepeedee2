@@ -237,13 +237,18 @@
    #:percent-hexpair-encode
    #:dispatcher-register-path
    #:dispatcher-canonical-name
-   #:build-http-response
-   #:respond-http
+
+   #:with-http-params
+   #:with-http-headers
+   #:send-http-response
+   #:start-http-response
+   
+   #:servestate-origin*
+   #:*servestate*
+
    #:*default-dispatcher*
    #:dispatcher-add-alias
    #:find-or-make-dispatcher
-   #:http-parse-and-generate-response
-   #:+http-param-origin+
 
    #:http-start-server
    ))

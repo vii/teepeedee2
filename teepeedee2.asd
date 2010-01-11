@@ -62,7 +62,8 @@
 					      :components (
 							   (:file "encoding")
 							   (:file "headers")
-							   (:file "dispatcher")
+							   (:file "dispatcher" :depends-on ("servestate"))
+							   (:file "servestate")
 							   (:file "serve" :depends-on ("encoding" "headers" "dispatcher"))
 							   (:file "request" :depends-on ("headers"))))
 				     (:module :ml

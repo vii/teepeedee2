@@ -14,52 +14,23 @@
 	   (mapcar 'char-code '(#\- #\_))))
   :test 'equalp)
 
-(defun generate-args-for-defpage-from-params (&key params-var defaulting-lambda-list 
+(defun generate-args-for-defpage-from-params (&key defaulting-lambda-list 
 					      basic-call create-frame)
-  (let (page-params
-	form-vars
-	gensyms)
-    (loop for arg in defaulting-lambda-list
-	  for arg-as-list = (force-list arg)
-	  for name = (first arg-as-list)
-	  for val = (second arg-as-list)
-	  do (case name
-	       (all-http-params!
-		(appendf page-params `(:all-http-params! ,params-var)))
-	       (t
-		(let ((gs (gensym (force-string name))))
-		  (push gs gensyms)
-		   (push name form-vars)
-		   (appendf page-params 
-			    `(,(intern (force-string name) :keyword) 
-			       ,(if val
-				    `(or ,gs ,val)
-				    `,gs)))))))
-    (with-unique-names (name value)
-      `(let (*webapp-frame* ,@gensyms)
-	 (loop for (,name . ,value) in ,params-var
-	       do 
-	       (case-match-fold-ascii-case ,name
-					   (,+webapp-frame-id-param+ 
-					    (setf *webapp-frame* (find-frame ,value)))
-					   ,@(loop for var in form-vars
-						    for gs in gensyms
-						   collect `(,(force-byte-vector var)
-							      (setf ,gs ,value)))))
-	 (when ,(if create-frame t `*webapp-frame*)
-	   (setf (frame-trace-info (webapp-frame :site (current-site))) 
-		 (get-http-param
-		  ,params-var tpd2.http:+http-param-origin+))
-	   (frame-reset-timeout (webapp-frame)))
-
-	 (,@basic-call ,@page-params)))))
+  `(with-http-params (,@defaulting-lambda-list (*webapp-frame* nil :name ,+webapp-frame-id-param+ :conv find-frame))
+     (when ,(if create-frame t `*webapp-frame*)
+       (setf (frame-trace-info (webapp-frame :site (current-site))) 
+	     (servestate-origin*))
+       (frame-reset-timeout (webapp-frame)))
+     
+     (,@basic-call ,@(loop for p in defaulting-lambda-list for n = (force-first p)
+			   collect (intern (force-string n) :keyword)
+			   collect n))))
 
 (defmacro apply-page-call ((&key con function create-frame) &rest args)
   (declare (ignore con))
   (let* ((defaulting-lambda-list (car (last args)))
 	 (normal-args (butlast args)))
     (generate-args-for-defpage-from-params 
-     :params-var 'all-http-params! 
      :defaulting-lambda-list defaulting-lambda-list
      :basic-call `(funcall ,function ,@normal-args)
      :create-frame create-frame)))
@@ -77,13 +48,12 @@
 	    (t
 	     (values function defaulting-lambda-list)))
     `(dispatcher-register-path (site-dispatcher (current-site)) ,path
-			     (lambda(dispatcher con done path all-http-params!)
-			       (declare (ignore dispatcher path))
-			       (declare (ignorable all-http-params!))
-			       (multiple-value-bind (body headers)
-				   (apply-page-call
-				    (:con con :function ,function :create-frame ,create-frame)  ,defaulting-lambda-list)
-				 (respond-http con done :body body :headers headers))))))
+			     (lambda(dispatcher con done)
+			       (declare (ignore dispatcher))
+			       (start-http-response)
+			       (send-http-response con done
+				(apply-page-call
+				 (:con con :function ,function :create-frame ,create-frame)  ,defaulting-lambda-list))))))
 
 (defmacro defpage (path defaulting-lambda-list &body body)
   (let ((normal-func-name (intern (strcat 'page- 

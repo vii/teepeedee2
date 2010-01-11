@@ -98,7 +98,7 @@
 				   (datastore-delete c))))))))))
 
     (defpage-lambda-blog (my post-comment-url)
-	(lambda (text author entry-name keep-this-empty .javascript. http-peer-info! all-http-params!)
+	(lambda (text author entry-name keep-this-empty .javascript.)
 	  (let ((entry-name (force-string entry-name)))
 	    (let ((success 		   
 		   (when (and 
@@ -115,14 +115,14 @@
 			 (make-comment 
 			  :author author
 			  :text text
-			  :trace-details http-peer-info!
+			  :trace-details (tpd2.http:servestate-origin*)
 			  :entry-index-name entry-name)
 			 (channel-notify entry))
 		       t))))
 	      (cond 
 		(.javascript.
 		 (if success
-		     (webapp-respond-ajax-body all-http-params!)
+		     (webapp-respond-ajax-body)
 		     (tpd2.io:with-sendbuf ()
 		       (js-to-bv (alert "Comment rejected.")))))
 		(success

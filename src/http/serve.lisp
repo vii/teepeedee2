@@ -1,25 +1,19 @@
 (in-package #:tpd2.http)
 
-(declaim (inline make-request))
-(defstruct request
-  (host nil :type (or null simple-byte-vector))
-  (path nil :type (or null simple-byte-vector))
-  params
-  (origin nil :type (or null simple-byte-vector)))
-
-(defvar *request*)
-(declaim (type request *request*))
-
 (defun http-serve-timeout ()
   60)
-
-(defconstant-bv +http-param-origin+ (force-byte-vector 'http-peer-info!))
 
 (defun match-x-forwarded-for (value)
   (match-bind
    (+ (and (char) (progn host (or (progn "," (* (space))) (last)))))
    value
    host))
+
+(defun-speedy match-request-url (url)
+  (match-bind (path (or (last) (progn "?" q)))
+      url
+    (setf (servestate-path*) path
+	  (servestate-query-string*) q)))
 
 (defconstant-bv +header-end+ (concatenate 'simple-byte-vector +newline+ +newline+))
 
@@ -29,7 +23,7 @@
 
   (io 'http-serve-parse-headers con (io 'recvline-shared-buf con +header-end+)))
 
-
+#- (and)
 (defun http-serve-parse-headers-clean (con done headers)
   (declare (optimize speed))
   (let (
@@ -83,29 +77,27 @@
 
 (defun http-serve-parse-headers (con done headers)
   (declare (optimize speed))
-  (let (
-	(request-content-length 0)
-	host
-	(request-origin (con-peer-info con))
-	connection-close)
+  (let ((*servestate* (make-servestate :origin (con-peer-info con))))
     (flet ((handle-header (name value)
 	     (declare (type simple-byte-vector name value))
 	     (unless (zerop (length value))
-	        (case-match-fold-ascii-case name
-					   ("content-length" 
-					    (setf request-content-length (match-int value)))
-					   ("host"
-					    (setf host value))
-					   ("connection"
-					    (match-bind (  
-							 (+ word (or (+ (space)) (last))
-							    '(case-match-fold-ascii-case (the simple-byte-vector word)
-							      ("close" (setf connection-close t))
-							      ("keep-alive" (setf connection-close nil)))))
+	        #.`(case-match-fold-ascii-case name
+					       ("content-length" 
+						(setf (servestate-content-length*) (match-int value)))
+					       ("connection"
+						(match-bind (  
+							     (+ word (or (+ (space)) (last))
+								'(case-match-fold-ascii-case (the simple-byte-vector word)
+								  ("close" (setf (servestate-connection-close*) t))
+								  ("keep-alive" (setf (servestate-connection-close*) nil)))))
 						value))
-					   ("x-forwarded-for" 
-					    (setf request-origin
-						  (match-x-forwarded-for value)))))))
+					       ("x-forwarded-for" 
+						(setf (servestate-origin*)
+						      (match-x-forwarded-for value)))
+					       ,@(loop for f in *stored-servestate-header-fields*
+						       collect
+						       `(,(force-string f)
+							  (setf (,(concat-sym 'servestate- f '*)) value)))))))
       (declare (dynamic-extent #'handle-header))
       (let ((pos 0))
 	(declare (type (integer 0 100000) pos)
@@ -141,7 +133,11 @@
 		   (line ()
 		     `(multiple-value-prog1 (u #\Return) (assert-eol))))
 
-	  (let ((method (ulws)) (url (ulws)) (version-major 0) (version-minor 9))
+	  (let ((version-major 0) (version-minor 9))
+	    (setf (servestate-method*) (ulws))
+
+	    (match-request-url (ulws))
+
 	    (cond ((= (e) (char-code #\Return)))
 		  (t
 		   (s "HTTP/")
@@ -150,7 +146,8 @@
 		   (setf version-minor (i))
 		   (lws)
 		   (assert-eol)))
-	    (setf connection-close (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor)))))
+	    (setf (servestate-connection-close*) 
+		  (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor)))))
 	    (loop until (= (e) (char-code #\Return))
 		  do (cond ((m #\Space #\Tab))
 			   (t
@@ -160,22 +157,18 @@
 			      (handle-header header-name (line))))))
 	    (assert-eol)
 
-	    (http-serve-process-body con done 
-				     url
-				     :request-content-length request-content-length 
-				     :host host 
-				     :origin request-origin
-				     :connection-close connection-close)))))))
+	    (http-serve-process-body con done *servestate*)))))))
 
-(defprotocol http-serve-process-body (con url &key request-content-length host origin connection-close)
-  (io 'parse-and-dispatch con url 
-      :host host
-      :origin origin
-      :request-body
-      (unless (zerop request-content-length)
-	(io 'recv con request-content-length)))
+(defprotocol http-serve-process-body (con servestate)
+  (unless (zerop (servestate-content-length servestate))
+    (setf (servestate-post-parameters servestate)
+	  (force-simple-byte-vector
+	   (io 'recv con (servestate-content-length servestate)))))
+
+  (io 'dispatch-servestate con servestate)
+
   (cond 
-       (connection-close	 
+       ((servestate-connection-close servestate)	 
 
 ;;; In the case where the client did not legitimately expect a
 ;;; connexion close, they could pipeline more requests. Closing the
@@ -193,23 +186,6 @@
 ;;; be closed, we can safely hangup.
 	(hangup con))
        (t (io 'http-serve con))))
-
-(defprotocol parse-and-dispatch (con path-and-args &key request-body host origin)
-  (let (params tmp)
-    (without-call/cc
-      (flet ((parse-params (str)
-	       (when str
-		 (match-bind ( (*  name "=" value (or (last) "&")
-				   '(push (cons (url-encoding-decode name) (url-encoding-decode value)) params)))
-		     str))
-	       (values)))
-	(match-bind (path (or (last) (progn "?" q)))
-	    path-and-args
-	  (parse-params q)
-	  (parse-params request-body)
-	  (setf tmp path)))
-      (push (cons +http-param-origin+ origin) params)) ; makes sure it's first so it can't be overridden by the user
-    (io 'dispatch con tmp :params params :host host)))
 
 (defun http-serve-wait-timeout ()
   60)
