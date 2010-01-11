@@ -117,12 +117,24 @@
   (recvbuf-peek (my recv)))
 
 (my-defun con 'recvline (done &optional (delimiter +newline+))
-  (declare (type function done))
+  (declare (type function done) (type simple-byte-vector delimiter))
   (acond
    ((recvbuf-eat-to-delimiter (my recv) delimiter)
     (funcall done it))
    (t 
     (recvbuf-prepare-read (my recv))
+    (recvbuf-recv (my recv) me #'my-call))))
+
+(my-defun con 'recvline-shared-buf (done &optional (delimiter +newline+))
+  (declare (type function done) (type simple-byte-vector delimiter))
+  (unless (zerop (recvbuf-read-idx (my recv)))
+   (recvbuf-shift-up (my recv) 0) ;shift everything so that we start with the read-idx at zero
+   (assert (zerop (recvbuf-read-idx (my recv))) (me (my recv))))
+  (acond
+   ((recvbuf-find (my recv) delimiter)
+    (setf (recvbuf-read-idx (my recv)) (+ it (length delimiter)))
+    (funcall done (recvbuf-store (my recv))))
+   (t 
     (recvbuf-recv (my recv) me #'my-call))))
 
 (my-defun con 'recv-until-close (done)

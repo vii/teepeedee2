@@ -28,6 +28,7 @@
 
 (my-defun recvbuf 'put-recvbuf ()
   (unless (> (my len) +recvbuf-oversize+)
+    (my reset)
     (push me *recvbufs*)))
 
 (my-defun recvbuf half-full-or-more ()
@@ -47,23 +48,28 @@
   (my-declare-fast-inline)
   (the recvbuf-small-integer (- (my write-idx) (my read-idx))))
 
+(my-defun recvbuf shift-up (size)
+  (my-declare-fast-inline)
+  (cond 
+    ((= (my write-idx) (my read-idx))
+     (when (> size (my len))
+       (setf (my store) (make-byte-vector size)))
+     (setf
+      (my read-idx) 0
+      (my write-idx) 0))
+    (t
+     ;; Unfortunately cannot use adjust-array as that might make non "simple" arrays
+     (let ((new-store (make-byte-vector (max (my len) size))))
+       (replace new-store (my store) :start2 (my read-idx) :end2 (my write-idx))
+       (decf (my write-idx) (my read-idx))
+       (setf (my read-idx) 0)
+       (setf (my store) new-store))))
+  (values))
+
 (my-defun recvbuf prepare-read (&optional (size 1024))
   (declare (type recvbuf-small-integer size))
   (when (> size (- (my len) (my read-idx)))
-    (cond 
-      ((= (my write-idx) (my read-idx))
-       (when (> size (my len))
-	 (setf (my store) (make-byte-vector size)))
-       (setf
-        (my read-idx) 0
-        (my write-idx) 0))
-      (t
-       ;; Unfortunately cannot use adjust-array as that might make non "simple" arrays
-       (let ((new-store (make-byte-vector (max (my len) size))))
-	 (replace new-store (my store) :start2 (my read-idx) :end2 (my write-idx))
-	 (decf (my write-idx) (my read-idx))
-	 (setf (my read-idx) 0)
-	 (setf (my store) new-store)))))
+    (my shift-up size))
   (debug-assert (>= (- (my len) (my read-idx)) size) (me size))
   (values))
 

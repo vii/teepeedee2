@@ -185,6 +185,7 @@
 
    #:recv
    #:recvline
+   #:recvline-shared-buf
    #:recv-until-close
    #:recv-discard-and-close
    #:send
