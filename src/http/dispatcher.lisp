@@ -18,18 +18,21 @@
 
 (defun-speedy map-http-params (func)
   (declare (dynamic-extent func) (type (function (simple-byte-vector simple-byte-vector) t) func))
-  (flet ((parse-params (str)
+  (labels (
+	   (f (name value)
+	     (funcall func (url-encoding-decode name) (url-encoding-decode value)))
+	   (parse-params (str)
 	   (when str
 	     (match-bind ( (*  name "=" value (or (last) "&")
-			       '(funcall func name value)))
+			       '(f name value)))
 		 str)))
 	 (parse-cookie-params (str)
 	   (when str
 	     (match-bind ( (*  name "=" value (or (last) "," ";")
-			       '(funcall func name value)))
+			       '(f name value)))
 		 str))))
-    (declare (inline parse-cookie-params parse-params)
-	     (dynamic-extent #'parse-params #'parse-cookie-params))
+    (declare (inline parse-cookie-params parse-params f)
+	     (dynamic-extent #'parse-params #'parse-cookie-params #'f))
     (parse-params (servestate-query-string*))
     (parse-params (servestate-post-parameters*))
     (parse-cookie-params (servestate-cookie*))))
