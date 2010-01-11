@@ -39,19 +39,36 @@
 	    (-1 nil)
 	    (t s))))
 
+(eval-always
+  (defun accept4-supported ()
+    (cffi:foreign-symbol-pointer "accept4")))
+
 (defmethod socket-accept ((fd integer))
   (cffi:with-foreign-object (sa 'sockaddr_in)
     (cffi:with-foreign-object (len :int)
       (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
       (let ((s
-	     (socket-io-syscall (syscall-accept fd sa len))))
+	     (socket-io-syscall 
+	      #. (progn 
+		   (if (accept4-supported)
+		    `(syscall-accept4 fd sa len 
+				      (logior
+				       0
+				       #-tpd2-untransformed-io +SOCK_NONBLOCK+
+				       )
+				      )
+		    `(syscall-accept fd sa len)
+		    )))))
 	(case-= s
 		(-1 nil)
 		(t
 ;		 (socket-set-tcp-nodelay s)
 ;		 (socket-cork s)
-		 #-tpd2-untransformed-io
-		 (set-fd-nonblock s)
+
+		 #.(unless (accept4-supported)
+		     #-tpd2-untransformed-io
+		     `(set-fd-nonblock s))
+
 		 (make-con 
 		  :socket s
 		  :peer-info (sockaddr-address-bv sa))))))))
