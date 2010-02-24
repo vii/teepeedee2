@@ -298,11 +298,13 @@ list of expressions for the tag."
 
 (defcpstransformer compiler-let (cons k-expr env)
   "Passes through a compiler-let form"
-  (let ((varlist (cadr cons))
+  (let (
+	(name (car cons))
+	(varlist (cadr cons))
 	(forms (cddr cons)))
-    `(,(car cons) ,varlist
-       ,@(extract-declarations forms)
-       ,@(expr-sequence->cps (remove-declarations forms) k-expr env))))
+    `(,name ,varlist
+	    ,@(extract-declarations forms)
+	    ,(expr-sequence->cps (remove-declarations forms) k-expr env))))
 
 (defcpstransformer let* (cons k-expr env)
   "Converts a LET* expression to CPS style."
