@@ -94,7 +94,9 @@
   (<div :class "blog-entry"
 	(my story-ml)
 	(<p :class "time" "Posted " (time-string (my time)))
-	(<p :class "viewers" (length (my subscribers)) " watching live")
+	(let ((v (length (my subscribers))))
+	  (unless (zerop v)
+	    (<p :class "viewers" v " watching live")))
 	(call-next-method)
 	(my comment-ml)))
 
