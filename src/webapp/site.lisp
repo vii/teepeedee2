@@ -44,7 +44,8 @@
 
 (defmacro defsite (name &rest args-for-make-site)
   `(progn
-     (defvar ,name)
+     (eval-always
+       (defvar ,name))
      (eval-always
        (setf ,name (make-site :runtime-name ',name ,@args-for-make-site)))
      ',name))
