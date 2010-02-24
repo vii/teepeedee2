@@ -37,8 +37,7 @@ href="http://github.com/stefanocasazza/ULib/tree/master">ULib</a> and
     as an experiment I decided to try to make a faster web-framework
     in a less efficient language: thus teepeedee2.</p>
 
-    <p>It was possible, but it took a lot of effort. Common Lisp is
-    certainly not well suited to the project.</p>
+    <p>It was possible, but it took a lot of effort.</p>
 
     <h3>Licence</h3>
 
@@ -79,11 +78,12 @@ LGPL</a>. See addons/* for the licences of those libraries.</p>
       sendbufs and cords, so that tpd2.ml need not depend on tpd2.io
       (and thereby CFFI).</li>
 
-      <li>Tidy up the HTTP client and make it much higher
-      performance.</li>
+      <li>Tidy up the HTTP server, and reintegrate the HTTP client
+      with it.</li>
 
-      <li>Rewrite the dispatcher mechanism to use a perfect hash
-      instead of a standard hash-table.</li>
+      <li>Rewrite the dispatcher mechanism to support more complicated
+      routing. And maybe something cool like using a perfect hash
+      instead of a standard hash-table?</li>
     </ul>
 
     <p> Patches welcomed! Write to the
