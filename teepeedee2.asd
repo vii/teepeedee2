@@ -9,9 +9,6 @@
       do
       (pushnew addon asdf:*central-registry* :test #'equal))
 
-#-tpd2-debug
-(declaim (optimize speed))
-
 #+tpd2-debug
 (progn
   (pushnew :tpd2-debug *features*)
