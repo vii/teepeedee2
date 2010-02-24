@@ -2,6 +2,7 @@
 (defpackage #:cl-cont
   (:nicknames #:cont)
   (:use :cl)
+  #+ccl (:import-from #:ccl #:compiler-let)
   (:documentation
    "A library that implements continuations by transforming Common
   Lisp code to continuation passing style."))

@@ -907,3 +907,36 @@
 	      (typep fun 'cl-cont::funcallable/cc)
 	      (typep fun (find-class 'cl-cont::funcallable/cc))))
   t t t)
+
+;;; documentation
+(deftest documentation-defun
+    (progn
+      (fmakunbound 'doc-test-fun)
+      (defun/cc doc-test-fun () "foo" t)
+      (equal (documentation #'doc-test-fun 'function) "foo"))
+  t)
+
+(deftest documentation-setf
+    (progn
+      (fmakunbound 'doc-test-fun)
+      (defun/cc doc-test-fun () "foo" t)
+      (setf (documentation #'doc-test-fun 'function) "bar")
+      (equal (documentation #'doc-test-fun 'function) "bar"))
+  t)
+
+(deftest documentation-symbol-lookup
+    (progn
+      (fmakunbound 'doc-test-fun)
+      (defun/cc doc-test-fun () "foo" t)
+      (setf (documentation 'doc-test-fun 'function) "bar")
+      (equal (documentation 'doc-test-fun 'function) "bar"))
+  t)
+
+(deftest documentation-plain-fun
+    (progn
+      (fmakunbound 'doc-test-fun)
+      (defun doc-test-fun () "foo" t)
+      (setf (documentation 'doc-test-fun 'function) "bar")
+      (equal (documentation 'doc-test-fun 'function) "bar"))
+  t)
+

@@ -21,18 +21,22 @@ uniformly within and without with-call/cc."
 ;;; DEFUN
 (defcpstransformer defun (cons k-expr env)
   "Transforms DEFUN expression to CPS form."
-  (let ((name (cadr cons))
-	(args (caddr cons))
-	(body (cdddr cons)))
-    `(progn
-       (setf (fdefinition ',name)
-	     ,(lambda-expr->cps `(lambda ,args
-				   ,@(extract-declarations body)
-				   (block ,name
-				     ,@(remove-declarations body)))
-				nil
-				env))
-       (funcall ,k-expr ',name))))
+  (let* ((name (cadr cons))
+         (args (caddr cons))
+         (body (cdddr cons)))
+    (multiple-value-bind (body declarations doc-string) (alexandria:parse-body body :documentation t)
+      (let ((cps-lambda (lambda-expr->cps `(lambda ,args
+                                             ,@declarations
+                                             ,doc-string
+                                             (block ,name
+                                                    ,@body))
+                                          nil
+                                          env)))
+        `(progn
+           (setf (fdefinition ',name) ,cps-lambda)
+           ,(when doc-string
+              `(setf (documentation (function ,name) 'function) ,doc-string))
+           (funcall ,k-expr ',name))))))
 
 (defmacro defun/cc (name arglist &body body)
   "A helper macro to define a function that supports CALL/CC."
