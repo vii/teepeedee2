@@ -17,7 +17,7 @@
 (defun datastore-use-file (filename)
   (unless (datastore-open-p)
     (datastore-load filename)
-    (setf *datastore* (open filename :direction :output :if-exists :append :if-does-not-exist :create))))
+    (setf *datastore* (open filename :direction :output :if-exists :append :if-does-not-exist :create #+ccl :sharing #+ccl :lock))))
 
 (defun datastore-ref-form (object)
   `(datastore-retrieve-unique ',(class-name (class-of object)) 'datastore-id ,(slot-value object 'datastore-id)))
@@ -80,7 +80,6 @@
   string)
 (defmethod datastore-save-form ((number number))
   number)
-
 (defmethod datastore-save-form ((array array))
   (typecase array
     (byte-vector
@@ -89,6 +88,9 @@
      `(make-array ',(array-dimensions array)
 		  :element-type ',(array-element-type array)
 		  :initial-contents (list ,@(map 'list 'datastore-save-form array))))))
+(defmethod datastore-save-form ((list list))
+  (when list
+    `(list ,@(map 'list 'datastore-save-form list))))
 
 (defgeneric datastore-record-constructor-form (object))
 
