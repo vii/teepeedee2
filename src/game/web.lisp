@@ -20,7 +20,7 @@
     (check-type frame frame)
     (let ((w (make-web-state :frame frame)))
       (push (lambda (f) (declare (ignore f)) (channel-destroy w)) 
-	    (frame-exit-hooks frame))
+	    (frame-destroy-hooks frame))
       w)))
 
 (my-defun web-state resigned ()

@@ -313,11 +313,12 @@
    #:*webapp-frame*
    #:webapp-frame-var
 
+   #:frame
    #:frame-var
    #:frame-username
    #:frame-messages
    #:frame-trace-info
-   #:frame-exit-hooks
+   #:frame-destroy-hooks
    #:list-all-frames
    #:find-frame
    #:frame-id
