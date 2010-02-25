@@ -59,25 +59,37 @@
 						   (list* name default keys))))
 					     lambda-list)
 				  ,@body)))
+		       (async t)
 		       after-submit-js)
       (force-list title-and-options)
     (let ((body-ml
 	   (loop for nv in lambda-list collect
-		 (destructuring-bind (name &optional value &key (type '<input) reset)
+		 (destructuring-bind (name &optional value &key (type '<input) reset label options)
 		     (force-list nv)
 		    (let ((name (force-byte-vector name)))
 		      (when reset
 			(appendf after-submit-js `((setf (slot-value (! (this elements named-item) ,(force-string name)) 'value) ,(if (eq reset t) nil reset)))))
-		      (ecase type
-			(<input
-			 `(<input :type :text :name ,name
-				  ,@(when value `(:value ,value))))
-			(<textarea
-			 `(<textarea :name ,name ,value))
-			(:hidden
-			 `(<input :type :text :name ,name :value ,value :style (css-attrib :display "none")))))))))
+		      (let ((input
+			     (ecase type
+			       (<input
+				 `(<input :type :text :name ,name
+					  ,@(when value `(:value ,value))))
+			       (<textarea
+				 `(<textarea :name ,name ,value))
+			       (:select-one
+				`(<select :name ,name 
+					  ,@(loop for opt in options collect
+						  `(<option ,@(when (equalp value opt) `(:selected t)) ,opt))))
+			       (:hidden
+				`(<input :type :text :name ,name :value ,value :style (css-attrib :display "none"))))))
+			(cond (label
+			       `(progn
+				  (<label :for ,name ,label)
+				  ,input))
+			      (t input))))))))
        `(<form 
-	 :onsubmit (js-attrib (return (let ((async-submit-success (async-submit-form this))) ,@after-submit-js async-submit-success)))
+	 ,@(when async 
+		 `(:onsubmit (js-attrib (return (let ((async-submit-success (async-submit-form this))) ,@after-submit-js async-submit-success)))))
 	 :method :post 
 	 :action ,action-link     
 	 (<p
@@ -116,6 +128,5 @@
 	(<div :class "change-name" 
 	      (html-action-form "Your name " ((new-name (my username)))
 		(my change-username new-name)
-		(values)))
-	(output-object-to-ml (my messages))))
+		(values)))))
 
