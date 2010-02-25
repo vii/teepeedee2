@@ -115,6 +115,9 @@
 					      :components ((:file "entry")
 							   (:file "feed" :depends-on ("blog"))
 							   (:file "blog" :depends-on ("entry"))))
+				     (:module :survey
+					      :depends-on (:webapp :ml :datastore)
+					      :components ((:file "survey")))
 				     (:module :truc
 					      :depends-on (:game)
 					      :components ( (:file "truc") (:file "web" :depends-on ("truc"))

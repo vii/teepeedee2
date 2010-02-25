@@ -317,6 +317,7 @@
    #:frame-username
    #:frame-messages
    #:frame-trace-info
+   #:frame-exit-hooks
    #:list-all-frames
    #:find-frame
    #:frame-id
@@ -331,6 +332,7 @@
    #:channel
    #:channel-notify
    #:channel-update
+   #:channel-destroy
    #:find-channel
 
    #:webapp-respond-ajax-body
@@ -421,6 +423,10 @@
 
 (defpackage #:teepeedee2.blog
   (:nicknames #:tpd2.blog)
+  (:use #:cl #:tpd2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.lib #:tpd2.datastore))
+
+(defpackage #:teepeedee2.survey
+  (:nicknames #:tpd2.survey)
   (:use #:cl #:tpd2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.lib #:tpd2.datastore))
 
 (defpackage #:teepeedee2.game.truc
