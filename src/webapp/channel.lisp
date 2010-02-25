@@ -1,6 +1,6 @@
 (in-package #:tpd2.webapp)
 
-(defvar *channels* (trivial-garbage:make-weak-hash-table :weakness :value :test 'equalp))
+(defvar *channels* (make-hash-table :test 'equalp))
 
 (defmyclass channel
   (id (random-web-sparse-key 10))
@@ -25,7 +25,12 @@
   (deletef f (my subscribers)))
 
 (defun find-channel (id)
+  (check-type id byte-vector)
   (gethash id *channels*))
+
+(my-defun channel destroy ()
+  (when (eq me (gethash (my id) *channels*))
+    (remhash (my id) *channels*)))
 
 (defgeneric channel-update (channel subscriber-state))
 

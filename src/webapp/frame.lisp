@@ -1,17 +1,20 @@
 (in-package #:tpd2.webapp)
 
 (defmyclass (frame (:include simple-channel))
-  current-page
+    current-page
   (site (current-site))
   variables
   (username (random-name))
-  (messages (make-list-channel))
   timeout
-  trace-info)
+  trace-info
+  destroy-hooks)
 
 (defvar *frames* (make-hash-table :test #'equalp))
 
 (my-defun frame exit ()
+  (loop for hook in (my destroy-hooks)
+	do (funcall hook me))
+  (my 'channel-destroy)
   (remhash (my id) *frames*))
 
 (my-defun frame reset-timeout ()
