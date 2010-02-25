@@ -127,15 +127,19 @@
       (let ((lines (make-array)))
 	(ps:for-in (channel *channels*)
 		   (! (lines push) (+ (encode-U-R-I-component channel) "|" (aref *channels* channel))))
+	(when (= 0 (~ lines length))
+	  (return nil))
 	(return (+ ".channels.=" (! (lines join) ";")))))
 
     (defun add-params-to-url-for-get (url &optional (params ""))
       (return (+ url (if (equal -1 (! (url search) "\\?")) "?" "&") params)))
 
     (defun fetch-channels ()
-      (when (and *channels* (not (= 0 (~ *channels* size))))
-	(async-request (add-params-to-url-for-get *channels-url* (channels-get-param))
-		       "Waiting for updates")))
+      (when *channels* 
+	(let ((param (channels-get-param)))
+	  (when param
+	    (async-request (add-params-to-url-for-get *channels-url* param)
+			   "Waiting for updates")))))
 
     (defun maybe-fetch-channels ()
       (unless *active-request*
