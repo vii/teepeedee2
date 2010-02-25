@@ -50,7 +50,7 @@
        (setf ,name (make-site :runtime-name ',name ,@args-for-make-site)))
      ',name))
 
-(defmacro with-compile-time-site ((site) &body body)
+(defmacro with-compile-time-site ((&optional (site (site-runtime-name *current-site*))) &body body)
   (check-symbols site)
   (assert (eq site (site-runtime-name (symbol-value site))))
   `(eval-always 
