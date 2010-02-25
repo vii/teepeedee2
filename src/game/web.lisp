@@ -15,6 +15,14 @@
   timed-out
   (timeout (make-timeout)))
 
+(defun make-web-state-from-frame ()
+  (let ((frame (webapp-frame)))
+    (check-type frame frame)
+    (let ((w (make-web-state :frame frame)))
+      (push (lambda (f) (declare (ignore f)) (channel-destroy w)) 
+	    (frame-exit-hooks frame))
+      w)))
+
 (my-defun web-state resigned ()
   (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
 
@@ -406,25 +414,18 @@
 				      (<h1 :class "mopoko" 
 					   (<A :href (page-link "/") 
 					       :class "inherit" 
-					       (html-jiggle-text "mopoko") " prerelease" ))
+					       "mopoko " " prerelease" ))
 				      (output-object-to-ml (webapp-frame))))
     :page-head (lambda(title)
 		 `(with-ml-output
 		    (<title "mopoko.com " (output-raw-ml ,title))
-					     (output-raw-ml 
-					      (<noscript
-						(output-raw-ml 
-						 (<meta :http-equiv "refresh" :content (byte-vector-cat "1000;" (page-link))))))
 					     (css)
-					     (webapp-default-page-head-contents)
-					     (output-raw-ml
-					      (js-library-animate))))
+					     (webapp-default-page-head-contents)))
     :page-body-footer 
     (lambda(title)
       (declare (ignore title))
       `(with-ml-output 
-	 (webapp-default-page-footer)
-	 (js-html-script (start-animation)))))
+	 (webapp-default-page-footer))))
 
 (with-compile-time-site (*site*)
   (defun web-add-game (game-generator name)
@@ -434,13 +435,13 @@
 
   (defun webapp-play-bot (game-name bot)
     (let ((game-state
-	   (make-web-state :frame (webapp-frame))))
+	   (make-web-state-from-frame)))
       (launch-game game-name (list bot game-state))
       (webapp ()
 	(webapp-display game-state))))
   
   (defun web-game-start (game-generator)
-    (let ((c (make-web-state :frame (webapp-frame))))
+    (let ((c (make-web-state-from-frame)))
       (game-generator-join-or-start game-generator c)
       (webapp ()
 	(webapp-display c))))
