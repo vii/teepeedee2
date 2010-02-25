@@ -20,7 +20,7 @@
 		for sa = (concat-sym a '*)
 		collect `(progn 
 			   (declaim (inline ,sa (setf ,sa))) 
-			   (defun ,sa () (,a ,special)) 
+			   (defun ,sa () (when (boundp ',special) (,a ,special))) 
 			   (defun (setf ,sa) (,v) (setf (,a ,special) ,v))))))))
 
 (defmacro def-servestate-struct (&rest fields)
