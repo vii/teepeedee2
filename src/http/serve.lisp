@@ -1,5 +1,8 @@
 (in-package #:tpd2.http)
 
+;;;;; FIXME Section 4.2 of RFC 2616: multiple headers equivalent to a
+;;;;; comma-delimited sequence.
+
 (defun http-serve-timeout ()
   60)
 
