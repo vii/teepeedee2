@@ -47,7 +47,6 @@
 	   (loop for c in (my comments) repeat 50 do (push c ret))
 	   ret))))
 
-
 (defun time-string (&optional (ut (get-universal-time)))
   (multiple-value-bind
 	(second minute hour date month year)

@@ -87,7 +87,6 @@
 					(datastore-retrieve-all 'comment)))))
 		(loop for c in (sort (copy-seq comments) #'> :key #'comment-time)
 		      do (<div :class "comment-admin"
-			       (output-object-to-ml c)
 			       (let ((c c))
 				 (html-action-form "Edit comment"
 				     ((text (comment-text c)  :type <textarea)

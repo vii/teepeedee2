@@ -50,4 +50,5 @@
     (with-standard-io-syntax 
       (let ((*package* #.*package*)) 
 	(mapcar (lambda (x) (format t "~S~%" x)) 
-		(mapcar 'datastore-record-constructor-form (sort (copy-list (datastore-retrieve-all 'comment)) #'>  :key 'comment-time)))))))
+		(mapcar 'datastore-record-constructor-form 
+			(sort (copy-list (datastore-retrieve-all 'comment)) #'>  :key 'comment-time)))))))
