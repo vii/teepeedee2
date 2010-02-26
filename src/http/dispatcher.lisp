@@ -60,7 +60,7 @@
 	 (locally ,@body)))))
 
 (defmacro with-http-headers (() &body body)
-  `(with-sendbuf-continue ((servestate-response*))
+  `(with-sendbuf-continue ((servestate-response-as-sendbuf*))
      ,@body))
 
 (defun-speedy send-http-response (con done body)
@@ -71,7 +71,7 @@
      body)
   (send
    con done
-   (servestate-response*)))
+   (servestate-response-as-sendbuf*)))
 
 (defun-speedy respond-http (con done &key banner body)
   (start-http-response :banner banner)

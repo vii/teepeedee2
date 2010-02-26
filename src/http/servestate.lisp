@@ -40,3 +40,13 @@
   (content-length 0 :type fixnum)
   
   (response nil :type (or null sendbuf)))
+
+;; Persuade SBCL's type inference that servestate-response* is a sendbuf
+(declaim (inline servestate-response-as-sendbuf*)
+	 (ftype (function () sendbuf) servestate-response-as-sendbuf*))
+(defun servestate-response-as-sendbuf* ()
+  #-tpd2-debug (declare (optimize (safety 0)))
+  (let ((sendbuf (servestate-response *servestate*)))
+    #-tpd2-debug (declare (type sendbuf sendbuf))
+    #+tpd2-debug (check-type sendbuf sendbuf)
+    sendbuf))
