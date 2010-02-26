@@ -50,7 +50,7 @@
     (let ((sendbuf
 	   (with-ml-output
 	     (loop for (channel . state) in channel-states do
-		   (unless (eql state (channel-state channel))
+		   (unless (equalp state (channel-state channel))
 		     (setf at-least-one t)
 		     (output-raw-ml 
 		      (js-to-string 
@@ -64,13 +64,13 @@
 
 (defun channel-respond (con done &key .channels.)
   (let ((channel-states (channel-string-to-states .channels.)))
-    (start-http-response)
     (with-preserve-specials (*webapp-frame* *servestate*) 
       (flet ((finished () 
 	       (or (con-dead? con)
 		   (with-specials-restored
 		       (with-frame-site 
 			   (awhen (channel-respond-body channel-states)
+			     (start-http-response)
 			     (send-http-response con done it)
 			     t))))))
       (unless (finished)
@@ -93,9 +93,11 @@
 		    (unless (con-dead? con)
 		      (with-specials-restored
 			  (with-ignored-errors (tpd2.io:report-unless-normal-connection-error)
+			    (start-http-response 
+			     :banner (force-byte-vector "504 Timeout")
+			     :content-type #.(byte-vector-cat "Retry-after: 0" +newline+))
 			    (send-http-response con done 
-						(with-sendbuf () (js-to-string "TIMEOUT"))))))
-		    ))
+						(with-sendbuf () (js-to-string "TIMEOUT"))))))))
 	    (setf (tpd2.io:con-hangup-hook con)
 		  (lambda (&rest args)
 		    (unsubscribe)
