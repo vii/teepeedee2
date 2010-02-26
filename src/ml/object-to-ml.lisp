@@ -13,7 +13,7 @@
   (object-to-ml (funcall f)))
 
 (defmethod object-to-ml (object)
-  (with-ml-output object))
+  (with-ml-output (force-string object)))
 
 (defmethod object-to-ml ((sendbuf sendbuf))
   (output-raw-ml (sendbuf-to-byte-vector sendbuf)))

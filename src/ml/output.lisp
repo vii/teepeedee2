@@ -12,12 +12,22 @@
       (#\& "&amp;")
       (#\' "&#39;"))))		   ; &apos; is *not* HTML but only XML
 
-(declaim (ftype (function (t) (or raw-ml-sendbuf simple-byte-vector)) escape-data-consistent-internal))
+(declaim (ftype (function (t) (or raw-ml-sendbuf simple-byte-vector)) escape-data-consistent-internal ml-output-form-consistent-internal))
 (defun-consistent escape-data (value)
   (typecase value
     (nil #.(force-byte-vector nil))
     (raw-ml-sendbuf
      value)
+    (t
+     (values (really-escape-string value)))))
+
+(defun-consistent ml-output-form (value)
+  (typecase value
+    (nil #.(force-byte-vector nil))
+    (raw-ml-sendbuf
+     value)
+    ((or standard-object structure-object) 
+     (object-to-ml value))
     (t
      (values (really-escape-string value)))))
 
@@ -54,8 +64,8 @@
 			(macroexpand-1 form env)
 		      (if changed 
 			  (r new)
-			  (list `(escape-data ,form)))))))
-	       (t (list `(escape-data ,form))))))
+			  (list `(ml-output-form ,form)))))))
+	       (t (list `(ml-output-form ,form))))))
     (r form)))
 
 (defmacro with-ml-output-start (&body body)
