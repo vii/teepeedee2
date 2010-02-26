@@ -18,6 +18,12 @@
     (with-open-file (stream it)
       (read-line stream))))
 
+(my-defun blog entry-unique-string (entry-name)
+  (strcat (my comment-index-prefix) ":" entry-name))
+
+(my-defun blog entry-channel-id (entry-name)
+  (force-byte-vector (my entry-unique-string entry-name)))
+
 (my-defun blog read-in ()
   (with-site ((my site)) 
     (setf 
@@ -31,7 +37,8 @@
 		       (iter:collect entry)))))
       #'> :key #'entry-time))
     (loop for entry in (my entries)
-	  do (setf (gethash (entry-index-name entry) (my entries-table)) entry))
+	  do
+	  (setf (gethash (entry-index-name entry) (my entries-table)) entry))
     (my set-page))
   me)
 
@@ -116,7 +123,7 @@
 			  :text text
 			  :trace-details (tpd2.http:servestate-origin*)
 			  :entry-index-name entry-name)
-			 (channel-notify entry))
+			 (channel-notify (entry-channel entry)))
 		       t))))
 	      (cond 
 		(.javascript.

@@ -16,6 +16,7 @@
 	      (force-string (my trace-details))
 	      (time-string (my time))))))
 
+
 (defun split-into-paragraphs (str)
   (match-split (progn #\Newline (* (or #\Space #\Tab #\Return)) #\Newline)
 	       str))
@@ -31,7 +32,7 @@
 
 	(<p :class "time" "Posted " (time-string (my time)) " by " (<span :class "author" (my author)))))
 
-(defmyclass (entry (:include simple-channel))
+(defmyclass entry
   blog
   name
   tags
@@ -40,11 +41,14 @@
   expiry-time
   paragraphs)
 
-(my-defun entry 'simple-channel-body-ml ()
+(defmyclass (entry-channel (:include simple-channel))
+    entry)
+
+(my-defun entry-channel 'simple-channel-body-ml ()
   (<div :class "blog-entry-comments"
 	(output-object-to-ml
 	 (let (ret) 
-	   (loop for c in (my comments) repeat 50 do (push c ret))
+	   (loop for c in (entry-comments (my entry)) repeat 50 do (push c ret))
 	   ret))))
 
 (defun time-string (&optional (ut (get-universal-time)))
@@ -71,7 +75,7 @@
   (page-link (my url-path)))
 
 (my-defun entry index-name ()
-  (strcat (its comment-index-prefix (my blog)) ":" (my name)))
+  (blog-entry-unique-string (my blog) (my name)))
 
 (my-defun entry story-ml ()
   (<div :class "blog-entry-story"
@@ -91,12 +95,12 @@
 
 (my-defun entry 'object-to-ml ()
   (<div :class "blog-entry"
-	(my story-ml)
 	(<p :class "time" "Posted " (time-string (my time)))
-	(let ((v (length (my subscribers))))
+	(let ((v (length (its subscribers (my channel)))))
 	  (unless (zerop v)
 	    (<p :class "viewers" v " watching live")))
-	(call-next-method)
+	(my story-ml)
+	(my channel)
 	(my comment-ml)))
 
 (my-defun entry combined-title ()
@@ -108,7 +112,19 @@
     (defpage-lambda (my url-path)
 	(lambda()
 	  (webapp ((my combined-title))
-	    (output-object-to-ml me))))))
+	    (output-object-to-ml me)))))
+  (my set-channel))
+
+(my-defun entry channel-id ()
+  (blog-entry-channel-id (my blog) (my name)))
+
+(my-defun entry channel ()
+  (find-channel (my channel-id)))
+
+(my-defun entry set-channel ()
+  (let ((id (my channel-id)))
+   (let ((channel (or (find-channel id) (make-entry-channel :id id :entry me))))
+     (setf (entry-channel-entry channel) me))))
 
 (my-defun entry read-paragraphs-from-buffer (buffer)
   (setf (my paragraphs)
