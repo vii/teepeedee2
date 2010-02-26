@@ -91,6 +91,9 @@
     (defvar *alive* nil)
     (defvar *channels-url*)
     (defvar *active-request*)
+    (defvar *channels*)
+    (unless *channels* (setf *channels* (ps:new *object)))
+    (defvar *last-status*)
 
     (defun find-element (element-id)
       (return (! (document get-element-by-id) element-id)))
@@ -157,7 +160,7 @@
 	  (ignore-errors
 	    (setf success (and (= 200 (~ req status)) (~ req response-text))))
 	  (ignore-errors
-	    (setf timedout (and (> 1000 (- (now) *alive*)) (= 504 (~ req status))))))
+	    (setf timedout (and (< 1000 (- (now) *alive*)) (= 504 (~ req status))))))
 
 	(cond (success
 	       (debug-log "async request completed okay" req)
@@ -168,7 +171,7 @@
 		 (maybe-fetch-channels)))
 	      (timedout 
 	       (debug-log "async request timeout refresh" req)
-	       (async-request url "Refreshing"))
+	       (async-request url *last-status*))
 	      (t
 	       (debug-log "async request unsuccessful" req)
 	       
@@ -203,7 +206,7 @@
 		     (4 
 		      (set-async-status initial-status "done")
 		      (async-request-done req url)))))
-	     
+	   (setf *last-status* initial-status)
 	   (set-async-status initial-status "connecting")
 	   (! (req open) "POST" url t)
 	   (! (req send) "")))
@@ -231,9 +234,6 @@
       (when (async-submit-link link)
 	(setf (~ window location) link)))
 
-    (defvar *channels*)
-    (unless *channels* (setf *channels* (ps:new *object)))
-   
     (defun channel (name counter)
       (setf (aref *channels* name) counter))
 
