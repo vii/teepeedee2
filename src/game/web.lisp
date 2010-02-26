@@ -23,6 +23,18 @@
 	    (frame-destroy-hooks frame))
       w)))
 
+(my-defun web-state 'inform :after (game-state (message (eql :new-state)) &rest args)
+  (declare (ignore game-state args))
+  (setf (my queued-choices) nil))
+
+(my-defun web-state 'inform (game-state message &rest args)
+  (declare (ignore game-state))
+  (my add-announcement 
+      (<p :class "game-message"
+	  message
+	  " "
+	  (output-object-to-ml args))))
+
 (my-defun web-state resigned ()
   (not (loop for p in (game-players (my game-state)) thereis (eql me (player-controller p)))))
 
@@ -40,112 +52,6 @@
 (my-defun web-state add-announcement (a)
   (appendf (my announcements) (list a))
   (my notify))
-
-;;;; XXXX refactor this repetitive nonsense
-
-(my-defun web-state 'inform (game-state (message (eql :talk)) &rest args)
-  (declare (ignore game-state))
-  (let ((sender (getf args :sender)) (msg (getf args :text)))
-    (my add-announcement (<p :class "game-talk-message" (player-controller-name-to-ml sender) ": " (<Q msg)))))
-
-(my-defun web-state 'inform (game-state (message (eql :new-player)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has joined the game.")))
-
-(my-defun web-state 'inform (game-state (message (eql :resigned)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has resigned.")))
-
-(my-defun web-state 'inform (game-state (message (eql :timed-out)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (first args)) " has timed out.")))
-
-(my-defun web-state 'inform (game-state (message (eql :select-card)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " played " (output-object-to-ml (make-card-from-number (getf args :choice))) ".")))
-
-(my-defun web-state 'inform (game-state (message (eql :select-demand)) &key player choice &allow-other-keys)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller player)) " demanded " choice ".")))
-
-(my-defun web-state 'inform (game-state (message (eql :select)) &key player selection &allow-other-keys)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller player)) " chose " (friendly-string selection) ".")))
-
-(my-defun web-state 'inform (game-state (message (eql :reject-cards)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
-			   (if (getf args :choice) " wants to change cards."
-			       " is satisfied with the cards."))))
-
-(my-defun web-state 'inform (game-state (message (eql :accept-new-stake)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player)))
-			   (if (getf args :choice) " saw the raise."
-			       " folded."))))
-
-(my-defun web-state 'inform (game-state (message (eql :select-new-stake)) &rest args)
-  (let ((choice (getf args :choice)))
-    (unless (eql choice (ignore-errors (its stake game-state)))
-      (my add-announcement (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " raised to " choice " chips.")))))
-
-(my-defun web-state 'inform (game-state (message (eql :winner)) &rest args)
-  (declare (ignore game-state))
-  (my add-announcement 
-      (<p :class "game-message" (player-controller-name-to-ml (player-controller (getf args :player))) " won"
-	  (awhen (getf args :chips)
-	    (with-ml-output " " it " chips"))
-	  ".")))
-
-(my-defun web-state 'inform (game-state (message (eql :game-over)) &key winner result &allow-other-keys)
-  (declare (ignore game-state))
-  (cond (winner
-	 (my add-announcement (<h2 :class "game-message" (player-controller-name-to-ml (player-controller winner)) " won the game.")))
-	(t
-	 (my add-announcement (<h2 :class "game-message" 
-				   (when result
-				     (string-capitalize (format nil "~A. " result))) 
-				   "Game over.")))))
-
-(my-defun web-state 'inform (game-state (message (eql :demand)) &key player amount &allow-other-keys)
-  (my add-announcement 
-      (<p :class "game-message"
-	  (player-controller-name-to-ml player)
-	  " demanded " amount ".")))
-
-(my-defun web-state 'inform (game-state (message (eql :profit)) &key player amount &allow-other-keys)
-  (my add-announcement 
-      (<p :class "game-message"
-	  (player-controller-name-to-ml player)
-	  (if (minusp amount) " lost " " gained ")
-	  (abs amount) ".")))
-
-(my-defun web-state 'inform (game-state (message (eql :bankrupt)) &key player &allow-other-keys)
-  (my add-announcement
-      (<p :class "game-message"
-	  (player-controller-name-to-ml player)
-	  " went bankrupt.")))
-
-(my-defun web-state 'inform (game-state (message (eql :betrayal)) &key player &allow-other-keys)
-  (my add-announcement
-      (<p :class "game-message"
-	  (player-controller-name-to-ml player)
-	  " betrayed everybody else.")))
-
-
-(my-defun web-state 'inform (game-state (message (eql :new-state)) &rest args)
-  (declare (ignore game-state))
-  (declare (ignore args))
-  (my add-announcement (<p :class "game-message" "New game."))
-  (setf (my queued-choices) nil))
-
-(my-defun web-state 'inform (game-state message &rest args)
-  (declare (ignore game-state))
-  (my add-announcement 
-      (<p :class "game-message"
-	  message
-	  " "
-	  (output-object-to-ml args))))
 
 (defmethod move-continuation (k (controller web-state) player-state move-type choices &rest args)
   (web-state-add-move-state controller
@@ -253,7 +159,7 @@
 	(loop for p in (my players)
 	      for once = t then nil
 	      unless once do (<div :class "separate")
-	      do (output-object-to-ml p))
+	      do (player-state-to-ml p))
 	(<div :style (css-attrib :clear "both" :float "none" :border "none"))))
 
 
@@ -307,8 +213,6 @@
 (my-defun web-state play-again-ml ()
   (game-play-again-ml (my game-state)))
 
-
-
 (my-defun web-state 'simple-channel-body-ml ()
   (<div :class "game-state" 
 	(<div :class "game-state-body" 
@@ -324,26 +228,29 @@
 		    (output-object-to-ml (my announcements))))
 	
 	(cond
-	       ((my timed-out)
-		(<p (load-time-value (format nil "Timed out; sorry, you took longer than ~R second~:P to respond."
-					     *web-state-move-timeout*))
-		    (my play-again-ml) "?"))
-	       ((my resigned)
-		(<p "Resigned." (my play-again-ml)))
-	      (t
-	       (output-object-to-ml (my game-state))
+	  ((my timed-out)
+	   (<p (load-time-value (format nil "Timed out; sorry, you took longer than ~R second~:P to respond."
+					*web-state-move-timeout*))
+	       (my play-again-ml) "?"))
+	  ((my resigned)
+	   (<p "Resigned." (my play-again-ml)))
+	  (t
+	   (output-object-to-ml (my game-state))
 	       
-	       (when (my waiting-for-input)
-		 (<div :class "moves"
-		       (loop for m in (my waiting-for-input)
-			     do 
-			     (output-object-to-ml m))))))))
+	   (when (my waiting-for-input)
+	     (<div :class "moves"
+		   (loop for m in (my waiting-for-input)
+			 do 
+			 (output-object-to-ml m))))))))
 
-(my-defun player 'object-to-ml ()
+(my-defun player state-to-ml ()
   (<div :class "player"
-	(<h3 (player-controller-name-to-ml (my controller))
+	(<h3 (output-object-to-ml me)
 	     (when (my waiting-for-input)
 	       (<span :class "turn" "'s turn")))))
+
+(my-defun player 'object-to-ml ()
+  (player-controller-name-to-ml (my controller)))
 
 (defun css ()
   (css-html-style 
@@ -405,7 +312,21 @@
     (".close-game" :text-align "right")
     ("[onclick],a,input[type=submit]" 
      :background-color "rgb(228,228,228)"
-     :cursor "pointer")))
+     :cursor "pointer")
+    ("#-async-status-"
+     :position "fixed"
+     :bottom "0em"
+     :padding "0.2em 0.2em 0.2em 0.2em" 
+     :margin "0 0 0 0"
+     :right "0em"
+     :text-align "right"
+     :background-color "white"
+     :font-size "70%"
+     :x-border-radius "0.3em"
+     :border "thin solid #cccccc";
+     :z-index 2)
+
+    ))
 
 (defsite *site*
     :page-body-start (lambda(title)
@@ -415,12 +336,13 @@
 					   (<A :href (page-link "/") 
 					       :class "inherit" 
 					       "mopoko " " prerelease" ))
+				      (<h4 :id ,tpd2.webapp:+html-id-async-status+ )
 				      (output-object-to-ml (webapp-frame))))
     :page-head (lambda(title)
 		 `(with-ml-output
 		    (<title "mopoko.com " (output-raw-ml ,title))
-					     (css)
-					     (webapp-default-page-head-contents)))
+		    (css)
+		    (webapp-default-page-head-contents)))
     :page-body-footer 
     (lambda(title)
       (declare (ignore title))
@@ -467,9 +389,7 @@
 	(<div :class "about"
 	      
 	      (<p (<a :href (page-link "/") "mopoko.com") " is a place to play
-      games. I hope you have as much fun from playing the games as I
-      did making them, and maybe learn a little about co-operating
-      with other people and dealing with risks.")
+      games. Have fun!")
 	      
 	      (<p "When you choose to play a game, we wait a few seconds for
       someone else to join in. If nobody does, then a robot will join

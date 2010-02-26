@@ -33,7 +33,7 @@
     (setf (player-controller (my player-state)) other)
     (my del)
     (timeout-cancel (my timeout))
-    (game-announce (my game) :new-player other)
+    (game-announce (my game) :new-player :player other)
     (setf (my game) nil)
     (loop for i in (reverse (my move-states)) do
 	  (move-state-continue i other))))

@@ -126,7 +126,7 @@
 	       
       (when winner
 	(incf (its stack winner) (my stake))
-	(my announce :winner :chips (my stake) :player winner)))))
+	(my announce :winner :coins (my stake) :player winner)))))
 
 
 

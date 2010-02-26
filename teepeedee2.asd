@@ -102,7 +102,7 @@
 							   (:file "coins" :depends-on ("framework"))
 							   (:file "unassigned-controller" :depends-on ("controllers"))
 							   (:file "web" :depends-on ("card" "controllers" "unassigned-controller"))
-							   ))
+							   (:file "web-messages" :depends-on ("web"))))
 				     (:module :small-games
 					      :depends-on (:game)
 					      :components (

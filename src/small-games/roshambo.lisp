@@ -24,7 +24,7 @@
 			   (setf (its choice p) (my secret-move :select p `(:one ,@*objects*)))))))
 
     (loop for p in (my players)
-	  do (my announce :select :player p :selection (its choice p)))
+	  do (my announce :select :player p :choice (its choice p)))
 
     (let ((winner
 	   (without-call/cc
