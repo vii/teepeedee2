@@ -159,7 +159,8 @@
 	(loop for p in (my players)
 	      for once = t then nil
 	      unless once do (<div :class "separate")
-	      do (player-state-to-ml p))
+	      do (with-ml-output 
+		   (player-state-to-ml p)))
 	(<div :style (css-attrib :clear "both" :float "none" :border "none"))))
 
 
@@ -245,7 +246,7 @@
 
 (my-defun player state-to-ml ()
   (<div :class "player"
-	(<h3 (output-object-to-ml me)
+	(<h3 me
 	     (when (my waiting-for-input)
 	       (<span :class "turn" "'s turn")))))
 

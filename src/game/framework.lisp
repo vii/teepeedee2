@@ -160,7 +160,7 @@
 (my-defun game resign (player-controller &key (reason :resigned) )
   (let ((p (find player-controller (my players) :key 'player-controller)))
     (when (and p (not (my game-over)))
-      (my announce reason :player player-controller)
+      (my announce reason :player p)
       (my drop-player p))))
 
 (defrules game new-state ()

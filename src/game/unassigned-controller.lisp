@@ -30,10 +30,11 @@
 
 (my-defun unassigned-controller assign (other)
   (when (my game)
-    (setf (player-controller (my player-state)) other)
-    (my del)
-    (timeout-cancel (my timeout))
-    (game-announce (my game) :new-player :player other)
+    (let ((player-state (my player-state)))
+     (setf (player-controller player-state) other)
+     (my del)
+     (timeout-cancel (my timeout))
+     (game-announce (my game) :new-player :player player-state))
     (setf (my game) nil)
     (loop for i in (reverse (my move-states)) do
 	  (move-state-continue i other))))
