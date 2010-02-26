@@ -116,8 +116,8 @@
 		    "<h1>Sorry, nothing to see here. Please go back.</h1>"))))))) 
 
 (defun webapp-respond-ajax-body ()
-  (with-http-params ((channels nil :conv channel-string-to-states))
-    (channel-respond-body channels :always-body t)))
+  (with-http-params ((.channels. nil :conv channel-string-to-states))
+    (channel-respond-body .channels. :always-body t)))
   
 (defun register-action-page ()
   (defpage-lambda +action-page-name+ #'action-respond-body :defaulting-lambda-list (.id. .javascript.)))
