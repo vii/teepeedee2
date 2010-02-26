@@ -152,20 +152,28 @@
       (set-async-status nil)
       (setf *active-request* nil)
 
-      (let ((success nil))
-	(ignore-errors
-	  (setf success (and req (= 200 (~ req status)) (~ req response-text))))
+      (let ((success nil) (timedout nil))
+	(when req
+	  (ignore-errors
+	    (setf success (and (= 200 (~ req status)) (~ req response-text))))
+	  (ignore-errors
+	    (setf timedout (and (> 1000 (- (now) *alive*)) (= 504 (~ req status))))))
 
 	(cond (success
 	       (debug-log "async request completed okay" req)
 	       (ignore-errors
 		 (eval (~ req response-text))
 		 (debug-log "safely evaluated response" req (~ req response-text)))
-	       (maybe-fetch-channels))
+	       (ps:do-set-timeout ((* 200 (random)))
+		 (maybe-fetch-channels)))
+	      (timedout 
+	       (debug-log "async request timeout refresh" req)
+	       (async-request url "Refreshing"))
 	      (t
 	       (debug-log "async request unsuccessful" req)
-	       (set-async-status "Failed" (~ req status))
-	       (ps:do-set-timeout (500)
+	       
+	       (set-async-status "Failed, retrying " (~ req status))
+	       (ps:do-set-timeout ((+ (* 1000 (random)) 500))
 		 (async-request url "Retrying"))))))
 
     (defun now ()
@@ -197,7 +205,7 @@
 		      (async-request-done req url)))))
 	     
 	   (set-async-status initial-status "connecting")
-	   (! (req open) "GET" url t)
+	   (! (req open) "POST" url t)
 	   (! (req send) "")))
        (:catch (e)
 	 (debug-log "async request was not started" url initial-status e)
@@ -227,14 +235,13 @@
     (unless *channels* (setf *channels* (ps:new *object)))
    
     (defun channel (name counter)
-      (setf (aref *channels* name) (max (if (aref *channels* name) (aref *channels* name) 0) counter)))
+      (setf (aref *channels* name) counter))
 
     (defun set-async-status (status substatus)
       (let (element)
 	(ignore-errors (setf element (find-element (unquote +html-id-async-status+))))
 	(when element
 	  (if status
-	      
 	      (setf (~ element style display) ""
 		    (~ element inner-h-t-m-l) (+ status ": " substatus))
 	      (setf (~ element style display) "none")))))
