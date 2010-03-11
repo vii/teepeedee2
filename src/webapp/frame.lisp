@@ -36,16 +36,17 @@
     (setf *webapp-frame* (apply 'make-frame args-for-make-frame)))
   *webapp-frame*)
 
-(my-defun frame var (id)
-  (getf (my variables) id))
+(my-defun frame var (id &optional default)
+  (getf (my variables) id default))
 
 (my-defun frame (setf var) (val id)
   (setf (getf (my variables) id) val))
 
-(defun webapp-frame-var (id)
-  (frame-var (webapp-frame) id))
+(defun webapp-frame-var (id &optional default)
+  (frame-var (webapp-frame) id default))
 
-(defun (setf webapp-frame-var) (val id)
+(defun (setf webapp-frame-var) (val id &optional default)
+  (declare (ignore default))
   (setf (frame-var (webapp-frame) id) val))
 
 (defun list-all-frames ()
