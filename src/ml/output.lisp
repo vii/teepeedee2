@@ -1,6 +1,6 @@
 (in-package #:tpd2.ml)
 
-(defstruct (raw-ml-sendbuf (:include sendbuf)))
+(defmystruct (raw-ml-sendbuf (:include sendbuf)))
 
 (declaim (ftype (function (t) simple-byte-vector) really-escape-string))
 (defun really-escape-string (value)
@@ -26,7 +26,7 @@
     (nil #.(force-byte-vector nil))
     (raw-ml-sendbuf
      value)
-    ((or standard-object structure-object) 
+    ((or standard-object structure-object list) 
      (object-to-ml value))
     (t
      (values (really-escape-string value)))))
@@ -83,3 +83,7 @@
 (defmacro with-ml-to-string (&body body)
   `(force-string (with-ml-output-start ,@body)))
 
+(my-defun raw-ml-sendbuf 'make-load-form (&optional env)
+  (declare (ignore env))
+  `(with-ml-output-start
+     (output-raw-ml ,(my to-byte-vector))))
