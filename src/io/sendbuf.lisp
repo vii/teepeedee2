@@ -182,3 +182,8 @@
 (my-defun sendbuf empty ()
   (my-declare-fast-inline)
   (not (my head)))
+
+(my-defun sendbuf 'make-load-form (&optional env)
+  (declare (ignore env))
+  `(with-sendbuf ()
+     ,(my to-byte-vector)))
