@@ -23,7 +23,7 @@
 
 (defun-consistent ml-output-form (value)
   (typecase value
-    (nil #.(force-byte-vector nil))
+    (null #.(force-byte-vector nil))
     (raw-ml-sendbuf
      value)
     ((or standard-object structure-object list) 
