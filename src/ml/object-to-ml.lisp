@@ -6,8 +6,9 @@
 (defgeneric object-to-ml (object))
 
 (defmethod object-to-ml ((list list))
-  (with-ml-output
-    (loop for i in list do (output-object-to-ml i))))
+  (when list
+   (with-ml-output
+     (loop for i in list do (output-object-to-ml i)))))
 
 (defmethod object-to-ml ((f function))
   (object-to-ml (funcall f)))
