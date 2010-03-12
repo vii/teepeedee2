@@ -60,6 +60,7 @@
 					     lambda-list)
 				  ,@body)))
 		       (async t)
+		       (sync-fallback t)
 		       after-submit-js)
       (force-list title-and-options)
     (let ((body-ml
@@ -91,7 +92,8 @@
 	 ,@(when async 
 		 `(:onsubmit (js-attrib (return (let ((async-submit-success (async-submit-form this))) ,@after-submit-js async-submit-success)))))
 	 :method :post 
-	 :action ,action-link     
+	 ,@(when sync-fallback
+		 `(:action ,action-link))
 	 (<p
 	  ,title
 	  ,@body-ml
