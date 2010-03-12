@@ -59,6 +59,7 @@
 						   (list* name default keys))))
 					     lambda-list)
 				  ,@body)))
+		       onsubmit-js
 		       (async t)
 		       (sync-fallback t)
 		       after-submit-js)
@@ -89,8 +90,9 @@
 				  ,input))
 			      (t input))))))))
        `(<form 
-	 ,@(when async 
-		 `(:onsubmit (js-attrib (return (let ((async-submit-success (async-submit-form this))) ,@after-submit-js async-submit-success)))))
+	 ,@(when (or async onsubmit-js) 
+		 `(:onsubmit 
+		   ,(or onsubmit-js `(js-attrib (return (let ((async-submit-success (async-submit-form this))) ,@after-submit-js async-submit-success))))))
 	 :method :post 
 	 ,@(when sync-fallback
 		 `(:action ,action-link))
