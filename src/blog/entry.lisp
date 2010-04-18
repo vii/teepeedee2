@@ -147,7 +147,6 @@
 	    (format nil "~R ~A~P" v name v))))))
 
 (my-defun entry headline-ml (score-mul)
-  (cl-user::debug-state (my score) score-mul (my index-name))
   (<div :class "blog-front-page-entry"
 	:style 
 	     (css-attrib 
