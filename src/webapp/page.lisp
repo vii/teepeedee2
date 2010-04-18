@@ -84,7 +84,7 @@
 	      collect "&"
 	      collect (symbol-name param)
 	      collect "="
-	      collect `(percent-hexpair-encode ,val)))))
+	      collect `(percent-hexpair-encode (force-byte-vector ,val))))))
 
 (defun-speedy random-web-safe-char ()
   (aref +web-safe-chars+ (random (length +web-safe-chars+))))
