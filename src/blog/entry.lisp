@@ -32,6 +32,10 @@
 
 	(<p :class "time" "Posted " (time-string (my time)) " by " (<span :class "author" (my author)))))
 
+(defvar *score-decay* (exp (/ (log 1/2) (* 30 24 60 60))))
+(defvar *comment-score* 8)
+(defvar *entry-score* 2)
+
 (defmyclass entry
   blog
   name
@@ -39,7 +43,26 @@
   (title "Untitled")
   time
   expiry-time
-  paragraphs)
+  paragraphs
+  score
+  score-update-time)
+
+(defun score-decay (then &key (now (get-universal-time)) (age (- now then)))
+  (expt *score-decay* age))
+
+(my-defun comment score ()
+  (* *comment-score* (score-decay (my time))))
+
+(my-defun entry set-score ()
+  (let ((score (loop for c in (my comments) summing (comment-score c))))
+    (incf score (* *entry-score* (score-decay (my time))))
+    (setf (my score) score
+	  (my score-update-time) (get-universal-time))))
+
+(my-defun entry update-score (&optional (inc 0))
+  (unless (my score) (my set-score))
+  (setf (my score) (+ inc (* (my score) (score-decay (my score-update-time))))
+	(my score-update-time) (get-universal-time)))
 
 (defmyclass (entry-channel (:include simple-channel))
     entry)
@@ -89,11 +112,12 @@
   (<div :class "blog-entry-post-comment"
 	(html-action-form-collapsed ("Post a comment" :action-link (blog-post-comment-url (my blog)))
 	    ((text nil :type <textarea :reset "")
-	     (author "Anonymous")
+	     (author (byte-vector-cat "Anonymous from " (tpd2.http:servestate-origin*)))
 	     (entry-name (my index-name) :type :hidden)
 	     (keep-this-empty nil :type :hidden)))))
 
 (my-defun entry 'object-to-ml ()
+  (my update-score 1)
   (<div :class "blog-entry"
 	(<p :class "time" "Posted " (time-string (my time)))
 	(let ((v (length (its subscribers (my channel)))))
@@ -102,6 +126,40 @@
 	(my story-ml)
 	(my channel)
 	(my comment-ml)))
+
+(defvar *age-units* `(("year" ,(* 365.25 24 60 60))
+		      ("week" ,(* 7 24 60 60))
+		      ("day" ,(* 24 60 60))
+		      ("hour" ,(* 60 60))
+		      ("minute" 60)
+		      ("second" 1)))
+
+(defun friendly-age-string (time)
+    (let ((age (- (get-universal-time) time)))
+      (let ((units *age-units*))
+	(loop 
+	      for value = (cadr (first units))
+	      while (and (cdr units) (< age value))
+	      do (pop units))
+	(destructuring-bind (name value)
+	    (first units)
+	  (let ((v (floor age value)))
+	    (format nil "~R ~A~P" v name v))))))
+
+(my-defun entry headline-ml (score-mul)
+  (cl-user::debug-state (my score) score-mul (my index-name))
+  (<div :class "blog-front-page-entry"
+	:style 
+	     (css-attrib 
+	      :max-width ((format nil "~$%" (* 100 (min 0.8 (max 0.2 (* 1/4 score-mul (my score)))))))
+	      :width "auto")
+	(<h2 :style 
+	     (css-attrib 
+	      :font-size ((format nil "~$em" (min 2.5 (max 1.2 (* 1.5 score-mul (my score)))))))
+	     (<a :href (my url-path) (my title)))
+	(<p :class "time" "Posted " (friendly-age-string (my time)) " ago"
+	    (when (my comments)
+	      (with-ml-output ", last comment " (friendly-age-string (comment-time (first (my comments)))) " ago")))))
 
 (my-defun entry combined-title ()
  (with-ml-output
