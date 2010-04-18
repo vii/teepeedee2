@@ -32,7 +32,7 @@
 
 	(<p :class "time" "Posted " (time-string (my time)) " by " (<span :class "author" (my author)))))
 
-(defvar *score-decay* (exp (/ (log 1/2) (* 30 24 60 60))))
+(defvar *score-decay* (exp (/ (log 1/2) (* 6 30 24 60 60))))
 (defvar *comment-score* 8)
 (defvar *entry-score* 2)
 
