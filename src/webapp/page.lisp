@@ -65,10 +65,11 @@
        (defun ,normal-func-name (&key ,@defaulting-lambda-list)
 	 ,@body)
        (defpage-lambda 
-	   ,path #',normal-func-name :defaulting-lambda-list ,defaulting-lambda-list ,@(loop for (key value) on body by #'cddr while (keywordp key) collect key collect value))
+	   ,path #',normal-func-name :defaulting-lambda-list ,defaulting-lambda-list 
+	   ,@(loop for (key value) on body by #'cddr while (keywordp key) collect key collect value))
        ',normal-func-name)))
 
-(defmacro page-link (&optional (page '+action-page-name+) &rest args)
+(defmacro page-link (&optional (page '(site-action-page-name (current-site))) &rest args)
   `(sendbuf-to-byte-vector
     (with-sendbuf (sendbuf)
       ,page

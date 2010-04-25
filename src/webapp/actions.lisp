@@ -16,7 +16,7 @@
      ,@body))
 
 (defmacro page-action-link (&body body)
-  `(page-link (action-page-name (current-site)) :.id. (register-action-id (page-action-lambda ,@body))))
+  `(page-link (site-action-page-name (current-site)) :.id. (register-action-id (page-action-lambda ,@body))))
 
 (defmacro html-replace-link (text &body body)
   (with-unique-names (body-func)
