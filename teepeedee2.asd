@@ -88,7 +88,7 @@
 							   (:file "site")
 							   (:file "default-site" :depends-on ("site" "webapp" "js-library"))
 							   (:file "js-library" :depends-on ("html-constants" "page"))
-							   (:file "actions" :depends-on ("page" "html-constants" "frame"))
+							   (:file "actions" :depends-on ("page" "html-constants" "frame" "site"))
 							   (:file "channel" :depends-on ("page" "html-constants"))
 							   (:file "webapp" :depends-on ("actions"))
 							   (:file "message-channel" :depends-on ("channel"))))

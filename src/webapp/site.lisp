@@ -18,6 +18,8 @@
 	       `(with-ml-output
 		  (<title ,title)
 		  (webapp-default-page-head-contents))))
+  (action-page-name +action-page-name+)
+  (channel-page-name +channel-page-name+)
   (page-body-start 
    (lambda(title)
      `(<h1 ,title)))

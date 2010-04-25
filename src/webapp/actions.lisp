@@ -16,7 +16,7 @@
      ,@body))
 
 (defmacro page-action-link (&body body)
-  `(page-link +action-page-name+ :.id. (register-action-id (page-action-lambda ,@body))))
+  `(page-link (action-page-name (current-site)) :.id. (register-action-id (page-action-lambda ,@body))))
 
 (defmacro html-replace-link (text &body body)
   (with-unique-names (body-func)
@@ -124,7 +124,8 @@
     (channel-respond-body .channels. :always-body t)))
   
 (defun register-action-page ()
-  (defpage-lambda +action-page-name+ #'action-respond-body :defaulting-lambda-list (.id. .javascript.)))
+  (defpage-lambda (site-action-page-name (current-site)) 
+      #'action-respond-body :defaulting-lambda-list (.id. .javascript.)))
 
 
 (my-defun frame 'simple-channel-body-ml ()
