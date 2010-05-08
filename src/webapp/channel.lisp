@@ -104,8 +104,8 @@
 		    (when original-hangup-handler
 		      (apply original-hangup-handler args)))))))))))
 
-(defun register-channel-page ()
-  (dispatcher-register-path (site-dispatcher (current-site)) (site-channel-page-name (current-site)) #'channel-respond-page))
+(defun register-channel-page (&optional (url (site-action-page-name (current-site))))
+  (dispatcher-register-path url (site-channel-page-name (current-site)) #'channel-respond-page))
 
 (my-defun channel 'object-to-ml ()
   (js-html-script (channel (unquote (force-string (my id))) (unquote (my state)))))

@@ -123,8 +123,8 @@
   (with-http-params ((.channels. nil :conv channel-string-to-states))
     (channel-respond-body .channels. :always-body t)))
   
-(defun register-action-page ()
-  (defpage-lambda (site-action-page-name (current-site)) 
+(defun register-action-page (&optional (url (site-action-page-name (current-site))))
+  (defpage-lambda url 
       #'action-respond-body :defaulting-lambda-list (.id. .javascript.)))
 
 
