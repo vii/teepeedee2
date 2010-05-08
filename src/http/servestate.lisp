@@ -27,7 +27,7 @@
   `(def-specialvar-struct servestate
        ,@fields
      ,@(loop for f in *stored-servestate-header-fields*
-	     collect `(,f nil :type (or null simple-byte-vector)))))
+	     collect `(,f nil :type list))))
 
 (def-servestate-struct
     (method nil :type (or null simple-byte-vector))

@@ -100,7 +100,7 @@
 					       ,@(loop for f in *stored-servestate-header-fields*
 						       collect
 						       `(,(force-string f)
-							  (setf (,(concat-sym 'servestate- f '*)) value)))))))
+							  (push value  (,(concat-sym 'servestate- f '*)))))))))
       (declare (dynamic-extent #'handle-header))
       (let ((pos 0))
 	(declare (type (integer 0 100000) pos)
