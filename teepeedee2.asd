@@ -85,7 +85,7 @@
 							   (:file "frame" :depends-on ("names" "list-channel" "simple-channel"))
 							   (:file "names")
 							   (:file "html-constants")
-							   (:file "site")
+							   (:file "site" :depends-on ("html-constants"))
 							   (:file "default-site" :depends-on ("site" "webapp" "js-library"))
 							   (:file "js-library" :depends-on ("html-constants" "page"))
 							   (:file "actions" :depends-on ("page" "html-constants" "frame" "site"))
