@@ -6,7 +6,7 @@
   (error-responder 'default-http-error-page))
 
 (defun dispatch-servestate (con done *servestate*)
-  (dispatcher-respond (find-dispatcher (servestate-host*)) 
+  (dispatcher-respond (find-dispatcher (first (servestate-host*))) 
 		      con done))
 
 (defun-speedy start-http-response (&key (banner (force-byte-vector "200 OK"))
