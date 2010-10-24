@@ -26,8 +26,8 @@
 	     (match-bind ( (*  name "=" value (or (last) "&")
 			       '(f name value)))
 		 str)))
-	 (parse-cookie-params (str)
-	   (when str
+	 (parse-cookie-params (cookies)
+	   (loop for str in cookies do
 	     (match-bind ( (*  name "=" value (or (last) "," ";")
 			       '(f name value)))
 		 str))))
@@ -101,6 +101,7 @@
   (setf (gethash (force-byte-vector path) (my paths)) (alexandria:ensure-function func)))
 
 (my-defun dispatcher 'default-http-error-page ()
+  (format *trace-output* "~&Page ~A not found~&" (strcat (my canonical-name) (servestate-path*))) 
   (with-sendbuf () 
     "<h1>I made a mistake. Sorry for the inconvenience.</h1>"))
 
