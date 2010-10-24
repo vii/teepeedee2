@@ -5,9 +5,10 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (asdf:operate 'asdf:load-op 'cl-fad))
 
-(loop for addon in (remove-if-not 'cl-fad:directory-pathname-p (cl-fad:list-directory "addons"))
-      do
-      (pushnew addon asdf:*central-registry* :test #'equal))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (loop for addon in (remove-if-not 'cl-fad:directory-pathname-p (cl-fad:list-directory "addons"))
+	do
+	(pushnew addon asdf:*central-registry* :test #'equal)))
 
 #+tpd2-debug
 (progn
@@ -52,7 +53,12 @@
 							    (:file "epoll" :depends-on ("syscalls" "mux"))
 							    (:file "syscalls")
 							    (:file "protocol" :depends-on ("socket" "con"))
-							    (:file "repeater" :depends-on ("con" "protocol"))))
+							    (:file "repeater" :depends-on ("con" "protocol"))
+							    (:file "openssl")
+							    (:file "ssl" :depends-on ("con" "openssl"))
+							    )
+					       
+					       )
 
 				     (:module :http
 					      :depends-on (:lib :io)

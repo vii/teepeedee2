@@ -212,6 +212,8 @@
    #:con-default-timeout-function
    #:con-timeout
    #:con-hangup-hook
+
+   #:convert-con-to-ssl
    
    #:+newline+
    #:+SOCK_DGRAM+

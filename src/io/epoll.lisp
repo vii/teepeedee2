@@ -43,8 +43,8 @@
 
 (my-defun epoll handle-postponed-registrations ()
     (assert (not (my postpone-registration)))
-    (adolist (my postponed-registrations)
-      (my 'mux-add it))
+    (loop for (fd . con) in (my postponed-registrations) do
+      (my 'mux-add fd con))
     (setf (my postponed-registrations) nil))
 
 (my-defun epoll wait (timeout)
@@ -77,17 +77,16 @@
 
 (defvar *epoll* (make-epoll))
 
-(defun register-fd (events con)
+(defun register-fd (fd events con)
   (with-shorthand-accessor (my epoll *epoll*)
-    (let ((fd (con-socket con)))
-      (cond ((my 'mux-find-fd fd) 
-	     (debug-assert (eq con (my 'mux-find-fd fd)) (*epoll* con fd)) 
-	     (my ctl +EPOLL_CTL_MOD+ fd events))
-	    (t
-	     (if (my postpone-registration)
-		 (push con (my postponed-registrations))
-		 (my 'mux-add con))
-	     (my ctl +EPOLL_CTL_ADD+ fd events))))))
+    (cond ((my 'mux-find-fd fd) 
+	   (debug-assert (eq con (my 'mux-find-fd fd)) (*epoll* con fd)) 
+	   (my ctl +EPOLL_CTL_MOD+ fd events))
+	  (t
+	   (if (my postpone-registration)
+	       (push (cons fd con) (my postponed-registrations))
+	       (my 'mux-add fd con))
+	   (my ctl +EPOLL_CTL_ADD+ fd events)))))
 
 (defun deregister-fd (fd)
   (declare (optimize speed))
@@ -96,8 +95,6 @@
 
 (defun-speedy events-pending-p ()
   (not (mux-empty *epoll*)))
-
-
 
 (defun wait-for-next-event (&optional timeout)
   (with-shorthand-accessor (my epoll *epoll*)

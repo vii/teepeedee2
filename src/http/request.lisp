@@ -95,8 +95,8 @@
   (con-clear-failure-callbacks con)
   (hangup con))
 
-(defun get-http-request-con (address port)
-  (let ((con (pop (gethash (list address port) *connection-cache*))))
+(defun get-http-request-con (ssl address port)
+  (let ((con (pop (gethash (list ssl address port) *connection-cache*))))
     (cond (con
 	   (con-clear-failure-callbacks con)
 	   (reset-timeout con)
@@ -105,11 +105,14 @@
 		  con)
 		 (t
 		  (hangup con)
-		  (get-http-request-con address port))))
+		  (get-http-request-con ssl address port))))
 	  (t
-	   (make-con-connect :address address :port port)))))
+	   (let ((con (make-con-connect :address address :port port)))
+	     (when ssl
+	       (convert-con-to-ssl con))
+	     con)))))
 
-(defun launch-http-request (&key (port 80) address body 
+(defun launch-http-request (&key ssl (port (if ssl 443 80)) address body 
 			    (path (force-byte-vector "/")) 
 			    extra-header-lines
 			    hostname
@@ -121,7 +124,7 @@
     (setf address (lookup-hostname hostname)))
   (unless address
     (error "Please specify an address"))
-  (let ((con (get-http-request-con address port)) succeeded)
+  (let ((con (get-http-request-con ssl address port)) succeeded)
     (when failure
       (con-add-failure-callback con (lambda(e) (unless succeeded (funcall failure e)))))
     (when timeout
@@ -145,4 +148,4 @@
 		 +newline+
 		 body)
 	       (lambda(&rest args)(setf succeeded t) (apply done args))
-	       :connection-cache (list address port))))
+	       :connection-cache (list ssl address port))))

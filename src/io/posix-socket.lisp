@@ -82,7 +82,7 @@
 
 (defmethod socket-register ((fd integer) events con)
   (debug-assert (eql fd (con-socket con)) (fd con))
-  (register-fd events con))
+  (register-fd fd events con))
 
 (defmethod socket-supports-writev ( (fd integer))
   (declare (ignore fd))
