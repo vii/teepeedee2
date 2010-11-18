@@ -34,7 +34,7 @@
 
 (defvar *score-decay* (exp (/ (log 1/2) (* 6 30 24 60 60))))
 (defvar *comment-score* 8)
-(defvar *entry-score* 2)
+(defvar *entry-score* 10)
 
 (defmyclass entry
   blog
@@ -233,8 +233,11 @@
 			     (case-match-fold-ascii-case header
 							 (("expiry-time" "time")  (setf value (parse-time value)))
 							 ("tags" (setf value (split-into-list-by-comma value))))
-			     (setf (slot-value entry (normally-capitalized-string-to-symbol header))
-				   value)))
+			     (let ((sym (normally-capitalized-string-to-symbol header)))
+			      (cond ((slot-exists-p entry sym)
+				     (setf (slot-value entry sym)
+					   value))
+				    (t (warn "~A" (strcat "blog entry " name " has invalid header " sym " (" header ")")))))))
 	(my read-paragraphs-from-buffer remaining))
       (my set-page))
     entry))
