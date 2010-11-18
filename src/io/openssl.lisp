@@ -4,7 +4,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (cffi:define-foreign-library libssl
-    (:unix  "libssl.so")
+    (:unix  "libssl.so" "libssl.so.0.9.8")
     (t (:default "libssl3")))
 
   (cffi:use-foreign-library libssl)
