@@ -93,7 +93,7 @@
     (ssl-library-init)
     (ssl-load-error-strings)
     (setf *ssl-ctx* (ssl-ctx-new (ssl-v23-method))
-	  *openssl-initialized* t)))
+          *openssl-initialized* t)))
 
 (defun ssl-ctx-set-mode (context mode)
   (ssl-ctx-ctrl context +SSL_CTRL_MODE+ mode (cffi:null-pointer)))

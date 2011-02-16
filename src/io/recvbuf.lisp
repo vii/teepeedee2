@@ -20,7 +20,7 @@
 (my-defun recvbuf reset ()
   (my-declare-fast-inline)
   (setf (my write-idx) 0
-	(my read-idx) 0))
+        (my read-idx) 0))
 
 (declaim (ftype (function () recvbuf) get-recvbuf))
 (defun-speedy get-recvbuf ()
@@ -50,7 +50,7 @@
 
 (my-defun recvbuf shift-up (size)
   (my-declare-fast-inline)
-  (cond 
+  (cond
     ((= (my write-idx) (my read-idx))
      (when (> size (my len))
        (setf (my store) (make-byte-vector size)))
@@ -77,29 +77,29 @@
   (my-declare-fast-inline)
   (assert (not (my full)) () 'connection-buffer-overflow-error :con con :len (my len))
   (let ((s
-	 (socket-read (con-socket con)
-		      (my store)
-		      (my write-idx))))
-    (cond 
+         (socket-read (con-socket con)
+                      (my store)
+                      (my write-idx))))
+    (cond
        ((not s)
-	(when retry
-	  (con-when-ready-to-read con retry))
-	nil)
+        (when retry
+          (con-when-ready-to-read con retry))
+        nil)
        (t
-	(locally
-	    (declare (type fixnum s))
-	  (incf (my write-idx) s)
-	  s)))))
+        (locally
+            (declare (type fixnum s))
+          (incf (my write-idx) s)
+          s)))))
 
 (my-defun recvbuf recv (con &optional done)
   (my-declare-fast-inline)
   (let ((s (my read-some con (when done #'my-call))))
     (cond ((not s))
-	  ((zerop s)
-	   (error 'socket-closed))
-	  (t
-	   (when done
-	     (funcall done))))))
+          ((zerop s)
+           (error 'socket-closed))
+          (t
+           (when done
+             (funcall done))))))
 
 (my-defun recvbuf sync ()
   (my-declare-fast-inline)
@@ -127,28 +127,28 @@
   (my-declare-fast-inline)
   (declare (type simple-byte-vector delimiter))
   (let ((limit (- (my write-idx) (1- (length delimiter))))
-	(trigger (aref delimiter 0)))
+        (trigger (aref delimiter 0)))
     (loop for i from (my read-idx) below limit
-          thereis 
-	  (and (= trigger (aref (my store) i))
-	   (unless
-	       (loop for j from 1 below (length delimiter)
-		     thereis (/= (aref delimiter j) (aref (my store) (+ i j))))
-	     i)))))
+          thereis
+          (and (= trigger (aref (my store) i))
+           (unless
+               (loop for j from 1 below (length delimiter)
+                     thereis (/= (aref delimiter j) (aref (my store) (+ i j))))
+             i)))))
 
 (my-defun recvbuf eat-to-delimiter (delimiter)
   (my-declare-fast-inline)
   (let ((ending (my find delimiter)))
     (when ending
-      (prog1 
+      (prog1
           (my eat-to-idx ending)
         (incf (my read-idx) (length delimiter))
-	(my sync)))))
+        (my sync)))))
 
 (my-defun recvbuf 'print-object (stream)
   (print-unreadable-object (me stream :type t :identity t)
     (format stream "read ~D/~D bytes: ~A~%|~%~A"
-	    (my read-idx)
-	    (my write-idx)
-	    (force-string (subseq (my store) 0 (my read-idx)))
-	    (force-string (subseq (my store) (my read-idx) (my write-idx))))))
+            (my read-idx)
+            (my write-idx)
+            (force-string (subseq (my store) 0 (my read-idx)))
+            (force-string (subseq (my store) (my read-idx) (my write-idx))))))

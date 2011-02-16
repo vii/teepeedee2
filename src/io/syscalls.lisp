@@ -174,8 +174,8 @@
   ((errno :initarg :errno :reader syscall-failed-errno)
    (syscall :initarg :syscall))
   (:report (lambda (condition stream)
-	     (with-slots (errno syscall) condition
-	       (format stream "~A failed: ~A (errno ~A)" syscall (strerror errno) errno)))))
+             (with-slots (errno syscall) condition
+               (format stream "~A failed: ~A (errno ~A)" syscall (strerror errno) errno)))))
 
 (eval-always
  (defun syscall-name (name)
@@ -194,43 +194,43 @@
   (destructuring-bind (name &key (would-block '(+EAGAIN+ +EINPROGRESS+)) (error t))
       (force-list name-and-options)
    (let ((direct-sym (direct-syscall-sym name))
-	 (noretry-sym (noretry-syscall-sym name))
-	 (syscall-name (syscall-name name))
-	 (arg-names (mapcar #'first args))
-	 (func (concat-sym-from-sym-package 'def-simple-syscall 'syscall- name)))
+         (noretry-sym (noretry-syscall-sym name))
+         (syscall-name (syscall-name name))
+         (arg-names (mapcar #'first args))
+         (func (concat-sym-from-sym-package 'def-simple-syscall 'syscall- name)))
      `(progn
-	(declaim (inline ,func ,direct-sym ,noretry-sym))
-	(declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)) ,noretry-sym)
-		 (ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer) ,func ,direct-sym))
-	(def-syscall ,name ,@args)
-	(defun ,noretry-sym ,arg-names
-	  (declare (optimize speed (safety 0)))
-	  (let ((val (,direct-sym ,@arg-names)))
-	    (cond ((/= val -1) val)
-		  (t
-		   (let ((errno errno))
-		     (cond ((or ,@(loop for e in would-block collect `(= errno ,e)))
-			    -1)
-			   ((= errno +EINTR+)
-			    nil)
-			   (t
-			    ,(if error 
-				 `(error 'syscall-failed :errno errno :syscall ,syscall-name)
-				 -1) )))))))
-    
-	(defun ,func ,arg-names
-	  (declare (optimize speed (safety 0)))
-	  (loop
-		(let ((val (,noretry-sym ,@arg-names)))
-		  (when val (return val)))))))))
+        (declaim (inline ,func ,direct-sym ,noretry-sym))
+        (declaim (ftype (function (,@(mapcar (constantly t) arg-names)) (or null syscall-return-integer)) ,noretry-sym)
+                 (ftype (function (,@(mapcar (constantly t) arg-names)) syscall-return-integer) ,func ,direct-sym))
+        (def-syscall ,name ,@args)
+        (defun ,noretry-sym ,arg-names
+          (declare (optimize speed (safety 0)))
+          (let ((val (,direct-sym ,@arg-names)))
+            (cond ((/= val -1) val)
+                  (t
+                   (let ((errno errno))
+                     (cond ((or ,@(loop for e in would-block collect `(= errno ,e)))
+                            -1)
+                           ((= errno +EINTR+)
+                            nil)
+                           (t
+                            ,(if error
+                                 `(error 'syscall-failed :errno errno :syscall ,syscall-name)
+                                 -1) )))))))
+
+        (defun ,func ,arg-names
+          (declare (optimize speed (safety 0)))
+          (loop
+                (let ((val (,noretry-sym ,@arg-names)))
+                  (when val (return val)))))))))
 
 
 (def-simple-syscall (close :would-block nil)
     (fd :int))
 
 (defconstant +SHUT_RD+ 0)
-(defconstant +SHUT_WR+ 1)  
-(defconstant +SHUT_RDWR+ 2) 
+(defconstant +SHUT_WR+ 1)
+(defconstant +SHUT_RDWR+ 2)
 
 (def-simple-syscall (shutdown :would-block (+ENOTCONN+))
     (fd :int)
@@ -242,8 +242,8 @@
 
 (cffi:defcfun ("signal" syscall-signal)
     :pointer
-  (signum :int) 
-  (action :pointer)) 
+  (signum :int)
+  (action :pointer))
 
 (cffi:defctype size_t :unsigned-long)
 
@@ -286,33 +286,33 @@
 
 (defconstant +SOCK_NONBLOCK+ #o04000)
 
-(def-simple-syscall (accept4 :would-block (+EAGAIN+ 
-					  +EMFILE+
-					  +EINPROGRESS+
-					  +ENETDOWN+ 
-					  +EPROTO+ 
-					  +ENOPROTOOPT+
-					  +EHOSTDOWN+    
-					  +ENONET+    
-					  +EHOSTUNREACH+    
-					  +EOPNOTSUPP+
-					  +ENETUNREACH+))
+(def-simple-syscall (accept4 :would-block (+EAGAIN+
+                                          +EMFILE+
+                                          +EINPROGRESS+
+                                          +ENETDOWN+
+                                          +EPROTO+
+                                          +ENOPROTOOPT+
+                                          +EHOSTDOWN+
+                                          +ENONET+
+                                          +EHOSTUNREACH+
+                                          +EOPNOTSUPP+
+                                          +ENETUNREACH+))
     (sockfd :int)
   (addr :pointer)
   (addrlen :pointer)
   (flags :int))
 
-(def-simple-syscall (accept :would-block (+EAGAIN+ 
-					  +EMFILE+
-					  +EINPROGRESS+
-					  +ENETDOWN+ 
-					  +EPROTO+ 
-					  +ENOPROTOOPT+
-					  +EHOSTDOWN+    
-					  +ENONET+    
-					  +EHOSTUNREACH+    
-					  +EOPNOTSUPP+
-					  +ENETUNREACH+))
+(def-simple-syscall (accept :would-block (+EAGAIN+
+                                          +EMFILE+
+                                          +EINPROGRESS+
+                                          +ENETDOWN+
+                                          +EPROTO+
+                                          +ENOPROTOOPT+
+                                          +EHOSTDOWN+
+                                          +ENONET+
+                                          +EHOSTUNREACH+
+                                          +EOPNOTSUPP+
+                                          +ENETUNREACH+))
     (sockfd :int)
   (addr :pointer)
   (addrlen :pointer))
@@ -338,13 +338,13 @@
 (defun grovel-from-c-defines (string)
   (dolist (line (cl-ppcre:split "\\n" string))
     (cl-ppcre:register-groups-bind (name val description)
-				   ("^#define\\s+(\\S+)\\s+(\\S+)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
-				   (format t "(defconstant +~A+ ~A \"~A\")~&"
-					   name val (or description name)))
+                                   ("^#define\\s+(\\S+)\\s+(\\S+)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
+                                   (format t "(defconstant +~A+ ~A \"~A\")~&"
+                                           name val (or description name)))
     (cl-ppcre:register-groups-bind (name val description)
-				   ("^\\s*(\\S+)\\s*=\\s*(\\S+?(?:,)?)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
-				   (format t "(defconstant +~A+ ~A \"~A\")~&"
-					   name val (or description name)))))
+                                   ("^\\s*(\\S+)\\s*=\\s*(\\S+?(?:,)?)\\s*(?:/\\*\\s*(.*?)\\s*\\*/)?" line)
+                                   (format t "(defconstant +~A+ ~A \"~A\")~&"
+                                           name val (or description name)))))
 |#
 
 
@@ -459,7 +459,7 @@
 
 (defun socket-cork (fd)
   (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 1))
-  
+
 (defun socket-uncork (fd)
   (setsockopt-int fd +IPPROTO_TCP+ +TCP_CORK+ 0))
 
@@ -527,7 +527,7 @@
   (next :pointer))
 
 
-(cffi:defcfun getaddrinfo 
+(cffi:defcfun getaddrinfo
     :int
   (node :string)
   (service :string)
@@ -542,11 +542,11 @@
   (cffi:with-foreign-object (res :pointer)
     (let ((ret (getaddrinfo hostname (cffi:null-pointer) (cffi:null-pointer) res)))
       (when (zerop ret)
-	(let ((ai (cffi:mem-ref res :pointer)))
-	  (unwind-protect
-	       (sockaddr-address-string-with-ntop 
-		(cffi:foreign-slot-value ai 'addrinfo 'addr))
-	    (freeaddrinfo ai)))))))
+        (let ((ai (cffi:mem-ref res :pointer)))
+          (unwind-protect
+               (sockaddr-address-string-with-ntop
+                (cffi:foreign-slot-value ai 'addrinfo 'addr))
+            (freeaddrinfo ai)))))))
 
 (def-simple-syscall setsockopt
     (fd :int)
@@ -559,14 +559,14 @@
   (cffi:with-foreign-object (on :int)
     (setf (cffi:mem-ref on :int) value)
     (syscall-setsockopt fd level optname
-			on (cffi:foreign-type-size :int))))
+                        on (cffi:foreign-type-size :int))))
 
 (defun sockaddr-address-string-with-ntop (sa)
   (cffi:with-foreign-pointer-as-string ((str str-size) 200)
     (unless (inet_ntop (cffi:foreign-slot-value sa 'sockaddr_in 'family)
-		       (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)
-		       str
-		       str-size)
+                       (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)
+                       str
+                       str-size)
       (error "Cannot convert address: ~A" (strerror errno)))))
 
 #+tpd2-old-sockaddr-address-string
@@ -583,8 +583,8 @@
       #.`(strcat ,@(loop for i below 4 unless (= i 0) collect "." collect `(the simple-string (aref octet-to-string (ldb (byte 8 (* 8 ,i)) addr))))))))
 
 (alexandria:define-constant +octet-to-bv+
-    (make-array 256 :element-type 'simple-byte-vector 
-		:initial-contents (mapcar 'force-simple-byte-vector (loop for i from 0 below 256 collect (format nil "~3,'0D" i))))
+    (make-array 256 :element-type 'simple-byte-vector
+                :initial-contents (mapcar 'force-simple-byte-vector (loop for i from 0 below 256 collect (format nil "~3,'0D" i))))
   :test 'equalp)
 
 (defun-speedy bv-from-address (addr)
@@ -593,62 +593,62 @@
   (let ((dest (make-byte-vector (1- (* 4 4)))))
     (declare (type simple-byte-vector dest))
       (macrolet ((write-one (offset &optional terminate?)
-		   `(let ((str (aref +octet-to-bv+ (logand addr #xff))))
-		      (declare (type simple-byte-vector str))
-		      ,(when terminate? `(setf addr (ash addr -8)))
-		      ,@(loop for i below 3 collect `(setf (aref dest ,(+ i offset)) (aref str ,i)))
-		      ,(when terminate?
-			     `(setf (aref dest ,(+ offset 3)) ,(char-code #\.)))))
-		 (write-all ()
-		   `(progn ,@(loop for i below 4
-				   collect `(write-one ,(* i 4) ,(> 3 i))))))
-	(write-all)
-	dest)))
+                   `(let ((str (aref +octet-to-bv+ (logand addr #xff))))
+                      (declare (type simple-byte-vector str))
+                      ,(when terminate? `(setf addr (ash addr -8)))
+                      ,@(loop for i below 3 collect `(setf (aref dest ,(+ i offset)) (aref str ,i)))
+                      ,(when terminate?
+                             `(setf (aref dest ,(+ offset 3)) ,(char-code #\.)))))
+                 (write-all ()
+                   `(progn ,@(loop for i below 4
+                                   collect `(write-one ,(* i 4) ,(> 3 i))))))
+        (write-all)
+        dest)))
 
 (defun-speedy sockaddr-address-bv (sa)
   (declare (optimize speed (safety 0)))
   (bv-from-address (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
-  
 
-(defun new-socket-helper (&key 
-			  port 
-			  address 
-			  socket-family
-			  socket-type
-			  action)
+
+(defun new-socket-helper (&key
+                          port
+                          address
+                          socket-family
+                          socket-type
+                          action)
   (let ((fd (syscall-socket socket-family socket-type 0)))
-    (signal-protect 
+    (signal-protect
      (let ((network-port (htons port)))
        (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
        (set-fd-nonblock fd)
        (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
-	 (setf family socket-family)
-	 (cffi:with-foreign-string (src address)
-	   (when (<= (inet_pton socket-family src 
-				(cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
-	     (error "Internet address is not valid: ~A" address)))
-	 (setf port network-port)
-	 (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in))) 
+         (setf family socket-family)
+         (cffi:with-foreign-string (src address)
+           (when (<= (inet_pton socket-family src
+                                (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
+             (error "Internet address is not valid: ~A" address)))
+         (setf port network-port)
+         (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in)))
        fd)
      (syscall-close fd))))
 
 (defun make-listen-socket (&rest args)
-  (apply 'new-socket-helper :action 
-	 (lambda(fd sa len)
-	   (syscall-bind fd sa len)
-	   (syscall-listen fd 1024))
-	 args))
+  (apply 'new-socket-helper :action
+         (lambda(fd sa len)
+           (syscall-bind fd sa len)
+           (syscall-listen fd 1024))
+         args))
 
 (defun make-bind-socket (&rest args)
-  (apply 'new-socket-helper :action 
-	 (lambda(fd sa len)
-	   (syscall-bind fd sa len))
-	 args))
+  (apply 'new-socket-helper :action
+         (lambda(fd sa len)
+           (syscall-bind fd sa len))
+         args))
 
 (defun make-connect-socket (&rest args)
-  (apply 'new-socket-helper 
-	 :action 'syscall-connect
-	 args))
+  (apply 'new-socket-helper
+         :action 'syscall-connect
+         args))
 
 (defconstant +max-iovecs+ 1024)
 
@@ -660,8 +660,8 @@
     (sec :unsigned-long)
   (usec :unsigned-long))
 
-(def-simple-syscall gettimeofday 
-    (tv :pointer) 
+(def-simple-syscall gettimeofday
+    (tv :pointer)
   (tz :pointer))
 
 (defconstant +unix-epoch-to-universal-time-offset+ 2208988800)
@@ -683,11 +683,11 @@
 (defun syscall-retry-epoll_wait (epfd events maxevents timeout-ms)
   (let ((start (get-internal-real-time)))
     (loop
-	  (let ((retval (syscall-noretry-epoll_wait epfd events maxevents timeout-ms)))
-	    (when retval (return retval))
-	    (unless (>= 0 timeout-ms)
-	      (setf timeout-ms
-		    (max (- timeout-ms (floor (- (get-internal-real-time) start) (ceiling internal-time-units-per-second 1000))) 0)))))))
+          (let ((retval (syscall-noretry-epoll_wait epfd events maxevents timeout-ms)))
+            (when retval (return retval))
+            (unless (>= 0 timeout-ms)
+              (setf timeout-ms
+                    (max (- timeout-ms (floor (- (get-internal-real-time) start) (ceiling internal-time-units-per-second 1000))) 0)))))))
 
 (def-simple-syscall epoll_ctl
     (epfd :int)
@@ -734,7 +734,7 @@
 #+sbcl ; debug
 (defun check-fd-dead (fd)
   (assert (not
-	   (ignore-errors
-	     (sb-posix:readlink (format nil "/proc/~A/fd/~A" (sb-posix:getpid) fd))))
-	  (fd)
-	  "FD ~A still alive" fd))
+           (ignore-errors
+             (sb-posix:readlink (format nil "/proc/~A/fd/~A" (sb-posix:getpid) fd))))
+          (fd)
+          "FD ~A still alive" fd))

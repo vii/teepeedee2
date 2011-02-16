@@ -5,14 +5,14 @@
 
 (defstruct mux
   (fd-to-con (make-mux-array 128)
-	     :type (simple-array (or null con))))
+             :type (simple-array (or null con))))
 
 (my-defun mux empty ()
-	  (my-declare-fast-inline)
-	  (every #'not (my fd-to-con))) 
+          (my-declare-fast-inline)
+          (every #'not (my fd-to-con)))
 
 (my-defun mux find-fd (fd)
-  (my-declare-fast-inline)	  
+  (my-declare-fast-inline)
   (declare (type (or null fixnum) fd))
   (when fd
     (when (> (length (my fd-to-con)) fd)
@@ -23,11 +23,11 @@
   (when fd
     (debug-assert (not (my find-fd fd)) (me con fd))
     (when (>= fd (length (my fd-to-con)))
-      (let ((new (make-mux-array  
-		  (loop for length = (* 2 (length (my fd-to-con))) then (* 2 length)
-			thereis (when (> length fd) length)))))
-	(replace new (my fd-to-con))
-	(setf (my fd-to-con) new))
+      (let ((new (make-mux-array
+                  (loop for length = (* 2 (length (my fd-to-con))) then (* 2 length)
+                        thereis (when (> length fd) length)))))
+        (replace new (my fd-to-con))
+        (setf (my fd-to-con) new))
       (debug-assert (> (length (my fd-to-con)) fd) (me fd)))
     (setf (aref (my fd-to-con) fd) con)))
 
@@ -40,5 +40,5 @@
 
 (my-defun mux close-all ()
   (loop for x across (my fd-to-con)
-	when x
-	do (hangup x)))
+        when x
+        do (hangup x)))

@@ -1,8 +1,8 @@
 (in-package #:tpd2.lib)
 
-(defvar *my-fast-inline-declaration* 
+(defvar *my-fast-inline-declaration*
   (progn '(declare (optimize speed))
-	 #+tpd2-debug '(declare)))
+         #+tpd2-debug '(declare)))
 
 (defgeneric copy (original))
 (defgeneric assign (original copy))
@@ -21,12 +21,12 @@
 ;  (copy-structure original))
 (defmethod copy ((original array))
   (let ((new
-	 (apply #'make-array
-		(list* (array-dimensions original)
-		       :element-type (array-element-type original)
-		       :adjustable (adjustable-array-p original)
-		       :fill-pointer (when (array-has-fill-pointer-p original)
-				       (fill-pointer original))))))
+         (apply #'make-array
+                (list* (array-dimensions original)
+                       :element-type (array-element-type original)
+                       :adjustable (adjustable-array-p original)
+                       :fill-pointer (when (array-has-fill-pointer-p original)
+                                       (fill-pointer original))))))
     (assign original new)
     new))
 (defmethod copy ((original standard-object))
@@ -56,20 +56,20 @@
 (defun parse-defstruct (name-and-options)
   (values
    (force-first name-and-options)
-   (loop for x in (force-rest name-and-options) 
-	 if (and (listp x) (eq (first x) :include))
-	 collect (second x))))
+   (loop for x in (force-rest name-and-options)
+         if (and (listp x) (eq (first x) :include))
+         collect (second x))))
 
 (defun generate-defmyclass-defstruct (&key name superclasses slots conc-name predicate-sym)
   `(eval-always
      (defclass ,name (,@superclasses)
        ,(mapcar (lambda(slot-spec)
-		  (let ((slot-name (force-first slot-spec)))
-		    `(,slot-name
-		      :initarg ,(intern (symbol-name slot-name) :keyword)
-		      :initform ,(when (and (force-rest slot-spec) (not (keywordp (second slot-spec))))
-				  (second slot-spec))
-		      :accessor ,(concat-sym conc-name slot-name)))) slots))
+                  (let ((slot-name (force-first slot-spec)))
+                    `(,slot-name
+                      :initarg ,(intern (symbol-name slot-name) :keyword)
+                      :initform ,(when (and (force-rest slot-spec) (not (keywordp (second slot-spec))))
+                                  (second slot-spec))
+                      :accessor ,(concat-sym conc-name slot-name)))) slots))
      (defun ,(concat-sym-from-sym-package name 'make- name) (&rest args)
        (apply #'make-instance ',name args))
      (defgeneric ,predicate-sym (var))
@@ -84,7 +84,7 @@
   (multiple-value-bind (name superclasses)
       (parse-defstruct name-and-options)
     (generate-defmyclass-defstruct
-     :name name 
+     :name name
      :superclasses superclasses
      :slots slots
      :conc-name (concat-sym name '-)
@@ -94,31 +94,31 @@
   (multiple-value-bind (name superclasses)
       (parse-defstruct name-and-options)
     `(eval-always
-	(progn
-	  (,defstruct ,name-and-options ,@slots)
-	  (defmethod assign ((original ,name) (copy ,name))
-	    ,@(mapcar (lambda(slot) 
-		       (let ((slot-name (force-first slot)))
-			 `(setf (slot-value copy ',slot-name) (copy (slot-value original ',slot-name))))) slots)
-	    ,@(when superclasses
-		    `((call-next-method)))
-	   copy)
-	  (defmethod my-auto-prefices ((class (eql (find-class ',name))))
-	    (cons ',name (my-auto-prefices ',superclasses)))
-	  (find-class ',(force-first name-and-options))))))
+        (progn
+          (,defstruct ,name-and-options ,@slots)
+          (defmethod assign ((original ,name) (copy ,name))
+            ,@(mapcar (lambda(slot)
+                       (let ((slot-name (force-first slot)))
+                         `(setf (slot-value copy ',slot-name) (copy (slot-value original ',slot-name))))) slots)
+            ,@(when superclasses
+                    `((call-next-method)))
+           copy)
+          (defmethod my-auto-prefices ((class (eql (find-class ',name))))
+            (cons ',name (my-auto-prefices ',superclasses)))
+          (find-class ',(force-first name-and-options))))))
 
 (defmacro defmystruct (name-and-options &rest slots)
-  (generate-defstruct 
-   :defstruct 'defstruct 
-   :name-and-options name-and-options 
+  (generate-defstruct
+   :defstruct 'defstruct
+   :name-and-options name-and-options
    :slots slots))
 
 (defmacro defmyclass (name-and-options &rest slots)
-  (generate-defstruct 
+  (generate-defstruct
    :defstruct 'defmyclass-defstruct
-   :name-and-options name-and-options 
+   :name-and-options name-and-options
    :slots slots))
-    
+
 (defun my-function (func prefices)
   (let ((possibilities (mapcar (lambda(prefix) (concat-sym prefix '- func)) prefices)))
     (or (find-if 'fboundp possibilities) (first possibilities))))
@@ -137,36 +137,36 @@
   (let ((sym (its-type-sym instance)))
     (when sym
       (multiple-value-bind
-	   (type valid)
-	  (macroexpand-1 sym env) 
-	(when valid type)))))
+           (type valid)
+          (macroexpand-1 sym env)
+        (when valid type)))))
 
 (defmacro its (func instance &rest args &environment env)
   (check-type func symbol)
   (let ((its-known-type (its-known-type instance env)))
     (cond (its-known-type
-	   `(,(my-function func (my-auto-prefices its-known-type)) ,instance ,@args))
-	  (t
-	   (once-only (instance)
-	     `(funcall (my-function ',func (my-auto-prefices ,instance)) ,instance ,@args))))))
+           `(,(my-function func (my-auto-prefices its-known-type)) ,instance ,@args))
+          (t
+           (once-only (instance)
+             `(funcall (my-function ',func (my-auto-prefices ,instance)) ,instance ,@args))))))
 
 (defmacro set-its (new-value func instance &rest args &environment env)
   (let ((its-known-type (its-known-type instance env)))
     (cond (its-known-type
-	   `(setf (,(my-function func (my-auto-prefices its-known-type)) ,instance ,@args) ,new-value))
-	  (t
-	   `(set-its-dynamic ,new-value ',func ,instance ,@args)))))
+           `(setf (,(my-function func (my-auto-prefices its-known-type)) ,instance ,@args) ,new-value))
+          (t
+           `(set-its-dynamic ,new-value ',func ,instance ,@args)))))
 
 (defun set-its-dynamic (new-value func instance &rest args)
   (check-type func symbol)
   (eval `(setf (,(my-function func (my-auto-prefices instance)) ,instance ,@args) ',new-value)))
 
-(define-setf-expander its (func instance &rest args) 
-					; cannot use defsetf because need to control evaluation of func argument
+(define-setf-expander its (func instance &rest args)
+                                        ; cannot use defsetf because need to control evaluation of func argument
   ; XXX maybe evaluates thing too many times . . .
   (check-type func symbol)
   (with-unique-names (new-value)
-   (values 
+   (values
     nil
     nil
     (list new-value)
@@ -176,19 +176,19 @@
 (defun my-func-name-to-symbol (class func)
   (etypecase func
     (symbol (my-function func (my-auto-prefices class)))
-    (list 
+    (list
      (ecase (first func)
        (quote
-	(unquote-quoted-symbol func))
+        (unquote-quoted-symbol func))
        (setf
-	(list 'setf (my-func-name-to-symbol class (second func))))))))
+        (list 'setf (my-func-name-to-symbol class (second func))))))))
 
 (defmacro with-shorthand-accessor ((accessor class &optional (instance class)) &body body)
   (check-type class symbol)
   (once-only ((instance ignorable `(type ,class)))
     `(macrolet ((,accessor (func &rest args)
-		  `(,(my-func-name-to-symbol ',class func)
-		     ,',instance ,@args)))
+                  `(,(my-func-name-to-symbol ',class func)
+                     ,',instance ,@args)))
        ,@body)))
 
 (defun structure-classp (class)
@@ -196,40 +196,40 @@
 
 (defmacro my-defun (class func lambda-list &body body)
   (flet ((my-make-def (class func args)
-	   (multiple-value-bind (def my-arg)
-	       (let ((func-sym (my-func-name-to-symbol class func)))
-		 (if (and (fboundp func-sym) (subtypep (type-of (fdefinition func-sym)) 'generic-function))
-		     (values 'defmethod `(,class ,class))
-		     (values 'defun class)))
-	     (if (and (listp func) (eq (first func) 'setf))
-		 (values def (list 'setf (my-func-name-to-symbol class (second func)))
-			 (list* (first args) my-arg (rest args)))
-		 (values def (my-func-name-to-symbol class func) (list* my-arg args))))))
+           (multiple-value-bind (def my-arg)
+               (let ((func-sym (my-func-name-to-symbol class func)))
+                 (if (and (fboundp func-sym) (subtypep (type-of (fdefinition func-sym)) 'generic-function))
+                     (values 'defmethod `(,class ,class))
+                     (values 'defun class)))
+             (if (and (listp func) (eq (first func) 'setf))
+                 (values def (list 'setf (my-func-name-to-symbol class (second func)))
+                         (list* (first args) my-arg (rest args)))
+                 (values def (my-func-name-to-symbol class func) (list* my-arg args))))))
     (check-type class symbol)
     (multiple-value-bind (combination-type args declarations-and-body)
-	(if (keywordp lambda-list)
-	    (values lambda-list (first body) (rest body))
-	    (values nil lambda-list body))
+        (if (keywordp lambda-list)
+            (values lambda-list (first body) (rest body))
+            (values nil lambda-list body))
       (multiple-value-bind (declarations-and-body inline)
-	  (if (equalp '(my-declare-fast-inline) (first declarations-and-body))
-	      (values (cons *my-fast-inline-declaration* (rest declarations-and-body)) t)
-	      (values declarations-and-body nil))
-	(multiple-value-bind (declarations body)
-	    (separate-declarations declarations-and-body)
-	  (multiple-value-bind 
-		(def name lambda-list)
-	      (my-make-def class func args)
-	    `(progn 
-	       ,(when inline `(declaim (inline ,name)))
-	       #+tpd2-debug (declaim (notinline ,name))
-	       (,def ,name ,@(force-list combination-type) ,lambda-list
-			  ,@declarations
-			  (labels ((my-call ()
-				     (let ((me ,class))
-				       (with-shorthand-accessor (my ,class me)
-					 ,@body))))
-			    (my-call)))
-	       )))))))
+          (if (equalp '(my-declare-fast-inline) (first declarations-and-body))
+              (values (cons *my-fast-inline-declaration* (rest declarations-and-body)) t)
+              (values declarations-and-body nil))
+        (multiple-value-bind (declarations body)
+            (separate-declarations declarations-and-body)
+          (multiple-value-bind
+                (def name lambda-list)
+              (my-make-def class func args)
+            `(progn
+               ,(when inline `(declaim (inline ,name)))
+               #+tpd2-debug (declaim (notinline ,name))
+               (,def ,name ,@(force-list combination-type) ,lambda-list
+                          ,@declarations
+                          (labels ((my-call ()
+                                     (let ((me ,class))
+                                       (with-shorthand-accessor (my ,class me)
+                                         ,@body))))
+                            (my-call)))
+               )))))))
 
 (defmacro my-call ()
   "Inside a my-defun, #'my-call is the function call again"

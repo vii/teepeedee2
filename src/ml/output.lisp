@@ -10,7 +10,7 @@
       (#\< "&lt;")
       (#\> "&gt;")
       (#\& "&amp;")
-      (#\' "&#39;"))))		   ; &apos; is *not* HTML but only XML
+      (#\' "&#39;"))))             ; &apos; is *not* HTML but only XML
 
 (declaim (ftype (function (t) (or raw-ml-sendbuf simple-byte-vector)) escape-data-consistent-internal ml-output-form-consistent-internal))
 (defun-consistent escape-data (value)
@@ -26,14 +26,14 @@
     (null #.(force-byte-vector nil))
     (raw-ml-sendbuf
      value)
-    ((or standard-object structure-object list) 
+    ((or standard-object structure-object list)
      (object-to-ml value))
     (t
      (values (really-escape-string value)))))
 
 (defmacro output-escaped-ml (&rest args)
   `(with-ml-output
-       ,@args)) 
+       ,@args))
 
 (defmacro output-raw-ml (&rest body)
   `(with-ml-output
@@ -52,27 +52,27 @@
 
 (defun ml-output-form-to-list (form env)
   (labels ((r (form)
-	     (typecase form
-	       (null nil)
-	       (list
-		(case (first form) 
-		  (with-ml-output (loop for x in (rest form) appending (r x)))
-		  (output-raw-ml (copy-list (rest form)))
-		  ((without-ml-output escape-data) (list form))
-		  (t 
-		    (multiple-value-bind (new changed)
-			(macroexpand-1 form env)
-		      (if changed 
-			  (r new)
-			  (list `(ml-output-form ,form)))))))
-	       (t (list `(ml-output-form ,form))))))
+             (typecase form
+               (null nil)
+               (list
+                (case (first form)
+                  (with-ml-output (loop for x in (rest form) appending (r x)))
+                  (output-raw-ml (copy-list (rest form)))
+                  ((without-ml-output escape-data) (list form))
+                  (t
+                    (multiple-value-bind (new changed)
+                        (macroexpand-1 form env)
+                      (if changed
+                          (r new)
+                          (list `(ml-output-form ,form)))))))
+               (t (list `(ml-output-form ,form))))))
     (r form)))
 
 (defmacro with-ml-output-start (&body body)
-  `(macrolet	      
+  `(macrolet
        ((with-ml-output (&body body &environment env)
-			`(with-sendbuf-continue (ml-sendbuf)
-			   ,@(loop for x in body appending (ml-output-form-to-list x env)))))
+                        `(with-sendbuf-continue (ml-sendbuf)
+                           ,@(loop for x in body appending (ml-output-form-to-list x env)))))
      (let ((ml-sendbuf (make-raw-ml-sendbuf)))
        (with-ml-output ,@body)
        ml-sendbuf)))

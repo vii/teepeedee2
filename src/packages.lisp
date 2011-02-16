@@ -8,21 +8,21 @@
   (:import-from #:alexandria #:with-unique-names #:define-constant)
   (:import-from #:trivial-garbage #:finalize #:cancel-finalization)
   (:import-from #:cl-cont #:call/cc #:with-call/cc)
-  (:import-from #:cl-irregsexp 
-		#:match-replace-all #:match-replace-one #:match-split
-		#:match-bind #:if-match-bind
-		#:match-failed )
+  (:import-from #:cl-irregsexp
+                #:match-replace-all #:match-replace-one #:match-split
+                #:match-bind #:if-match-bind
+                #:match-failed )
   (:import-from #:cl-irregsexp.utils
-		#:alist-get
-		#:defun-consistent
-		#:declaim-defun-consistent-ftype
-		#:defun-speedy
-		#:defun-careful
-		#:concat-sym
-		#:concat-sym-from-sym-package
-		#:read-only-load-time-value
-		#:load-time-constantp)
-  (:export 
+                #:alist-get
+                #:defun-consistent
+                #:declaim-defun-consistent-ftype
+                #:defun-speedy
+                #:defun-careful
+                #:concat-sym
+                #:concat-sym-from-sym-package
+                #:read-only-load-time-value
+                #:load-time-constantp)
+  (:export
 
    #:defun-consistent
    #:declaim-defun-consistent-ftype
@@ -33,7 +33,7 @@
    #:read-only-load-time-value
    #:load-time-constantp
 
-   #:match-replace-all #:match-replace-one 
+   #:match-replace-all #:match-replace-one
    #:match-bind #:if-match-bind
    #:match-failed #:match-split
 
@@ -163,8 +163,8 @@
 (defpackage #:teepeedee2.io
   (:nicknames #:tpd2.io)
   (:use #:common-lisp #:teepeedee2.lib)
-  (:export 
-   #:defprotocol 
+  (:export
+   #:defprotocol
    #:launch-io
    #:io
    #:protocol-error
@@ -214,7 +214,7 @@
    #:con-hangup-hook
 
    #:convert-con-to-ssl
-   
+
    #:+newline+
    #:+SOCK_DGRAM+
    #:+SOCK_STREAM+
@@ -231,7 +231,7 @@
 (defpackage #:teepeedee2.http
   (:nicknames #:tpd2.http)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
-  (:export 
+  (:export
    #:http-serve
    #:launch-http-request
    #:http-serve-timeout
@@ -244,7 +244,7 @@
    #:with-http-headers
    #:send-http-response
    #:start-http-response
-   
+
    #:servestate-origin*
    #:*servestate*
 
@@ -259,13 +259,13 @@
   (:nicknames #:tpd2.ml)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.io)
   (:export
-   #:define-dtd 
-   #:output-raw-ml 
-   #:output-escaped-ml 
-   #:output-ml-comment 
-   #:output-object-to-ml 
-   #:object-to-ml 
-   #:with-ml-output 
+   #:define-dtd
+   #:output-raw-ml
+   #:output-escaped-ml
+   #:output-ml-comment
+   #:output-object-to-ml
+   #:object-to-ml
+   #:with-ml-output
    #:with-ml-output-start
    #:without-ml-output
    #:with-ml-to-string
@@ -290,12 +290,12 @@
 
 (defpackage #:teepeedee2.webapp
   (:nicknames #:tpd2.webapp)
-  (:use #:common-lisp 
-	#:teepeedee2.lib 
-	#:teepeedee2.http 
-	#:teepeedee2.io 
-	#:teepeedee2.ml.html 
-	#:teepeedee2.ml)
+  (:use #:common-lisp
+        #:teepeedee2.lib
+        #:teepeedee2.http
+        #:teepeedee2.io
+        #:teepeedee2.ml.html
+        #:teepeedee2.ml)
   (:export
    #:webapp
    #:webapp-section
@@ -340,7 +340,7 @@
 
    #:webapp-respond-ajax-body
 
-   #:http-peer-info! 
+   #:http-peer-info!
    #:all-http-params!
 
    #:message-channel
@@ -367,12 +367,12 @@
    ))
 
 
-  
+
 (defpackage #:teepeedee2.game
   (:nicknames #:tpd2.game)
   (:use #:common-lisp #:teepeedee2.lib #:teepeedee2.webapp #:tpd2.ml #:tpd2.ml.html)
-  (:export 
-   #:defgameclass 
+  (:export
+   #:defgameclass
    #:defgame
    #:defplayer
    #:defrules
@@ -398,7 +398,7 @@
 
    #:player-controller-name-to-ml
    #:player-controller-var
-   #:web-state-queue-choice 
+   #:web-state-queue-choice
    #:current-web-controller
    #:player-controller
 
@@ -476,11 +476,11 @@
 (defpackage #:teepeedee2
   (:nicknames #:tpd2)
   ,@(let ((tpd-pkgs '(#:tpd2.io #:tpd2.lib #:tpd2.http #:tpd2.webapp)) syms)
-	 (dolist (p tpd-pkgs)
-	   (do-external-symbols (sym (find-package p)) (push sym syms)))
-	 (list
-	  `(:use #:common-lisp ,@tpd-pkgs)
-	  `(:export ,@syms))))
+         (dolist (p tpd-pkgs)
+           (do-external-symbols (sym (find-package p)) (push sym syms)))
+         (list
+          `(:use #:common-lisp ,@tpd-pkgs)
+          `(:export ,@syms))))
 
 
 (defpackage #:teepeedee2.user

@@ -18,25 +18,25 @@
     (my new-state)
     (with-join-spawn/cc ()
       (loop for p in (my players)
-	    do 
-	    (let-current-values (p) 
-		 (spawn/cc () 
-			   (setf (its choice p) (my secret-move :select p `(:one ,@*objects*)))))))
+            do
+            (let-current-values (p)
+                 (spawn/cc ()
+                           (setf (its choice p) (my secret-move :select p `(:one ,@*objects*)))))))
 
     (loop for p in (my players)
-	  do (my announce :select :player p :choice (its choice p)))
+          do (my announce :select :player p :choice (its choice p)))
 
     (let ((winner
-	   (without-call/cc
-	     (flet ((v (c)
-		      (position c *objects*)))
-	      (loop for p in (my players)
-		    for vp = (v (its choice p))
-		    thereis (loop for q in (my players)
-				  for vq = (v (its choice q))
-				  thereis (when (= vp (mod (1+ vq) (length *objects*)))
-					    p)))))))
+           (without-call/cc
+             (flet ((v (c)
+                      (position c *objects*)))
+              (loop for p in (my players)
+                    for vp = (v (its choice p))
+                    thereis (loop for q in (my players)
+                                  for vq = (v (its choice q))
+                                  thereis (when (= vp (mod (1+ vq) (length *objects*)))
+                                            p)))))))
       (cond (winner
-	     (my finished :winner winner))
-	    (t
-	     (my finished :result :draw))))))
+             (my finished :winner winner))
+            (t
+             (my finished :result :draw))))))

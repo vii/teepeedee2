@@ -12,21 +12,21 @@
   ;; for each invocation of once-only
 
     (let* ((names (mapcar 'force-first names-and-decls))
-	 (declarations (mapcar 'force-rest names-and-decls))
-	 (symbols (loop for name in names collect (gensym (string name)))))
-    `(let ,(loop for symbol in symbols 
-	      for name in names
-	      collect `(,symbol (gensym ,(string name))))
+         (declarations (mapcar 'force-rest names-and-decls))
+         (symbols (loop for name in names collect (gensym (string name)))))
+    `(let ,(loop for symbol in symbols
+              for name in names
+              collect `(,symbol (gensym ,(string name))))
        `(let ,(list ,@(loop for name in names
-			 for symbol in symbols
-			 collect `(list ,symbol ,name)))
-	  ,@(list
-	     ,@(loop for symbol in symbols for decl in declarations
-		  append 
-		    (loop for d in decl
-		       collect ``(declare (,@,(if (listp d) d `(list `,',d)) ,,symbol)))))
-	  ,(let ,(loop for symbol in symbols
-		    for name in names
-		    collect `(,name ,symbol))
-		,@body)))))
+                         for symbol in symbols
+                         collect `(list ,symbol ,name)))
+          ,@(list
+             ,@(loop for symbol in symbols for decl in declarations
+                  append
+                    (loop for d in decl
+                       collect ``(declare (,@,(if (listp d) d `(list `,',d)) ,,symbol)))))
+          ,(let ,(loop for symbol in symbols
+                    for name in names
+                    collect `(,name ,symbol))
+                ,@body)))))
 

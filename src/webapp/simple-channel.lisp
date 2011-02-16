@@ -10,10 +10,10 @@
     (output-raw-ml
      (js-to-string
        (reset-element-id (unquote (force-string (my id)))
-			 (unquote (force-string 
-				   (simple-channel-body-ml me))))))))
+                         (unquote (force-string
+                                   (simple-channel-body-ml me))))))))
 
 (my-defun simple-channel 'object-to-ml ()
-  (<div :id (my id) 
-	(simple-channel-body-ml me)
-	(call-next-method)))
+  (<div :id (my id)
+        (simple-channel-body-ml me)
+        (call-next-method)))

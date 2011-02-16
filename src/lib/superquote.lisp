@@ -11,13 +11,13 @@
 (defun superquote-function-go (form)
   (typecase form
     (list (case (first form)
-	    (unquote-splice (second form))
-	    (unquote (second form))
-	    (t `(append ,@(loop for f in form
-			     if (eq (first (force-list f)) 'unquote-splice)
-			     collect (second f)
-			     else
-			     collect `(list ,(superquote-function-go f)))))))
+            (unquote-splice (second form))
+            (unquote (second form))
+            (t `(append ,@(loop for f in form
+                             if (eq (first (force-list f)) 'unquote-splice)
+                             collect (second f)
+                             else
+                             collect `(list ,(superquote-function-go f)))))))
     (t `',form)))
 
 (defun superquote-function (form)
@@ -26,8 +26,8 @@
 (defun superquote-form-constantp (form env)
   (typecase form
     (list (case (first form)
-	    ((unquote-splice unquote) (load-time-constantp (second form) env))
-	    (t (every (lambda(form) (superquote-form-constantp form env)) form))))
+            ((unquote-splice unquote) (load-time-constantp (second form) env))
+            (t (every (lambda(form) (superquote-form-constantp form env)) form))))
     (t t)))
 
 (defmacro superquote (form &environment env)

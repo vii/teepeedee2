@@ -5,29 +5,29 @@
 (define-condition connection-buffer-overflow-error (protocol-error)
   ((con :initarg :con) (len :initarg :len))
   (:report (lambda (err stream)
-	     (with-slots (con len)
-		 err
-	       (format stream "~A overflowed a buffer of length ~A" con len)))))
+             (with-slots (con len)
+                 err
+               (format stream "~A overflowed a buffer of length ~A" con len)))))
 
 (defmacro simple-io-function (sym)
   `(get ,sym 'simple-io-function))
 
 (defmacro with-simple-io (&body body)
   `(macrolet ((io (func con-var &rest args)
-		(check-symbols con-var)
-		`(funcall (simple-io-function ,func) ,con-var ,@args)))
+                (check-symbols con-var)
+                `(funcall (simple-io-function ,func) ,con-var ,@args)))
      (flet ((hangup (con)
-	      (declare (ignore con)))
-	    (reset-timeout (con timeout)
-	      (declare (ignore con timeout))))
+              (declare (ignore con)))
+            (reset-timeout (con timeout)
+              (declare (ignore con timeout))))
        (declare (ignorable #'hangup #'reset-timeout))
        ,@body)))
 
 (defmacro defun-simple-io (name lambda-list &body body)
   `(eval-always
      (setf (simple-io-function ',name)
-	   (defun ,(concat-sym-from-sym-package name 'simple-io- name)
-	       ,lambda-list (with-simple-io ,@body)))))
+           (defun ,(concat-sym-from-sym-package name 'simple-io- name)
+               ,lambda-list (with-simple-io ,@body)))))
 
 (defun-simple-io recv (stream amount)
   (let ((buf (make-string amount)))
@@ -42,7 +42,7 @@
 
 (defun-simple-io send (stream sendbuf)
   (loop for buf in (sendbuf-head sendbuf)
-	do (write-string (force-string buf) stream))
+        do (write-string (force-string buf) stream))
   (values))
 
 #-tpd2-untransformed-io
@@ -51,38 +51,38 @@
   (with-unique-names (done)
     `(progn
        (defun-simple-io ,name (,con-var ,@args)
-	   ,@body)
+           ,@body)
        (defun ,name (,con-var ,done ,@args)
-	 (with-call/cc 
-	   (funcall ,done (locally ,@body)))))))
+         (with-call/cc
+           (funcall ,done (locally ,@body)))))))
 
 #-tpd2-untransformed-io
 (defmacro io (func con-var &rest args &environment env)
   (check-symbols con-var)
   (with-unique-names (k)
     (let* (gensyms
-	   (func (if (and (listp func) (eq 'quote (first func))) `(function ,@(rest func)) func))
-	   (arg-syms (loop for a in args collect 
-			  (cond 
-			    ((constantp a env) 
-			     a)
-			    (t
-			     (let ((g (gensym (force-string a))))
-			      (push `(,g ,a) gensyms)
-			      g))))))
+           (func (if (and (listp func) (eq 'quote (first func))) `(function ,@(rest func)) func))
+           (arg-syms (loop for a in args collect
+                          (cond
+                            ((constantp a env)
+                             a)
+                            (t
+                             (let ((g (gensym (force-string a))))
+                              (push `(,g ,a) gensyms)
+                              g))))))
       `(let ,(reverse gensyms)
-	 (call/cc 
-	  (lambda(,k)
-	    (funcall ,func ,con-var (convert-continuation-to-normal-function ,k) ,@arg-syms)))))))
+         (call/cc
+          (lambda(,k)
+            (funcall ,func ,con-var (convert-continuation-to-normal-function ,k) ,@arg-syms)))))))
 
 (defmacro launch-io (func con-var &rest args)
   (once-only (con-var)
     `(progn
-       (con-set-callback ,con-var 
-			 (lambda()
-			   (funcall ,func ,con-var 
-				    (lambda (&rest args) (declare (ignore args))) 
-				    ,@args)))
+       (con-set-callback ,con-var
+                         (lambda()
+                           (funcall ,func ,con-var
+                                    (lambda (&rest args) (declare (ignore args)))
+                                    ,@args)))
        (con-run ,con-var)
        (values))))
 
@@ -90,17 +90,17 @@
 #| ; cl-cont might overflow stack
 (defprotocol accept-forever (con proto)
   (loop for n = (io 'accept con)
-	do (launch-io proto n)))
+        do (launch-io proto n)))
 ; |#
 
 
 (defvar *socket-accept-burst* 16)
 (my-defun con 'accept-forever (done proto)
   (declare (ignore done))
-  (loop repeat *socket-accept-burst* 
-	for new = (socket-accept (my socket))
-	while new
-	do (launch-io proto new))
+  (loop repeat *socket-accept-burst*
+        for new = (socket-accept (my socket))
+        while new
+        do (launch-io proto new))
   (my when-ready-to-read #'my-call)
   (values))
 
@@ -110,19 +110,19 @@
   (with-unique-names (done)
     `(progn
        (defun-simple-io ,name (,con-var ,@args)
-	   ,@body)
+           ,@body)
        (defun ,name (,con-var ,done ,@args)
-	   (funcall ,done (locally ,@body))))))
+           (funcall ,done (locally ,@body))))))
 
 #+tpd2-untransformed-io
 (defmacro io (func con-var &rest args)
   (check-symbols con-var)
   (with-unique-names (val)
     `(let (,val)
-       (funcall ,func ,con-var (lambda (&optional arg &rest args) 
-			 (declare (ignore args))
-			 (setf ,val arg))
-	      ,@args)
+       (funcall ,func ,con-var (lambda (&optional arg &rest args)
+                         (declare (ignore args))
+                         (setf ,val arg))
+              ,@args)
        ,val)))
 
 
