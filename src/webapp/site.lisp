@@ -15,12 +15,12 @@
   (dispatcher *default-dispatcher*)
   (frameless-lambda-callbacks)
   (page-head (lambda(title)
-	       `(with-ml-output
-		  (<title ,title)
-		  (webapp-default-page-head-contents))))
+               `(with-ml-output
+                  (<title ,title)
+                  (webapp-default-page-head-contents))))
   (action-page-name +action-page-name+)
   (channel-page-name +channel-page-name+)
-  (page-body-start 
+  (page-body-start
    (lambda(title)
      `(<h1 ,title)))
   (page-body-footer
@@ -34,15 +34,15 @@
   (site-dispatcher site))
 
 (defmacro current-site-call (method &rest args)
-  `(funcall (,(concat-sym 'site-runtime- method) 
-	      (current-site)) ,@args))
+  `(funcall (,(concat-sym 'site-runtime- method)
+              (current-site)) ,@args))
 
 (defmacro with-site ((site) &body body)
   (once-only (site)
     `(let ((*current-site* ,site))
        (macrolet ((current-site ()
-		    ',site))
-	 ,@body))))
+                    ',site))
+         ,@body))))
 
 (defmacro defsite (name &rest args-for-make-site)
   `(progn
@@ -55,48 +55,48 @@
 (defmacro with-compile-time-site ((&optional (site (site-runtime-name *current-site*))) &body body)
   (check-symbols site)
   (assert (eq site (site-runtime-name (symbol-value site))))
-  `(eval-always 
+  `(eval-always
      (macrolet ((current-site-call (method &rest args)
-		  (apply (funcall (concat-sym 'site- method) ,site) args))
-		  (current-site () ',site)
-		(with-site ((&optional site) &body body)
-		  (declare (ignore site))
-		  `(let ((*current-site* ,',site))
-		     ,@body)))
+                  (apply (funcall (concat-sym 'site- method) ,site) args))
+                  (current-site () ',site)
+                (with-site ((&optional site) &body body)
+                  (declare (ignore site))
+                  `(let ((*current-site* ,',site))
+                     ,@body)))
        (with-site ()
-	 ,@body))))
+         ,@body))))
 
 (defmacro with-frame-site (&body body)
-  `(if (webapp-frame-available-p) 
+  `(if (webapp-frame-available-p)
        (with-site ((frame-site (webapp-frame)))
-	 ,@body)
+         ,@body)
        (locally ,@body)))
-  
+
 (defun make-site (&rest args)
   (let ((args (copy-list args)))
     (awhen (getf args :dispatcher)
       (typecase it
-	((or string byte-vector)
-	 (setf (getf args :dispatcher) (find-or-make-dispatcher it)))))
+        ((or string byte-vector)
+         (setf (getf args :dispatcher) (find-or-make-dispatcher it)))))
     (awhen (getf args :dispatcher-aliases)
-	   (loop for a in it do 
-		 (dispatcher-add-alias (getf args :dispatcher) a))
-	   (remf args :dispatcher-aliases))
+           (loop for a in it do
+                 (dispatcher-add-alias (getf args :dispatcher) a))
+           (remf args :dispatcher-aliases))
     (let ((site (apply '%make-site args)))
       (with-site (site)
-	(register-action-page)
-	(register-channel-page)
-	(macrolet ((def-runtime-funcs (site)
-		     `(progn 
-			,@(loop for func in +site-customization-funcs+ collect
-				`(setf (,(concat-sym 'site-runtime- func) ,site)
-				       (compile nil (eval 
-						     `(lambda ,+site-customization-func-args+
-							(declare (ignorable ,@+site-customization-func-args+))
-							,(apply (,(concat-sym 'site- func) ,site) +site-customization-func-args+)))))))))
-	  (def-runtime-funcs site))
+        (register-action-page)
+        (register-channel-page)
+        (macrolet ((def-runtime-funcs (site)
+                     `(progn
+                        ,@(loop for func in +site-customization-funcs+ collect
+                                `(setf (,(concat-sym 'site-runtime- func) ,site)
+                                       (compile nil (eval
+                                                     `(lambda ,+site-customization-func-args+
+                                                        (declare (ignorable ,@+site-customization-func-args+))
+                                                        ,(apply (,(concat-sym 'site- func) ,site) +site-customization-func-args+)))))))))
+          (def-runtime-funcs site))
 
-    	site))))
+        site))))
 
 
 

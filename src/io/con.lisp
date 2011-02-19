@@ -15,11 +15,11 @@
   (let ((con (apply '%make-con args)))
     (let ((sock (con-socket con)))
       (assert sock)
-      #+tpd2-finalize-sockets  
-      (finalize con 
-		(lambda()
-		  (warn "Closing socket in finalizer ~A" sock)
-		  (ignore-errors (socket-close sock)))))
+      #+tpd2-finalize-sockets
+      (finalize con
+                (lambda()
+                  (warn "Closing socket in finalizer ~A" sock)
+                  (ignore-errors (socket-close sock)))))
     (con-init con)
     con))
 
@@ -28,7 +28,7 @@
     (setf (my timeout) (make-timeout :func (my default-timeout-function)))))
 
 (my-defun con default-timeout-function ()
-  (lambda() 
+  (lambda()
     (my fail 'timeout)))
 
 (my-defun con fail (&optional (e (make-condition 'socket-explicitly-hungup)))
@@ -54,11 +54,11 @@
 
 (my-defun con run ()
   (restart-case
-      (handler-bind ((error 
-		      (lambda(e)
-			(when (normal-connection-error e)
-			  (invoke-restart 'hangup e)))))
-	(funcall (my ready-callback)))
+      (handler-bind ((error
+                      (lambda(e)
+                        (when (normal-connection-error e)
+                          (invoke-restart 'hangup e)))))
+        (funcall (my ready-callback)))
     (hangup (&optional (err (make-condition 'socket-explicitly-hungup)))
       (my fail err))))
 
@@ -74,17 +74,17 @@
 
 (my-defun con add-failure-callback (func)
   (let ((old (my err)))
-    (setf (my err) 
-	  (if old
-	      (lambda(e)
-		(funcall func e)
-		(funcall old e))
-	      func))
+    (setf (my err)
+          (if old
+              (lambda(e)
+                (funcall func e)
+                (funcall old e))
+              func))
     (values)))
 
 (my-defun con clear-failure-callbacks ()
-  (setf (my err) 
-	nil))
+  (setf (my err)
+        nil))
 
 (my-defun con 'recv (done amount)
   (declare (type fixnum amount))
@@ -98,17 +98,17 @@
 
 (my-defun con 'recv-some-or-nil (done)
   (let ((available (recvbuf-available-to-eat (my recv))))
-    (cond 
+    (cond
       ((zerop available)
        (let ((s (recvbuf-read-some (my recv) me #'my-call)))
-	(case s
-	  ((nil))
-	  (0
-	   (funcall done nil)
-	   (return-from my-call))
-	  (t
-	   (debug-assert (not (zerop (recvbuf-available-to-eat (my recv)))) (me (my recv)))
-	   (my-call)))))
+        (case s
+          ((nil))
+          (0
+           (funcall done nil)
+           (return-from my-call))
+          (t
+           (debug-assert (not (zerop (recvbuf-available-to-eat (my recv)))) (me (my recv)))
+           (my-call)))))
       (t
        (funcall done (recvbuf-eat (my recv) available)))))
   (values))
@@ -121,7 +121,7 @@
   (acond
    ((recvbuf-eat-to-delimiter (my recv) delimiter)
     (funcall done it))
-   (t 
+   (t
     (recvbuf-prepare-read (my recv))
     (recvbuf-recv (my recv) me #'my-call))))
 
@@ -134,26 +134,26 @@
    ((recvbuf-find (my recv) delimiter)
     (setf (recvbuf-read-idx (my recv)) (+ it (length delimiter)))
     (funcall done (recvbuf-store (my recv))))
-   (t 
+   (t
     (recvbuf-recv (my recv) me #'my-call))))
 
 (my-defun con 'recv-until-close (done)
   (let ((total))
     (labels ((r (buf)
-	       (cond ((not buf)
-		      (funcall done (apply-byte-vector-cat (nreverse total))))
-		     (t
-		      (push (copy-byte-vector buf) total)
-		      (recv-some-or-nil me #'r)))))
+               (cond ((not buf)
+                      (funcall done (apply-byte-vector-cat (nreverse total))))
+                     (t
+                      (push (copy-byte-vector buf) total)
+                      (recv-some-or-nil me #'r)))))
       (recv-some-or-nil me #'r))))
 
 (my-defun con 'recv-discard-and-close (done)
    (labels ((r (buf)
-	      (cond ((not buf)
-		     (my 'hangup)
-		     (funcall done))
-		    (t
-		     (recv-some-or-nil me #'r)))))
+              (cond ((not buf)
+                     (my 'hangup)
+                     (funcall done))
+                    (t
+                     (recv-some-or-nil me #'r)))))
      (socket-shutdown-write (my socket))
      (r t)))
 
@@ -164,62 +164,62 @@
      (funcall done))
     (t
      (if (socket-supports-writev (my socket))
-	 (sendbuf-send-writev sendbuf me done)
-	 (sendbuf-send-write sendbuf me done)))))
+         (sendbuf-send-writev sendbuf me done)
+         (sendbuf-send-write sendbuf me done)))))
 
 (my-defun con 'accept (done)
-  (acond 
+  (acond
       ((socket-accept (my socket))
        (funcall done it))
       (t
        (my when-ready-to-read #'my-call))))
 
 (my-defun con 'hangup ()
-  (my-declare-fast-inline)	  
+  (my-declare-fast-inline)
   (timeout-cancel (my timeout))
   (when (my socket)
     #+tpd2-finalize-sockets (cancel-finalization me)
     (handler-case
-	(socket-close (my socket))
+        (socket-close (my socket))
       (error (e)
-	(warn "Error closing socket ~A: ~A" con e)))
+        (warn "Error closing socket ~A: ~A" con e)))
     (setf (my socket) nil)
     (put-recvbuf (my recv))
     (when (my hangup-hook)
       (funcall (my hangup-hook)))))
 
 
-(defun make-con-connect (&key address port 	       
-		(socket-family +AF_INET+) 
-		(socket-type +SOCK_STREAM+))
+(defun make-con-connect (&key address port
+                (socket-family +AF_INET+)
+                (socket-type +SOCK_STREAM+))
   (make-con :socket (make-connect-socket
-		     :port port
-		     :address address 
-		     :socket-family socket-family
-		     :socket-type socket-type)))
+                     :port port
+                     :address address
+                     :socket-family socket-family
+                     :socket-type socket-type)))
 
-(defun make-con-listen (&key (port 0) 
-	       (address "0.0.0.0") 
-	       (socket-family +AF_INET+) 
-	       (socket-type +SOCK_STREAM+))
-  (make-con 
+(defun make-con-listen (&key (port 0)
+               (address "0.0.0.0")
+               (socket-family +AF_INET+)
+               (socket-type +SOCK_STREAM+))
+  (make-con
    :err (lambda (e) (error "Listening connexions cannot have errors: ~A" e))
-   :socket 
-   (make-listen-socket 
-    :port port 
-    :address address 
+   :socket
+   (make-listen-socket
+    :port port
+    :address address
     :socket-family socket-family
     :socket-type socket-type)))
 
 (defun make-con-bind (&key (port 0)
-	       (address "0.0.0.0") 
-	       (socket-family +AF_INET+) 
-	       (socket-type +SOCK_DGRAM+))
-  (make-con :socket (make-listen-socket 
-		     :port port 
-		     :address address 
-		     :socket-family socket-family
-		     :socket-type socket-type)))
+               (address "0.0.0.0")
+               (socket-family +AF_INET+)
+               (socket-type +SOCK_DGRAM+))
+  (make-con :socket (make-listen-socket
+                     :port port
+                     :address address
+                     :socket-family socket-family
+                     :socket-type socket-type)))
 
 (my-defun con when-ready (events &optional callback)
   (my-declare-fast-inline)

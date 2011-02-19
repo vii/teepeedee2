@@ -13,7 +13,7 @@
 
 (my-defun frame exit ()
   (loop for hook in (my destroy-hooks)
-	do (funcall hook me))
+        do (funcall hook me))
   (my 'channel-destroy)
   (remhash (my id) *frames*))
 

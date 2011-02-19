@@ -11,13 +11,13 @@
   me)
 
 (defstruct quick-queue
-  (entries 
+  (entries
    (let ((len (* 16 1024)))
-     (copy-seq (map '(vector quick-queue-entry) 'identity 
-		    (loop for i below len collect 
-			  (let ((entry (make-quick-queue-entry)))
-			    (quick-queue-entry-init entry)
-			    entry)))))
+     (copy-seq (map '(vector quick-queue-entry) 'identity
+                    (loop for i below len collect
+                          (let ((entry (make-quick-queue-entry)))
+                            (quick-queue-entry-init entry)
+                            entry)))))
 
    :type (simple-array quick-queue-entry)))
 
@@ -43,4 +43,3 @@
   (setf (quick-queue-entry-prev (my next)) (my prev))
   (setf (my prev) me (my next) me))
 
-  

@@ -3,27 +3,27 @@
 (defmethod move ((controller robot) (player-state truc-player) (move-type (eql :select-card)) choices &rest args)
   (declare(ignore args choices))
   (let ((played-card-values (its chosen-card-values (its game player-state)))
-	(my-best-card (first (its cards player-state)))
-	(my-worst-card (first (its cards player-state))))
+        (my-best-card (first (its cards player-state)))
+        (my-worst-card (first (its cards player-state))))
     (let ((highest-played-card (when played-card-values (reduce 'max played-card-values :initial-value 0)))
-	  (board-beater))
+          (board-beater))
       (labels ((val (c)
-		 (card-number-truc-ranking c))
-	       (card-better (a b)
-		 (> (val a) (val b))))
-	(loop for card in (its cards player-state)
-	      when (card-better card my-best-card)
-	      do (setf my-best-card card)
-	      when (card-better my-worst-card card)
-	      do (setf my-worst-card card)
-	      when (and highest-played-card (> highest-played-card (val card))
-			(or (not board-beater) (card-better board-beater card)))
-	      do (setf board-beater card))
-	(cond ((and highest-played-card (>= highest-played-card (val my-best-card)))
-	       my-worst-card)
-	      (board-beater
-	       board-beater)
-	      (t my-best-card))))))
+                 (card-number-truc-ranking c))
+               (card-better (a b)
+                 (> (val a) (val b))))
+        (loop for card in (its cards player-state)
+              when (card-better card my-best-card)
+              do (setf my-best-card card)
+              when (card-better my-worst-card card)
+              do (setf my-worst-card card)
+              when (and highest-played-card (> highest-played-card (val card))
+                        (or (not board-beater) (card-better board-beater card)))
+              do (setf board-beater card))
+        (cond ((and highest-played-card (>= highest-played-card (val my-best-card)))
+               my-worst-card)
+              (board-beater
+               board-beater)
+              (t my-best-card))))))
 
 
 (define-constant +best-starts+ #(0 0 0 0 0 0 0 0 0 2 2 2 2 2 2 2 0 2 2 2 2 2 2 2 0 2 2 0 2 2 2 2 0 2 2 2
@@ -45,7 +45,7 @@
   :test 'equalp)
 
 
-(define-constant +three-card-win-probabilities+ 
+(define-constant +three-card-win-probabilities+
   #(0 1/1218 1/522 11/3654 5/1218 19/3654 23/3654 3/406 1/1218 79/3654 44/1827
     71/1827 122/1827 197/1827 296/1827 419/1827 1/522 44/1827 101/3654 82/1827
     5/63 8/63 49/261 478/1827 11/3654 71/1827 82/1827 143/1827 64/609 323/1827
@@ -110,25 +110,25 @@
     (3 (aref +three-card-win-probabilities+ (my hand-number)))
     (t
      (let ((expected-wins
-	    (loop for c in (my cards)
-		  sum (/ (card-number-truc-ranking c) (length +truc-ranking+)))))
+            (loop for c in (my cards)
+                  sum (/ (card-number-truc-ranking c) (length +truc-ranking+)))))
        (min 1 (/ (+ expected-wins (my wins)) 2))))))
 
 (my-defun truc-player hand-number ()
-  (loop for i from 0 
-	for card in (my cards)
-	sum (* (expt 8 i) (card-number-truc-ranking card))))
+  (loop for i from 0
+        for card in (my cards)
+        sum (* (expt 8 i) (card-number-truc-ranking card))))
 
 (defmethod move ((controller robot-sensible) (player-state truc-player) (move-type (eql :select-card)) choices &rest args)
   (declare (ignore args choices))
   (let ((cards (its cards player-state)))
     (cond ((and (not (its chosen-card-values (its game player-state))) (= (length cards) 3))
-	  (elt 
-	   (sort (copy-list cards) '> :key 'card-number-truc-ranking)
-	   (aref +best-starts+
-		 (its hand-number player-state))))
-	(t 
-	 (call-next-method)))))
+          (elt
+           (sort (copy-list cards) '> :key 'card-number-truc-ranking)
+           (aref +best-starts+
+                 (its hand-number player-state))))
+        (t
+         (call-next-method)))))
 
 (defmethod move ((controller robot-sensible) (player-state truc-player) (move-type (eql :accept-new-stake)) choices &rest args)
   (declare (ignore choices))
@@ -138,19 +138,19 @@
 (defmethod move ((controller robot-sensible) (player-state truc-player) (move-type (eql :select-new-stake)) choices &rest args)
   (declare(ignore args))
   (let ((max-other-stack (loop for player in (its players (its game player-state))
-			       unless (eq player player-state) 
-			       maximize (its stack player)))
-	(least (reduce 'min (choices-list choices)))
-	(wp (its win-probability player-state)))
+                               unless (eq player player-state)
+                               maximize (its stack player)))
+        (least (reduce 'min (choices-list choices)))
+        (wp (its win-probability player-state)))
     (let ((most (min (- +truc-winning-stack+ (its stack player-state)) (reduce 'max (choices-list choices)))))
       (cond ((>= (+ max-other-stack (its stake (its game player-state))) +truc-winning-stack+)
-	     most)
-	    ((= most least)
-	     most)
-	    ((> wp 0)
-	     (min (max (floor (/ (its stake (its game player-state)) wp))  least) most))
-	    (t 
-	     least)))))
+             most)
+            ((= most least)
+             most)
+            ((> wp 0)
+             (min (max (floor (/ (its stake (its game player-state)) wp))  least) most))
+            (t
+             least)))))
 
 (defmethod move ((controller robot-bully) (player-state truc-player) (move-type (eql :select-new-stake)) choices &rest args)
   (declare(ignore args))

@@ -22,10 +22,10 @@
 
 (defmethod choices-list-form ((first (eql :integer)) &rest args)
   (destructuring-bind
-	(min-inclusive max-inclusive)
+        (min-inclusive max-inclusive)
       args
     (loop for i from min-inclusive upto max-inclusive
-	  collect i)))
+          collect i)))
 
 (defmethod choices-list-form ((first (eql :one)) &rest args)
   args)

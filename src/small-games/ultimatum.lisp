@@ -22,20 +22,20 @@
   (with-game
     (my new-state)
     (destructuring-bind (proposer acceptor)
-	(random-shuffle (my players))
+        (random-shuffle (my players))
       (with-its-type (proposer ultimatum-player)
-	(with-its-type (acceptor ultimatum-player)
+        (with-its-type (acceptor ultimatum-player)
 
-	  (let ((demand (my move :select-demand proposer `(:integer 0 ,(my pot)))))
-	    (let ((ok (my move :cooperate acceptor :boolean)))
-	      (cond (ok
-		     (its give-coins proposer demand)
-		     (its give-coins acceptor (- (my pot) demand))
-		     (my finished :result :sharing))
-		    (t
-		     (its give-coins proposer (- (my penalty)))
-		     (its give-coins acceptor (- (my penalty)))
-		     (my finished :result :penalty))))))))))
+          (let ((demand (my move :select-demand proposer `(:integer 0 ,(my pot)))))
+            (let ((ok (my move :cooperate acceptor :boolean)))
+              (cond (ok
+                     (its give-coins proposer demand)
+                     (its give-coins acceptor (- (my pot) demand))
+                     (my finished :result :sharing))
+                    (t
+                     (its give-coins proposer (- (my penalty)))
+                     (its give-coins acceptor (- (my penalty)))
+                     (my finished :result :penalty))))))))))
 
 (my-defun ultimatum 'object-to-ml ()
   (flet ((coins (c) (format nil "~R coin~:P" c)))
@@ -43,6 +43,6 @@
       (call-next-method)
       (<h3 "Pot: " (my pot) ", penalty: " (my penalty) ".")
       (<p "The first player demands some portion of " (coins (my pot)) ". The second player will get the rest, "
-	  "but if he or she is unhappy with this division then both players lose " (coins (my penalty)) ". "))))
+          "but if he or she is unhappy with this division then both players lose " (coins (my penalty)) ". "))))
 
 

@@ -12,6 +12,6 @@
 
 (my-defun list-channel 'simple-channel-body-ml ()
   (<div :class "list-channel"
-	(loop for x in (reverse (my list)) do
-	      (output-object-to-ml x))))
+        (loop for x in (reverse (my list)) do
+              (output-object-to-ml x))))
 

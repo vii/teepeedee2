@@ -4,7 +4,7 @@
   (define-constant +suits+ '(:clubs :hearts :spades :diamonds) :test 'equal)
   (defconstant +cards-per-suit+ 13))
 
-(defstruct card 
+(defstruct card
   (suit :clubs :type  #.`(member ,@+suits+))
   (value 0 :type (integer 0 #.+cards-per-suit+)))
 
@@ -18,15 +18,15 @@
 
 (my-defun card name ()
   (format nil "~A of ~A"
-	  (my value-string)
-	  (string-capitalize (symbol-name (my suit)))))
+          (my value-string)
+          (string-capitalize (symbol-name (my suit)))))
 
 (my-defun card number ()
   (+ (* (position (my suit) +suits+) +cards-per-suit+) (my value)))
 
 (defun make-card-from-number (number)
   (multiple-value-bind
-	(s-n v)
+        (s-n v)
       (floor number +cards-per-suit+)
     (make-card :suit (elt +suits+ s-n) :value v)))
 
@@ -34,10 +34,10 @@
   (<span
     :class "card"
     (<span :class (symbol-name (my suit))
-	   (my value-string)
-	   (output-raw-ml
-	    "&")
-	   (case (my suit)
-	     (:diamonds "diams")
-	     (t (string-downcase (symbol-name (my suit)))))
-	   ";")))
+           (my value-string)
+           (output-raw-ml
+            "&")
+           (case (my suit)
+             (:diamonds "diams")
+             (t (string-downcase (symbol-name (my suit)))))
+           ";")))

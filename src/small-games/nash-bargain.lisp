@@ -24,25 +24,25 @@
     (with-game
       (my new-state)
       (with-join-spawn/cc ()
-	(loop for p in (my players)
-	      do 
-	      (let-current-values (p) 
-		(spawn/cc () 
-			  (setf (its demand p) (my secret-move :select-demand p `(:integer 0 ,(my pot))))))))
-      (let ((total-demand 
-	     (loop for p in (my players) 
-		   for demand = (its demand p) 
-		   do
-		   (my announce :demand :player p :amount demand)
-		   summing demand)))
-	(cond ((>= (my pot) total-demand)
-	       (loop for p in (my players) do
-		     (its give-coins p (its demand p)))
-	       (my finished :result :sharing))
-	      (t
-	       (loop for p in (my players) do
-		     (its give-coins p (- (my penalty))))
-	       (my finished :result :penalty)))))))
+        (loop for p in (my players)
+              do
+              (let-current-values (p)
+                (spawn/cc ()
+                          (setf (its demand p) (my secret-move :select-demand p `(:integer 0 ,(my pot))))))))
+      (let ((total-demand
+             (loop for p in (my players)
+                   for demand = (its demand p)
+                   do
+                   (my announce :demand :player p :amount demand)
+                   summing demand)))
+        (cond ((>= (my pot) total-demand)
+               (loop for p in (my players) do
+                     (its give-coins p (its demand p)))
+               (my finished :result :sharing))
+              (t
+               (loop for p in (my players) do
+                     (its give-coins p (- (my penalty))))
+               (my finished :result :penalty)))))))
 
 (my-defun nash-bargain 'object-to-ml ()
   (flet ((coins (c) (format nil "~R coin~:P" c)))
@@ -50,13 +50,13 @@
       (call-next-method)
       (<h3 "Pot: " (my pot) ", penalty: " (my penalty) ".")
       (<p "The pot has " (coins (my pot)) "; you can demand zero or more of them. "
-	  "If the total demanded by the players is less than or equal to " (coins (my pot)) ", then each player receives his or her demand. "
-	      "Otherwise, if the players are too greedy, they each forfeit " (coins (my penalty)) ". ")
+          "If the total demanded by the players is less than or equal to " (coins (my pot)) ", then each player receives his or her demand. "
+              "Otherwise, if the players are too greedy, they each forfeit " (coins (my penalty)) ". ")
       (<p
-	"Your real demand is secret, but you can talk to the other player."))))
+        "Your real demand is secret, but you can talk to the other player."))))
 
 (my-defun nash-bargain drop-player :before (p)
-	  (unless (my game-over)
-	    (with-shorthand-accessor (p coin-game-player p)
-	      (p give-coins (- (my penalty))))))
+          (unless (my game-over)
+            (with-shorthand-accessor (p coin-game-player p)
+              (p give-coins (- (my penalty))))))
 

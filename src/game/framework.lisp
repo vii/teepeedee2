@@ -18,11 +18,11 @@
 
 (defun validate-choice (choices choice)
   (acond ((and (not choice) (member nil (choices-list choices)))
-	  nil)
-	 ((and choice (find choice (choices-list choices) :test 'equalp))
-	  it)
-	 (t
-	  'invalid-choice)))
+          nil)
+         ((and choice (find choice (choices-list choices) :test 'equalp))
+          it)
+         (t
+          'invalid-choice)))
 
 (defun random-choice (choices)
   (random-elt (choices-list choices)))
@@ -45,7 +45,7 @@
 
 (my-defun game announce (message &rest args)
   (loop for l in (my listeners)
-	do (apply 'inform l me message args)))
+        do (apply 'inform l me message args)))
 
 (defstruct game-generator
   make-game
@@ -58,61 +58,61 @@
   (my name))
 
 (eval-always (defvar *games* (make-hash-table :test 'equalp)))
-  
+
 (defmacro defgame (name superclasses slots defplayer &rest options)
   (let ((options (copy-list options)))
     (flet ((opt (name &optional default)
-	     (prog1 (second (or (assoc name options) (list nil default)))
-	       (deletef name options :key 'car))))
+             (prog1 (second (or (assoc name options) (list nil default)))
+               (deletef name options :key 'car))))
      (let* (
-	    (game-name-string (force-byte-vector (or (opt :game-name) (string-capitalize (symbol-name name)))))
-	    (game-description (opt :game-description))
-	    (playable (not (opt :unplayable))) ; for abstract base classes
-	    (advertised (opt :advertised playable)))
+            (game-name-string (force-byte-vector (or (opt :game-name) (string-capitalize (symbol-name name)))))
+            (game-description (opt :game-description))
+            (playable (not (opt :unplayable))) ; for abstract base classes
+            (advertised (opt :advertised playable)))
        (flet ((defgameclass-form (name superclasses options slots)
-		`(defmyclass (,name 
-			      ,@(mapcar (lambda(c) `(:include ,c)) 
-					superclasses)
-			      ,@options)
-		     ,@slots)))
-	 (destructuring-bind
-	       (defplayer-sym df-superclasses df-slots &rest df-options)
-	     defplayer
-	   (assert (eq 'defplayer defplayer-sym))
-	   `(eval-always
-	      ,(when playable 
-		`(setf (gethash ,game-name-string *games*) 
-		       (make-game-generator
-			:name ,game-name-string
-			:description ,(when game-description `(tpd2.io:sendbuf-to-byte-vector (with-ml-output ,game-description)))
-			:advertised ,advertised
-			:make-game (lambda(controllers)
-				     (let ((game (,(concat-sym-from-sym-package name 'make- name))))
-				       (let ((players 
-					      (mapcar (lambda(c) 
-						      (,(concat-sym-from-sym-package name 'make- name '-player)
-							:game game 
-							:controller c)) controllers)))
-					 (setf (game-players game) players))
-				       game)))))
-	      ,(defgameclass-form (concat-sym name '-player)
-				  `(,@df-superclasses 
-				    ,@(loop for s in superclasses collect 
-					    (concat-sym s '-player)) 
-				    player)
-				  df-options
-				  df-slots)
-	      ,(defgameclass-form name
-				  (or superclasses (list 'game))
-				  options
-				  slots)
-	      (defmethod game-name ((,name ,name))
-		,game-name-string)
+                `(defmyclass (,name
+                              ,@(mapcar (lambda(c) `(:include ,c))
+                                        superclasses)
+                              ,@options)
+                     ,@slots)))
+         (destructuring-bind
+               (defplayer-sym df-superclasses df-slots &rest df-options)
+             defplayer
+           (assert (eq 'defplayer defplayer-sym))
+           `(eval-always
+              ,(when playable
+                `(setf (gethash ,game-name-string *games*)
+                       (make-game-generator
+                        :name ,game-name-string
+                        :description ,(when game-description `(tpd2.io:sendbuf-to-byte-vector (with-ml-output ,game-description)))
+                        :advertised ,advertised
+                        :make-game (lambda(controllers)
+                                     (let ((game (,(concat-sym-from-sym-package name 'make- name))))
+                                       (let ((players
+                                              (mapcar (lambda(c)
+                                                      (,(concat-sym-from-sym-package name 'make- name '-player)
+                                                        :game game
+                                                        :controller c)) controllers)))
+                                         (setf (game-players game) players))
+                                       game)))))
+              ,(defgameclass-form (concat-sym name '-player)
+                                  `(,@df-superclasses
+                                    ,@(loop for s in superclasses collect
+                                            (concat-sym s '-player))
+                                    player)
+                                  df-options
+                                  df-slots)
+              ,(defgameclass-form name
+                                  (or superclasses (list 'game))
+                                  options
+                                  slots)
+              (defmethod game-name ((,name ,name))
+                ,game-name-string)
 
-	      ,@(when playable 
-		      `((eval-when (:load-toplevel :execute)
-			  (web-add-game (find-game-generator ,game-name-string) 
-					,(force-byte-vector (string-downcase (force-string name))))))))))))))
+              ,@(when playable
+                      `((eval-when (:load-toplevel :execute)
+                          (web-add-game (find-game-generator ,game-name-string)
+                                        ,(force-byte-vector (string-downcase (force-string name))))))))))))))
 
 (my-defun game generator ()
   (gethash (my name) *games*))
@@ -122,18 +122,18 @@
 
 (defrules game secret-move (type player choices &rest args)
   (check-type type keyword)
-  (let ((ret (call/cc 
-	      (lambda(cc)
-		(apply 'move-continuation 
-		       (lambda(&rest a)
-			 (unless (my game-over)
-			   (apply cc a)))
-		       (player-controller player) player type choices 
-		       args)
-		'with-call/cc))))
+  (let ((ret (call/cc
+              (lambda(cc)
+                (apply 'move-continuation
+                       (lambda(&rest a)
+                         (unless (my game-over)
+                           (apply cc a)))
+                       (player-controller player) player type choices
+                       args)
+                'with-call/cc))))
     (let ((vc (validate-choice choices ret)))
       (when (eq vc 'invalid-choice)
-	(error "invalid choice picked ~A from ~A" ret choices))
+        (error "invalid choice picked ~A from ~A" ret choices))
       vc)))
 
 (defrules game move (type player choices &rest args)
