@@ -180,31 +180,32 @@
       (my ready-entries :age age :tags (split-into-list-by-comma tags)))))
 
 (my-defun blog front-page ()
-  (let ((all-entries (my ready-entries-http)) (count 10))
+  (let ((all-entries (my ready-entries-http)) (top-count 6) (bottom-count 15))
     (multiple-value-bind (fresh-entries entries)
-	  (mv-filter #'entry-hot-off-the-press-p all-entries)
+	(mv-filter #'entry-hot-off-the-press-p all-entries)
       (let ((entries (sort (copy-list entries) #'> :key #'entry-score)))
         (<div :class "blog-front-page"
-              (<div :class "blog-front-page-entries"
-                    (let* (
-                           (entries (loop for e in entries repeat count collect e))
-                           (total-score (loop for e in entries summing (entry-score e)))
-                           (score-mul (/ (length entries) (max 1 total-score)))
-                           (reverse-entries (reverse entries)))
-                      (loop for entry in entries
-                            repeat (/ count 3)
-                            do
-                            (with-ml-output (entry-headline-ml entry score-mul)
-                                            (loop repeat 2 do
-                                                  (with-ml-output (entry-headline-ml (pop reverse-entries) score-mul))))
-                                            )))
-
-	      (<div :class "blog-fresh-entries"
-		    (loop for entry in fresh-entries do
-			  (with-ml-output
-			    (entry-inline-ml entry))))
-
-              (my link-to-latest))))))
+	      (let* (
+		     (total-score (loop for e in entries summing (entry-score e)))
+		     (score-mul (/ (length entries) (max 1 total-score)))
+		     (reverse-entries (reverse entries)))
+		(flet ((headlines (count)
+			 (<div :class "blog-front-page-entries"
+			       (loop for entry in entries
+				     repeat (/ count 3)
+				     do
+				     (with-ml-output (entry-headline-ml entry score-mul)
+						     (loop repeat 2 do
+							   (with-ml-output (entry-headline-ml (pop reverse-entries) score-mul))))
+				     ))))
+		  (headlines top-count)
+		  (<div :class "blog-fresh-entries"
+			(loop for entry in fresh-entries do
+			      (with-ml-output
+				(entry-inline-ml entry))))
+		  (headlines bottom-count))
+		
+		(my link-to-latest)))))))
 
 (my-defun blog latest-page ()
   (tpd2.http:with-http-params (tags)

@@ -44,7 +44,7 @@
 
 (defmacro html-action-form-collapsed (title lambda-list &body body)
   `(html-collapser (<p ,(force-first title))
-                   (html-action-form (nil ,@(force-rest title) :after-submit-js ((toggle-hiding (~ this parent-node)))) ,lambda-list ,@body)))
+     (html-action-form (nil ,@(force-rest title) :after-submit-js ((toggle-hiding (~ this parent-node)))) ,lambda-list ,@body)))
 
 (defmacro html-action-form (title-and-options lambda-list &body body)
   (destructuring-bind (title
@@ -86,7 +86,7 @@
                                 `(<input :type :text :name ,name :value ,value :style (css-attrib :display "none"))))))
                         (cond (label
                                `(progn
-                                  (<label :for ,name ,label)
+                                  (<label :for ,name ,label (output-raw-ml "&nbsp;")) 
                                   ,input))
                               (t input))))))))
        `(<form
