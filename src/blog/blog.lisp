@@ -191,8 +191,9 @@
 		     (reverse-entries (reverse entries)))
 		(flet ((headlines (count)
 			 (<div :class "blog-front-page-entries"
-			       (loop for entry in entries
-				     repeat (/ count 3)
+			       (loop for entry = (pop entries)
+				     repeat (/ (min (length reverse-entries) count) 3)
+				     while entry
 				     do
 				     (with-ml-output (entry-headline-ml entry score-mul)
 						     (loop repeat 2 do
