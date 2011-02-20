@@ -158,7 +158,7 @@
 
     (defpage-lambda-blog (my link-base)
         (lambda ()
-          (webapp ((with-ml-output (my name) ": popular posts")
+          (webapp ((with-ml-output (my name) ": frontpage")
                    :head-contents
                    (my feed-head-contents))
             (my front-page))))
@@ -172,7 +172,7 @@
 
 (my-defun blog link-to-latest ()
   (tpd2.http:with-http-params (tags age)
-    (<h3 :class "latest-entries" (<a :href  (page-link (my latest-url) :tags tags :age age) "Alternatively, see newest posts"))))
+    (<h3 :class "latest-entries" (<a :href  (page-link (my latest-url) :tags tags :age age) "Posts in chronological order."))))
 
 (my-defun blog ready-entries-http ()
   (tpd2.http:with-http-params (tags age)
@@ -180,11 +180,11 @@
       (my ready-entries :age age :tags (split-into-list-by-comma tags)))))
 
 (my-defun blog front-page ()
-  (let ((entries (my ready-entries-http)) (count 24))
+  (let ((all-entries (my ready-entries-http)) (count 10))
+    (multiple-value-bind (fresh-entries entries)
+	  (mv-filter #'entry-hot-off-the-press-p all-entries)
       (let ((entries (sort (copy-list entries) #'> :key #'entry-score)))
         (<div :class "blog-front-page"
-              (my link-to-latest)
-
               (<div :class "blog-front-page-entries"
                     (let* (
                            (entries (loop for e in entries repeat count collect e))
@@ -199,7 +199,12 @@
                                                   (with-ml-output (entry-headline-ml (pop reverse-entries) score-mul))))
                                             )))
 
-              (my link-to-latest)))))
+	      (<div :class "blog-fresh-entries"
+		    (loop for entry in fresh-entries do
+			  (with-ml-output
+			    (entry-inline-ml entry))))
+
+              (my link-to-latest))))))
 
 (my-defun blog latest-page ()
   (tpd2.http:with-http-params (tags)
@@ -209,8 +214,8 @@
                   repeat count
                   do
                   (let ((entry (pop entries)))
-                    (<h2 (<a :href (entry-url-path entry) (entry-title entry)))
-                    (output-object-to-ml entry)))
+		    (with-ml-output
+		      (entry-inline-ml entry))))
             (when entries
               (<h3 :class "next-entries"
                    (<a :href (page-link (my latest-url) :age (force-byte-vector (entry-time (first entries))) :tags (force-byte-vector tags)) "Older entries (" (length entries) " remaining)")))))))

@@ -35,6 +35,7 @@
 (defvar *score-decay* (exp (/ (log 1/2) (* 6 30 24 60 60))))
 (defvar *comment-score* 8)
 (defvar *entry-score* 10)
+(defvar *entry-fresh-time* (* 3 24 60 60))
 
 (defmyclass entry
   blog
@@ -58,6 +59,14 @@
     (incf score (* *entry-score* (score-decay (my time))))
     (setf (my score) score
           (my score-update-time) (get-universal-time))))
+
+(my-defun entry hot-off-the-press-p ()
+   (and (my front-page-p) (>= *entry-fresh-time* (- (get-universal-time) (my time) ))))
+
+(my-defun entry inline-ml ()
+  (<div :class "blog-entry-inline"
+	(<h2 (<a :href (my url-path) (my title)))
+	(output-object-to-ml me)))
 
 (my-defun entry update-score (&optional (inc 0))
   (unless (my score) (my set-score))
