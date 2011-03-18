@@ -18,16 +18,11 @@
     (cond ((not object-paths)
            slot)
           (t
-           `(slot-value
+           `(getprop
              ,(if (rest object-paths)
                  `(~ ,@object-paths)
                  (first object-paths))
              ',slot)))))
-
-(ps:defpsmacro eq (a b)
-  `(ps:=== ,a ,b))
-(ps:defpsmacro equal (a b)
-  `(ps:== ,a ,b))
 
 (ps:defpsmacro ignore-errors (&body body)
   `(ps:try (progn
