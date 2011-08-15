@@ -82,6 +82,44 @@
                                         ;                    (<link :rel "alternate" :type "application/rss+xml" :href (my rss-feed-url)))
     ))
 
+(my-defun blog comment-admin (password entry-index-name)
+  (with-site ((my site))
+    (webapp 
+	((with-ml-output "Blog administration for " (my name) ))
+      (<div :class "blog-admin"
+	    (<form :method :post
+		   :action (my admin-url)
+		   (<p "Password "
+		       (<input :type :text :name "password" )
+		       (<input :class "plain-submit" :type :submit :value "↵")))	   
+	    (when (and password (equal (force-string password) (force-string (my admin-password))))
+	      (unless entry-index-name
+		(<ul :class "admin-entries"
+		     (loop for entry in (my entries)
+			   for en = (entry-name entry)
+			   for ein = (entry-index-name entry)
+			   do
+			   (<li (html-action-link en (my comment-admin password ein))))))
+	      (let ((comments
+		     (if entry-index-name
+			 (datastore-retrieve-indexed 'comment 'entry-index-name entry-index-name)
+			 (remove-if-not (lambda (comment)
+					  (and (typecase (comment-entry-index-name comment)
+						 ((or string byte-vector) t))
+					       (if-match-bind ((= (my comment-index-prefix)) ":")
+							      (comment-entry-index-name comment))))
+					(datastore-retrieve-all 'comment)))))
+		(loop for c in (sort (copy-seq comments) #'> :key #'comment-time)
+		      do (<div :class "comment-admin"
+			       (let ((c c))
+				 (html-action-form "Edit comment"
+				     ((text (comment-text c)  :type <textarea)
+				      (author (comment-author c)))
+				   (setf (comment-text c) text
+					 (comment-author c) author))
+				 (html-action-link "Delete"
+				   (datastore-delete c)))))))))))
+
 (my-defun blog set-page ()
   (with-site ((my site))
     (defpage-lambda-blog (my atom-feed-url)
@@ -92,33 +130,8 @@
           (my rss-feed)))
 
     (defpage-lambda (my admin-url)
-        (lambda (password entry-name)
-          (webapp "Blog administration"
-            (<form :method :post
-                   :action (my admin-url)
-                   (<p "Password "
-                       (<input :type :text :name "password" )
-                       (<input :class "plain-submit" :type :submit :value "↵")))
-            (when (and password (equal (force-string password) (force-string (my admin-password))))
-              (let ((comments
-                     (if entry-name
-                         (datastore-retrieve-indexed 'comment 'entry-index-name entry-name)
-                         (remove-if-not (lambda (comment)
-                                          (and (typecase (comment-entry-index-name comment)
-                                                 ((or string byte-vector) t))
-                                               (if-match-bind ((= (my comment-index-prefix)) ":")
-                                                              (comment-entry-index-name comment))))
-                                        (datastore-retrieve-all 'comment)))))
-                (loop for c in (sort (copy-seq comments) #'> :key #'comment-time)
-                      do (<div :class "comment-admin"
-                               (let ((c c))
-                                 (html-action-form "Edit comment"
-                                     ((text (comment-text c)  :type <textarea)
-                                      (author (comment-author c)))
-                                   (setf (comment-text c) text
-                                         (comment-author c) author))
-                                 (html-action-link "Delete"
-                                   (datastore-delete c))))))))))
+	(lambda (password entry-index-name)
+	  (my comment-admin password entry-index-name)))
 
     (defpage-lambda-blog (my post-comment-url)
         (lambda (text author entry-name keep-this-empty .javascript.)
