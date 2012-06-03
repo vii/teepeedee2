@@ -96,7 +96,7 @@
     (defun handle-special-elements (parent)
       (dolist (element (! (parent get-elements-by-tag-name) "a"))
         (when (equal (~ element class-name) (unquote +action-link-class+))
-          (setf (~ element href) (+ "javascript:asyncSubmitLinkHref(\'" (~ element href) "\')"))))
+          (setf (~ element onclick) (+ "asyncSubmitLink(\'" (~ element href) "\')"))))
       (dolist (element (! (parent get-elements-by-tag-name) "div"))
         (when (equal (~ element class-name) (unquote +html-class-scroll-to-bottom+))
           (setf (~ element scroll-top) (~ element scroll-height)))
@@ -224,11 +224,6 @@
                                                             (channels-get-param))) "Sending")
           (return true) ; error occurred so actually submit the form normally
           (return false)))
-
-    (defun async-submit-link-href (link)
-      (when (async-submit-link link)
-        (setf (~ window location) link))
-      t)
 
     (defun channel (name counter)
       (setf (aref *channels* name) counter))
