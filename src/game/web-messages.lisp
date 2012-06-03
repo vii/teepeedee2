@@ -3,7 +3,6 @@
 (defmacro def-web-state-message (message args &body body)
   `(progn
      (defmethod message-to-ml ((message (eql ,message)) &key ,@args &allow-other-keys)
-       (declare (ignorable game-state))
        (with-ml-output ,@body))
      (my-defun web-state 'inform (game-state (message (eql ,message)) &key ,@args &allow-other-keys)
        (declare (ignorable game-state))
@@ -17,7 +16,7 @@
 
   (messages
    (:talk (sender text)
-          (<span :class "game-talk-message" sender ": " (<q text)))
+          (<span :class "game-talk-message" (player-controller-name-to-ml sender) ": " (<q text)))
    (:shuffle () "The deck has been shuffled.")
    (:new-player (player)
                 player " has joined the game.")
