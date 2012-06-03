@@ -1,5 +1,16 @@
 (in-package #:tpd2.game)
 
+(defmyclass game
+    game-over
+  players
+  other-listeners)
+
+(defmyclass player
+    controller
+  game
+  waiting-for-input)
+
+(defgeneric player-full-state-to-ml (player))
 (defgeneric game-drop-player (game player))
 (defgeneric play (game))
 (defgeneric game-finished (game &rest args))

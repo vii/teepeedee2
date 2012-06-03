@@ -1,10 +1,5 @@
 (in-package #:tpd2.game)
 
-(defmyclass game
-    game-over
-  players
-  other-listeners)
-
 (defmacro defrules (game func lambda-list &body body)
   `(eval-always
      (with-call/cc
@@ -32,15 +27,9 @@
   (apply 'game-announce me :game-over args)
   (values))
 
-(defmyclass player
-    controller
-  game
-  waiting-for-input)
 
 (my-defun player announce (message &rest args)
   (apply 'game-announce (my game) message args))
-
-(defgeneric player-full-state-to-ml (player))
 
 (my-defun player full-state-to-ml ()
   (object-to-ml me))
