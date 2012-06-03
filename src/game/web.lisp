@@ -162,8 +162,8 @@
 
 (my-defun game 'object-to-ml :around ()
           (aif (my game-over)
-              (<h2 (apply 'message-to-ml it) " " (my play-again-ml) "?")
-              (call-next-method)))
+	       (<h2 (apply 'message-to-ml it) " " (my play-again-ml) "?")
+	       (call-next-method)))
 
 (defun current-web-controller (controller)
   (and (web-state-p controller)
