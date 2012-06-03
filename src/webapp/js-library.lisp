@@ -96,7 +96,7 @@
     (defun handle-special-elements (parent)
       (dolist (element (! (parent get-elements-by-tag-name) "a"))
         (when (equal (~ element class-name) (unquote +action-link-class+))
-          (setf (~ element onclick) (+ "asyncSubmitLink(\'" (~ element href) "\')"))))
+          (setf (~ element onclick) (lambda ()  (async-submit-link (~ element href))))))
       (dolist (element (! (parent get-elements-by-tag-name) "div"))
         (when (equal (~ element class-name) (unquote +html-class-scroll-to-bottom+))
           (setf (~ element scroll-top) (~ element scroll-height)))
