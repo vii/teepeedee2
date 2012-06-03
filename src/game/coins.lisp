@@ -12,7 +12,7 @@
                 do
                 (setf (player-controller-var p 'coins) (its coins p))))
 
-(my-defun coin-game-player 'object-to-ml ()
+(my-defun coin-game-player 'player-full-state-to-ml ()
   (<div :class "coin-game-player"
         (call-next-method)
         (let ((coins (or (my coins) (my 'player-controller-var 'coins))))

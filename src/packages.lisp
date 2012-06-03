@@ -311,6 +311,7 @@
 
    #:page-link
    #:webapp-frame
+   #:webapp-frame-available-p
    #:*default-site*
    #:*webapp-frame*
    #:webapp-frame-var
@@ -318,6 +319,7 @@
    #:frame
    #:frame-var
    #:frame-username
+   #:html-change-username-form
    #:frame-messages
    #:frame-trace-info
    #:frame-destroy-hooks

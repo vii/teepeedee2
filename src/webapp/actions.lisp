@@ -99,7 +99,7 @@
          (<p
           ,title
           ,@body-ml
-          (<input :class "plain-submit" :type :submit :value "↵"))))))
+	  (<input :class "plain-submit" :type :submit :value "↵"))))))
 
 (defun find-action (id)
   (when id
@@ -127,11 +127,10 @@
   (defpage-lambda url
       #'action-respond-body :defaulting-lambda-list (.id. .javascript.)))
 
+(my-defun frame change-username-form ()
+  (html-action-form "Your name " ((new-name (my username)))
+    (my change-username new-name)
+    (values)))
 
-(my-defun frame 'simple-channel-body-ml ()
-  (<div :class "frame"
-        (<div :class "change-name"
-              (html-action-form "Your name " ((new-name (my username)))
-                (my change-username new-name)
-                (values)))))
-
+(defmacro html-change-username-form ()
+  `(with-ml-output (frame-change-username-form (webapp-frame))))

@@ -61,3 +61,5 @@
   (setf (my username) new-name)
   (my notify)
   new-name)
+
+(my-defun frame 'simple-channel-body-ml ())

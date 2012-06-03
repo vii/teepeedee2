@@ -124,7 +124,7 @@
 		((my blackjack)
 		 (<p :class "blackjack" "Blackjack!"))))))
 
-(my-defun blackjack-player 'object-to-ml ()
+(my-defun blackjack-player 'player-full-state-to-ml ()
   (<div :class "blackjack-player"
 	(call-next-method)
 	(loop for h in (my hands)

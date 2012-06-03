@@ -28,7 +28,7 @@
   (random-elt (choices-list choices)))
 
 (my-defun game finished (&rest args)
-  (setf (my game-over) t)
+  (setf (my game-over) (list* :game-over args))
   (apply 'game-announce me :game-over args)
   (values))
 
@@ -39,6 +39,11 @@
 
 (my-defun player announce (message &rest args)
   (apply 'game-announce (my game) message args))
+
+(defgeneric player-full-state-to-ml (player))
+
+(my-defun player full-state-to-ml ()
+  (object-to-ml me))
 
 (my-defun game listeners ()
   (append (mapcar 'player-controller (my players)) (my other-listeners)))

@@ -18,10 +18,10 @@
     (cond ((not object-paths)
            slot)
           (t
-           `(getprop
+           `(ps:getprop
              ,(if (rest object-paths)
-                 `(~ ,@object-paths)
-                 (first object-paths))
+		  `(~ ,@object-paths)
+		  (first object-paths))
              ',slot)))))
 
 (ps:defpsmacro ignore-errors (&body body)
@@ -227,7 +227,8 @@
 
     (defun async-submit-link-href (link)
       (when (async-submit-link link)
-        (setf (~ window location) link)))
+        (setf (~ window location) link))
+      t)
 
     (defun channel (name counter)
       (setf (aref *channels* name) counter))

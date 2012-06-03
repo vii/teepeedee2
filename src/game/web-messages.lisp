@@ -1,21 +1,24 @@
 (in-package #:tpd2.game)
 
 (defmacro def-web-state-message (message args &body body)
-  `(my-defun web-state 'inform (game-state (message (eql ,message)) &key ,@args &allow-other-keys)
-     (declare (ignorable game-state))
-     (macrolet ((a (&rest args)
-                  `(my add-announcement (<p :class "game-message" ,@args))))
-       ,@body)))
+  `(progn
+     (defmethod message-to-ml ((message (eql ,message)) &key ,@args &allow-other-keys)
+       (declare (ignorable game-state))
+       (with-ml-output ,@body))
+     (my-defun web-state 'inform (game-state (message (eql ,message)) &key ,@args &allow-other-keys)
+       (declare (ignorable game-state))
+       (my add-announcement (<p :class "game-message" ,@body)))))
 
 (macrolet ((messages (&body body)
              `(progn
                 ,@(loop for (keyword args . ml) in body
                         collect `(def-web-state-message ,keyword ,args
-                                   (a ,@ml))))))
+                                   ,@ml)))))
 
   (messages
    (:talk (sender text)
           (<span :class "game-talk-message" sender ": " (<q text)))
+   (:shuffle () "The deck has been shuffled.")
    (:new-player (player)
                 player " has joined the game.")
    (:resigned (player)
@@ -57,7 +60,7 @@
                      (t
                       (when result
                         (with-ml-output
-                            (friendly-string result) ".")
+                            (friendly-string result) ". ")
                         "Game over."))))
    (:demand (player amount)
             player " demanded " amount ".")

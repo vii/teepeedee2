@@ -90,7 +90,6 @@
 (defun-speedy random-web-safe-char ()
   (aref +web-safe-chars+ (random (length +web-safe-chars+))))
 
-
 (defun random-web-sparse-key (length)
   (let ((bv (make-byte-vector length)))
     (loop for i from 0 below length
