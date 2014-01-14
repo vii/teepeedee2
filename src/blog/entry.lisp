@@ -44,7 +44,7 @@
   (title "Untitled")
   time
   expiry-time
-  paragraphs
+  body-function
   score
   score-update-time)
 
@@ -111,8 +111,7 @@
 
 (my-defun entry story-ml ()
   (<div :class "blog-entry-story"
-        (loop for p in (my paragraphs)
-              do (<p (output-raw-ml p)))))
+        (funcall (my body-function))))
 
 (my-defun entry comments ()
   (datastore-retrieve-indexed 'comment 'entry-index-name (my index-name)))
@@ -193,10 +192,24 @@
      (setf (entry-channel-entry channel) me))))
 
 (my-defun entry read-paragraphs-from-buffer (buffer)
-  (setf (my paragraphs)
-        (split-into-paragraphs
-         (match-replace-all buffer
-                            ("${static-base}"  (byte-vector-cat (blog-static-base-url (my blog)) (my name)))))))
+  (cond ((if-match-bind ((* (space)) "(progn") buffer)
+	 (setf (my body-function) 
+	       (compile (gensym (my name))
+			`(lambda ()
+			   (with-ml-output
+			     ,(let ((*package* (find-package '#:tpd2.blog-user))) (read-from-string (force-string buffer)))
+			     )))
+	       ))
+	 (t
+	  (let ((paragraphs
+		 (split-into-paragraphs
+		  (match-replace-all buffer
+		    ("${static-base}"  (byte-vector-cat (blog-static-base-url (my blog)) (my name)))))))
+	    (setf (my body-function)
+		  (lambda ()
+		    (with-ml-output 
+		      (loop for p in paragraphs
+			    do (<p (output-raw-ml p))))))))))
 
 (defun parse-time (str)
   (match-bind

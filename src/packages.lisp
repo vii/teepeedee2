@@ -430,6 +430,10 @@
   (:nicknames #:tpd2.blog)
   (:use #:cl #:tpd2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.lib #:tpd2.datastore))
 
+(defpackage #:teepeedee2.blog-user
+  (:nicknames #:tpd2.blog-user)
+  (:use #:cl #:tpd2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.lib))
+
 (defpackage #:teepeedee2.survey
   (:nicknames #:tpd2.survey)
   (:use #:cl #:tpd2.webapp #:tpd2.ml #:tpd2.ml.html #:tpd2.lib #:tpd2.datastore))
