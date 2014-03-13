@@ -20,6 +20,7 @@
   :name "teepeedee2"
   :author "John Fremlin <john@fremlin.org>"
   :description "Multiprotocol fast networking framework"
+  :version "1.0"
 
   :components (
 	       (:module :src

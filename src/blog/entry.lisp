@@ -156,14 +156,7 @@
 
 (my-defun entry headline-ml (score-mul)
   (<div :class "blog-front-page-entry"
-        :style
-             (css-attrib
-              :max-width ((format nil "~$%" (* 100 (min 0.5 (max 0.2 (* 1/5 score-mul (my score)))))))
-              :width "auto")
-        (<h2 :style
-             (css-attrib
-              :font-size ((format nil "~$em" (min 2.5 (max 1.2 (* 1.6 score-mul (my score)))))))
-             (<a :href (my url-path) (my title)))
+        (<h2 (<a :href (my url-path) (my title)))
         (<p :class "time" "Posted " (friendly-age-string (my time)) " ago"
             (when (my comments)
               (with-ml-output ", last comment " (friendly-age-string (comment-time (first (my comments)))) " ago")))))
