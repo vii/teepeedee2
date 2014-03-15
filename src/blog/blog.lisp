@@ -173,7 +173,7 @@
         (lambda ()
           (webapp ((with-ml-output (my name) ": frontpage")
                    :head-contents
-                   (my feed-heah-contents))
+                   (my feed-head-contents))
             (my front-page))))
 
     (defpage-lambda-blog (my latest-url)
