@@ -139,7 +139,7 @@
                       ("week" ,(* 7 24 60 60))
                       ("day" ,(* 24 60 60))
                       ("hour" ,(* 60 60))
-                      ("minute" 60)
+                      ("minute" 60)tl
                       ("second" 1)))
 
 (defun friendly-age-string (time)
@@ -154,7 +154,7 @@
           (let ((v (floor age value)))
             (format nil "~R ~A~P" v name v))))))
 
-(my-defun entry headline-ml (score-mul)
+(my-defun entry headline-ml ()
   (<div :class "blog-front-page-entry"
         (<h2 (<a :href (my url-path) (my title)))
         (<p :class "time" "Posted " (friendly-age-string (my time)) " ago"

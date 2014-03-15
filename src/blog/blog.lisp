@@ -193,25 +193,17 @@
       (my ready-entries :age age :tags (split-into-list-by-comma tags)))))
 
 (my-defun blog front-page ()
-  (let ((all-entries (my ready-entries-http)) (top-count 6) (bottom-count 15))
+  (let ((all-entries (my ready-entries-http)) (top-count 0) (bottom-count 15))
     (multiple-value-bind (fresh-entries entries)
 	(mv-filter #'entry-hot-off-the-press-p all-entries)
       (let ((entries (sort (copy-list entries) #'> :key #'entry-score)))
         (<div :class "blog-front-page"
-	      (let* (
-		     (total-score (loop for e in entries summing (entry-score e)))
-		     (score-mul (/ (length entries) (max 1 total-score)))
-		     (reverse-entries (reverse entries)))
-		(flet ((headlines (count)
-			 (<div :class "blog-front-page-entries"
-			       (loop for entry = (pop entries)
-				     repeat (/ (min (length reverse-entries) count) 3)
-				     while entry
-				     do
-				     (with-ml-output (entry-headline-ml entry score-mul)
-						     (loop repeat 2 do
-							   (with-ml-output (entry-headline-ml (pop reverse-entries) score-mul))))
-				     ))))
+	      (flet ((headlines (count)
+		       (<div :class "blog-front-page-entries"
+			     (loop for entry = (pop entries)
+				   repeat count
+				   while entry do
+				   (with-ml-output (entry-headline-ml entry))))))
 		  (headlines top-count)
 		  (<div :class "blog-fresh-entries"
 			(loop for entry in fresh-entries do
