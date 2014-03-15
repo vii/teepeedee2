@@ -173,7 +173,7 @@
         (lambda ()
           (webapp ((with-ml-output (my name) ": frontpage")
                    :head-contents
-                   (my feed-head-contents))
+                   (my feed-heah-contents))
             (my front-page))))
 
     (defpage-lambda-blog (my latest-url)
@@ -211,7 +211,7 @@
 				(entry-inline-ml entry))))
 		  (headlines bottom-count))
 		
-		(my link-to-latest)))))))
+		(my link-to-latest))))))
 
 (my-defun blog latest-page ()
   (tpd2.http:with-http-params (tags)
