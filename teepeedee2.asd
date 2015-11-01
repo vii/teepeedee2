@@ -5,11 +5,6 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (asdf:operate 'asdf:load-op 'cl-fad))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (loop for addon in (remove-if-not 'cl-fad:directory-pathname-p (cl-fad:list-directory "addons"))
-	do
-	(pushnew addon asdf:*central-registry* :test #'equal)))
-
 #+tpd2-debug
 (progn
   (pushnew :tpd2-debug *features*)
