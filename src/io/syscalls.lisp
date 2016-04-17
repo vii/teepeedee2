@@ -545,7 +545,7 @@
         (let ((ai (cffi:mem-ref res :pointer)))
           (unwind-protect
                (sockaddr-address-string-with-ntop
-                (cffi:foreign-slot-value ai 'addrinfo 'addr))
+                (cffi:foreign-slot-value ai '(:struct addrinfo) 'addr))
             (freeaddrinfo ai)))))))
 
 (def-simple-syscall setsockopt
@@ -563,8 +563,8 @@
 
 (defun sockaddr-address-string-with-ntop (sa)
   (cffi:with-foreign-pointer-as-string ((str str-size) 200)
-    (unless (inet_ntop (cffi:foreign-slot-value sa 'sockaddr_in 'family)
-                       (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)
+    (unless (inet_ntop (cffi:foreign-slot-value sa '(:struct sockaddr_in) 'family)
+                       (cffi:foreign-slot-pointer sa '(:struct sockaddr_in) 'addr)
                        str
                        str-size)
       (error "Cannot convert address: ~A" (strerror errno)))))
@@ -572,14 +572,14 @@
 #+tpd2-old-sockaddr-address-string
 (defun sockaddr-address-string (sa)
   (declare (optimize speed))
-  (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
+  (let ((addr (cffi:foreign-slot-value sa '(:struct sockaddr_in) 'addr)))
     #.`(strcat ,@(loop for i from 0 below 4 unless (= i 0) collect "." collect `(ldb (byte 8 (* 8 ,i)) addr)))))
 
 
 (let ((octet-to-string (make-array 256 :element-type 'simple-string :initial-contents (loop for i from 0 below 256 collect (princ-to-string i)))))
   (defun sockaddr-address-string (sa)
     (declare (optimize speed (safety 0)))
-    (let ((addr (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
+    (let ((addr (cffi:foreign-slot-value sa '(:struct sockaddr_in) 'addr)))
       #.`(strcat ,@(loop for i below 4 unless (= i 0) collect "." collect `(the simple-string (aref octet-to-string (ldb (byte 8 (* 8 ,i)) addr))))))))
 
 (alexandria:define-constant +octet-to-bv+
@@ -607,7 +607,7 @@
 
 (defun-speedy sockaddr-address-bv (sa)
   (declare (optimize speed (safety 0)))
-  (bv-from-address (cffi:foreign-slot-value sa 'sockaddr_in 'addr)))
+  (bv-from-address (cffi:foreign-slot-value sa '(:struct sockaddr_in) 'addr)))
 
 
 (defun new-socket-helper (&key
@@ -621,14 +621,14 @@
      (let ((network-port (htons port)))
        (setsockopt-int fd +SOL_SOCKET+ +SO_REUSEADDR+ 1)
        (set-fd-nonblock fd)
-       (with-foreign-object-and-slots ((addr port family) sa sockaddr_in)
+       (with-foreign-object-and-slots ((addr port family) sa (:struct sockaddr_in))
          (setf family socket-family)
          (cffi:with-foreign-string (src address)
            (when (<= (inet_pton socket-family src
-                                (cffi:foreign-slot-pointer sa 'sockaddr_in 'addr)) 0)
+                                (cffi:foreign-slot-pointer sa '(:struct sockaddr_in) 'addr)) 0)
              (error "Internet address is not valid: ~A" address)))
          (setf port network-port)
-         (funcall action fd sa (cffi:foreign-type-size 'sockaddr_in)))
+         (funcall action fd sa (cffi:foreign-type-size '(:struct sockaddr_in))))
        fd)
      (syscall-close fd))))
 
@@ -667,7 +667,7 @@
 (defconstant +unix-epoch-to-universal-time-offset+ 2208988800)
 
 (defun get-universal-us ()
-  (with-foreign-object-and-slots ((sec usec) tv timeval)
+  (with-foreign-object-and-slots ((sec usec) tv (:struct timeval))
     (syscall-gettimeofday tv (cffi:null-pointer))
     (+ (* 1000000 (+ sec +unix-epoch-to-universal-time-offset+)) usec)))
 
@@ -721,9 +721,9 @@
 
 (cffi:defcstruct (epoll-event :size 12)
     (events :uint32)
-  (data epoll-data :offset 4))
+  (data (:union epoll-data) :offset 4))
 
-(assert (= (cffi:foreign-type-size 'tpd2.io::epoll-event) 12))
+(assert (= (cffi:foreign-type-size '(:struct tpd2.io::epoll-event)) 12))
 
 (cffi:defcfun getpeername
     :int

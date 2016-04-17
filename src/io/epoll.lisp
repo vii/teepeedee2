@@ -57,17 +57,18 @@
                                  -1))))
     (debug-assert (>= (my max-events) nevents) (me nevents))
 
-    (dotimes (i nevents)
-      (let ((event (cffi:mem-aref (my events) 'epoll-event i)))
-        (cffi:with-foreign-slots ((events data) event epoll-event)
-          (cffi:with-foreign-slots ((fd) data epoll-data)
-            (awhen (my 'mux-find-fd fd)
+    (loop repeat nevents
+	  for event = (my events) then (cffi:inc-pointer event (cffi:foreign-type-size '(:struct epoll-event)))
+	  do
+	  (cffi:with-foreign-slots ((events data) event epoll-event)
+	    (cffi:with-foreign-slots ((fd) data epoll-data)
+	      (awhen (my 'mux-find-fd fd)
                 (unless (zerop (logand (logior +POLLIN+ +POLLOUT+) events))
                   (con-run it))
                 (unless (and (zerop (logand (logior +POLLERR+ +POLLHUP+) events))
                              (or (zerop (logand +POLLRDHUP+ events))
                                  (not (zerop (logand +POLLIN+ events)))))
-                  (con-fail it)))))))
+                  (con-fail it))))))
 
     (debug-assert (my postpone-registration))
     (setf (my postpone-registration) nil)

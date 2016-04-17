@@ -158,13 +158,15 @@
   (unless (my done)
     (let ((count (min +max-iovecs+ (my num-bufs))))
       (declare (type (integer 0 #.+max-iovecs+) count))
-      (cffi:with-foreign-object (vecs 'iovec count)
-        (loop for i below count
+      (cffi:with-foreign-object (vecs '(:struct iovec) count)
+        (loop
+	      repeat count
+	      for iovec = vecs then (cffi:inc-pointer iovec (cffi:foreign-type-size '(:struct iovec)))
               for buf of-type simple-byte-vector in (my head)
               for offset fixnum = (my offset) then 0
               do
               (with-pointer-to-vector-data (ptr buf)
-                (cffi:with-foreign-slots ((base len) (cffi:mem-aref vecs 'iovec i) iovec)
+                (cffi:with-foreign-slots ((base len) iovec (:struct iovec))
                   (setf base (cffi:inc-pointer ptr offset))
                   (setf len (- (length buf) offset)))))
         (let ((s (socket-writev (con-socket con) vecs count)))
@@ -172,7 +174,6 @@
           (when s
             (my shift-up s))))))
   (my check-done con done #'my-call))
-
 
 
 (my-defun sendbuf 'print-object (stream)

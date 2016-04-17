@@ -44,9 +44,9 @@
     (cffi:foreign-symbol-pointer "accept4")))
 
 (defmethod socket-accept ((fd integer))
-  (cffi:with-foreign-object (sa 'sockaddr_in)
+  (cffi:with-foreign-object (sa '(:struct sockaddr_in))
     (cffi:with-foreign-object (len :int)
-      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
+      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size '(:struct sockaddr_in)))
       (let ((s
              (socket-io-syscall
               #. (progn
@@ -90,9 +90,9 @@
   t)
 
 (defmethod socket-recvfrom ( (fd integer) buf)
-  (cffi:with-foreign-object (sa 'sockaddr_in)
+  (cffi:with-foreign-object (sa '(:struct sockaddr_in))
     (cffi:with-foreign-object (len :int)
-      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
+      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size '(:struct sockaddr_in)))
       (with-pointer-to-vector-data (ptr buf)
         (let ((s (socket-io-syscall (syscall-recvfrom fd ptr (length buf) 0 sa len))))
           (case-= s
@@ -117,9 +117,9 @@
 
 
 (defmethod socket-peer ((fd integer))
-  (cffi:with-foreign-object (sa 'sockaddr_in)
+  (cffi:with-foreign-object (sa '(:struct sockaddr_in))
     (cffi:with-foreign-object (len :int)
-      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size 'sockaddr_in))
+      (setf (cffi:mem-aref len :int) (cffi:foreign-type-size '(:struct sockaddr_in)))
       (when (zerop (getpeername fd sa len))
         (sockaddr-address-string sa)))))
 
