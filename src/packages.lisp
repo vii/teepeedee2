@@ -247,6 +247,7 @@
 
    #:servestate-origin*
    #:*servestate*
+   #:*client-http-connection-cache*
 
    #:*default-dispatcher*
    #:dispatcher-add-alias

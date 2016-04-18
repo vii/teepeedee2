@@ -55,9 +55,9 @@
 (my-defun con run ()
   (restart-case
       (handler-bind ((error
-                      (lambda(e)
-                        (when (normal-connection-error e)
-                          (invoke-restart 'hangup e)))))
+                      (lambda (e)
+                        (when (normal-connection-error e)			  
+			  (invoke-restart 'hangup e)))))
         (funcall (my ready-callback)))
     (hangup (&optional (err (make-condition 'socket-explicitly-hungup)))
       (my fail err))))
@@ -93,13 +93,14 @@
     ((>= (recvbuf-available-to-eat (my recv)) amount)
      (funcall done (recvbuf-eat (my recv) amount)))
     (t
-     (recvbuf-prepare-read (my recv) amount)
+     (recvbuf-prepare-read (my recv) amount amount)
      (recvbuf-recv (my recv) me #'my-call))))
 
 (my-defun con 'recv-some-or-nil (done)
   (let ((available (recvbuf-available-to-eat (my recv))))
     (cond
       ((zerop available)
+       (recvbuf-prepare-read (my recv))
        (let ((s (recvbuf-read-some (my recv) me #'my-call)))
         (case s
           ((nil))
@@ -128,8 +129,8 @@
 (my-defun con 'recvline-shared-buf (done &optional (delimiter +newline+))
   (declare (type function done) (type simple-byte-vector delimiter))
   (unless (zerop (recvbuf-read-idx (my recv)))
-   (recvbuf-shift-up (my recv) 0) ;shift everything so that we start with the read-idx at zero
-   (assert (zerop (recvbuf-read-idx (my recv))) (me (my recv))))
+    (recvbuf-shift-up (my recv)) ;shift everything so that we start with the read-idx at zero
+    (assert (zerop (recvbuf-read-idx (my recv))) (me (my recv))))
   (acond
    ((recvbuf-find (my recv) delimiter)
     (setf (recvbuf-read-idx (my recv)) (+ it (length delimiter)))

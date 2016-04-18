@@ -3,8 +3,10 @@
 (deftype recvbuf-small-integer ()
   `(integer 0 #x10000000))
 
-(defconstant +recvbuf-default-size+ 4096)
+(defconstant +recvbuf-default-size+ 8192)
+(defconstant +recvbuf-maximum-size+ (* 64 1024))
 (defconstant +recvbuf-oversize+ 10000)
+(defconstant +recvbuf-target-available-size+ 1024)
 
 (defstruct recvbuf
   (store (make-byte-vector +recvbuf-default-size+) :type simple-byte-vector)
@@ -48,29 +50,31 @@
   (my-declare-fast-inline)
   (the recvbuf-small-integer (- (my write-idx) (my read-idx))))
 
-(my-defun recvbuf shift-up (size)
+(my-defun recvbuf shift-up (&optional (desired-available 0) (maximum-size +recvbuf-maximum-size+))
   (my-declare-fast-inline)
   (cond
     ((= (my write-idx) (my read-idx))
-     (when (> size (my len))
-       (setf (my store) (make-byte-vector size)))
+     (when (> desired-available (my len))
+       (setf (my store) (make-byte-vector (min maximum-size desired-available))))
      (setf
       (my read-idx) 0
       (my write-idx) 0))
     (t
      ;; Unfortunately cannot use adjust-array as that might make non "simple" arrays
-     (let ((new-store (make-byte-vector (max (my len) size))))
+     (let ((new-store (make-byte-vector
+		       (min maximum-size
+			    (max (my len) (+ (my available-to-eat) desired-available))))))
        (replace new-store (my store) :start2 (my read-idx) :end2 (my write-idx))
        (decf (my write-idx) (my read-idx))
-       (setf (my read-idx) 0)
-       (setf (my store) new-store))))
+       (setf (my read-idx) 0
+	     (my store) new-store))))
   (values))
 
-(my-defun recvbuf prepare-read (&optional (size 1024))
-  (declare (type recvbuf-small-integer size))
-  (when (> size (- (my len) (my read-idx)))
-    (my shift-up size))
-  (debug-assert (>= (- (my len) (my read-idx)) size) (me size))
+(my-defun recvbuf prepare-read (&optional (desired-available +recvbuf-target-available-size+) (maximum-size +recvbuf-maximum-size+))
+  (declare (type recvbuf-small-integer desired-available))
+  (when (> desired-available (- (my len) (my write-idx)))
+    (my shift-up desired-available maximum-size))
+  (debug-assert (>= (- (my len) (my write-idx)) desired-available) (me desired-available))
   (values))
 
 (my-defun recvbuf read-some (con &optional retry)

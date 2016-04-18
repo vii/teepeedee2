@@ -1,7 +1,7 @@
 (asdf:defsystem :teepeedee2-test
   :name "teepeedee2 tests"
   :author "John Fremlin <john@fremlin.org>"
-  :version "prerelease"
+  :version "1.1"
   :description "Tests for teepeedee2"
   :components ((:module :t 
 	   

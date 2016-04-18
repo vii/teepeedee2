@@ -23,9 +23,9 @@
 
     (without-call/cc (apply-byte-vector-cat body))))
 
-(defvar *connection-cache* (make-hash-table :test #'equalp))
+(defvar *client-http-connection-cache* (make-hash-table :test #'equalp))
 
-(defprotocol http-request (con request done &key connection-cache)
+(defprotocol http-request (con request done &key connection-cache-key)
   (io 'send con request)
   (let ((content-length)
         (chunked)
@@ -39,7 +39,6 @@
 
           (when (not (or (< 1 version-major) (and (= 1 version-major) (< 0 version-minor))))
             (setf connection-close t))
-
           (io 'process-headers con
               (without-call/cc (lambda(name value)
                                  (unless (zerop (length value))
@@ -67,27 +66,30 @@
              (t
               (setf connection-close t)
               (io 'recv-until-close con))))
-
-          (cond ((or connection-close (not connection-cache))
-                 (hangup con))
+	  
+          (cond ((or connection-close (not connection-cache-key) (not *client-http-connection-cache*))
+		 (hangup con))
                 (t
-                 (add-to-connection-cache con connection-cache)))))))
+                 (add-to-connection-cache con connection-cache-key)))))))
 
 
 (defun http-connection-cache-timeout ()
   25)
 
-(defun add-to-connection-cache (con key)
+(defun add-to-connection-cache (con key &key (connection-cache *client-http-connection-cache*))
   (con-clear-failure-callbacks con)
-  (unless (con-dead? con)
-    (con-when-ready-to-read con (lambda() (con-fail con)))
-    (con-add-failure-callback con
-                              (lambda(&rest args)
-                                (declare (ignore args))
-                                (debug-assert (member con (gethash key *connection-cache*)) (con key))
-                                (deletef con (gethash key *connection-cache*))))
-    (reset-timeout con (http-connection-cache-timeout))
-    (push con (gethash key *connection-cache*))))
+  (cond
+    ((not connection-cache)
+     (hangup con))
+    ((not (con-dead? con))
+     (con-when-ready-to-read con (lambda() (con-fail con)))
+     (con-add-failure-callback con
+			       (lambda(&rest args)
+				 (declare (ignore args))
+				 (debug-assert (member con (gethash key connection-cache)) (con key))
+				 (deletef con (gethash key connection-cache))))
+     (reset-timeout con (http-connection-cache-timeout))
+     (push con (gethash key connection-cache)))))
 
 #+tpd2-http-no-connection-cache
 (defun add-to-connection-cache (con key)
@@ -96,7 +98,9 @@
   (hangup con))
 
 (defun get-http-request-con (ssl address port)
-  (let ((con (pop (gethash (list ssl address port) *connection-cache*))))
+  (let ((con
+	 (when *client-http-connection-cache*
+	   (pop (gethash (list ssl address port) *client-http-connection-cache*)))))
     (cond (con
            (con-clear-failure-callbacks con)
            (reset-timeout con)
@@ -113,13 +117,13 @@
              con)))))
 
 (defun launch-http-request (&key ssl (port (if ssl 443 80)) address body
-                            (path (force-byte-vector "/"))
-                            extra-header-lines
-                            hostname
-                            timeout
-                            failure
-                            done
-                            (method (force-byte-vector "GET")))
+			      (path (force-byte-vector "/"))
+			      extra-header-lines
+			      hostname
+			      timeout
+			      failure
+			      done
+			      (method (force-byte-vector "GET")))
   (unless address
     (setf address (lookup-hostname hostname)))
   (unless address
@@ -148,4 +152,4 @@
                  +newline+
                  body)
                (lambda(&rest args)(setf succeeded t) (apply done args))
-               :connection-cache (list ssl address port))))
+               :connection-cache-key (list ssl address port))))
