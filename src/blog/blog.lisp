@@ -70,6 +70,8 @@
   (my url "*blog-admin*"))
 (my-defun blog latest-url ()
   (my url "*latest*"))
+(my-defun blog sitemap-url ()
+  (my url "sitemap.txt"))
 
 (defmacro defpage-lambda-blog (path function &rest args)
   `(defpage-lambda ,path ,function :create-frame nil ,@args))
@@ -120,6 +122,13 @@
 				 (html-action-link "Delete"
 				   (datastore-delete c)))))))))))
 
+(my-defun blog sitemap ()
+  (with-site ((my site))
+    (with-ml-output-start
+      (loop for entry in (my ready-entries) do
+	    (output-raw-ml "http://" (its canonical-name (its dispatcher (my site))) (its url-path entry) tpd2.io:+newline+)))))
+
+
 (my-defun blog set-page ()
   (with-site ((my site))
     (defpage-lambda-blog (my atom-feed-url)
@@ -129,6 +138,10 @@
         (lambda ()
           (my rss-feed)))
 
+    (defpage-lambda-blog (my sitemap-url)
+        (lambda ()
+          (my sitemap)))
+    
     (defpage-lambda (my admin-url)
 	(lambda (password entry-index-name)
 	  (my comment-admin password entry-index-name)))
