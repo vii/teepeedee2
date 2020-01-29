@@ -126,7 +126,7 @@
   (with-site ((my site))
     (with-ml-output-start
       (loop for entry in (my ready-entries) do
-	    (output-raw-ml "http://" (its canonical-name (its dispatcher (my site))) (its url-path entry) tpd2.io:+newline+)))))
+	    (output-raw-ml (its canonical-protocol (its dispatcher (my site))) (its canonical-name (its dispatcher (my site))) (its url-path entry) tpd2.io:+newline+)))))
 
 
 (my-defun blog set-page ()
@@ -186,7 +186,9 @@
         (lambda ()
           (webapp ((with-ml-output (my name) ": frontpage")
                    :head-contents
-                   (my feed-head-contents))
+                   (with-ml-output
+		       (output-raw-ml "<meta name='robots' content='noindex,follow' />")
+		       (my feed-head-contents)))
             (my front-page))))
 
     (defpage-lambda-blog (my latest-url)

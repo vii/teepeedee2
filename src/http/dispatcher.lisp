@@ -2,6 +2,7 @@
 
 (defstruct dispatcher
   canonical-name
+  (canonical-protocol "http://")
   (paths (make-hash-table :test 'equalp))
   (error-responder 'default-http-error-page))
 
@@ -115,10 +116,10 @@
 (defun find-dispatcher (host)
   (or (find-dispatcher-go host) *default-dispatcher*))
 
-(defun find-or-make-dispatcher (host)
+(defun find-or-make-dispatcher (host &rest args)
   (let ((host (force-byte-vector host)))
     (or (find-dispatcher-go host)
-        (let ((it (make-dispatcher :canonical-name host)))
+        (let ((it (apply 'make-dispatcher :canonical-name host args)))
           (push (cons host it) *dispatchers*)
           it))))
 
